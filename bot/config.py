@@ -67,6 +67,12 @@ GUILD_ID = int(userOptions.get("guild_id", "0"))
 startTime = time.time()
 tc_stop_conditions = [x.strip().lower() for x in userOptions.get("tc_stop_on", "dungeon,miniboss").split(",") if x.strip()]
 
+# Night Sleep settings
+sleep_at = userOptions.get("sleep_at", "none").lower()
+if sleep_at == "none": sleep_at = None
+wake_up_at = userOptions.get("wake_up_at", "none").lower()
+if wake_up_at == "none": wake_up_at = None
+
 # Parse extra authorized admins
 admin_ids_str = userOptions.get("admin_ids", "")
 ADMIN_IDS = [int(x.strip()) for x in admin_ids_str.split(",") if x.strip().isdigit()]

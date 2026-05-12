@@ -23,6 +23,7 @@ from bot.state import (
 from bot.telegram import send_telegram_notification
 from bot.captcha import tentar_resolver_captcha, set_client
 from bot.handlers import responseResolver
+from bot.utils import is_sleep_time
 from colorama import Fore, Back, Style
 
 
@@ -75,12 +76,17 @@ class DiscordClient(discord.Client):
             try:
                 current_time = time.time()
 
-                logger.debug(
-                    f"States - Paused: {bot_state.paused}, "
                     f"Gambling: {not bot_state.gambling_paused}, "
                     f"Coinflip: {bot_state.coinflip_pending}, "
                     f"Withdraw: {bot_state.awaiting_withdraw}"
                 )
+
+                # Stealth: Night Sleep (Truly Offline)
+                if is_sleep_time():
+                    HUD.alert(f"NIGHT SLEEP: Time to go offline ({config.sleep_at} - {config.wake_up_at}).")
+                    HUD.system("Closing connection... See you later!")
+                    await self.close()
+                    return
 
                 # Stealth: Coffee Breaks
                 if (

@@ -1,23 +1,23 @@
 # 🔮 Oracle v2 — Epic RPG Automation
 
-Este repositório contém a versão isolada do **Oracle v2**, um macro avançado para automação do Epic RPG com inteligência artificial para resolução de captchas e sistema de anti-detecção.
+Este repositório contém o **Oracle v2**, um macro avançado para automação do Epic RPG com inteligência artificial para resolução de captchas e sistema de anti-detecção.
 
 ---
 
 ## 🛡️ Segurança e Diretrizes de Uso (MUITO IMPORTANTE)
 
-O uso de automação no Discord é um jogo de "gato e rato". Para garantir a longevidade da sua conta, siga estas diretrizes baseadas em heurísticas de anti-detecção:
+Para garantir a longevidade da sua conta, siga estas diretrizes baseadas em heurísticas de anti-detecção:
 
-### ⚠️ Use em sua conta principal com atividade orgânica
+### ⚠️ Não utilize em contas secundárias sem atividade orgânica
 O Discord utiliza Machine Learning para analisar padrões comportamentais. Uma conta que **apenas** envia comandos de RPG e não tem outras atividades é facilmente detectada.
 *   **POR QUÊ**: O endpoint `/science` do Discord rastreia movimentos do mouse, troca de canais e foco da tela. O bot não simula isso.
-*   **MITIGAÇÃO**: Use a conta normalmente (conversa com amigos, entra em canais de voz, navega por servidores) enquanto o bot roda em segundo plano.
+*   **MITIGAÇÃO**: Use a conta normalmente de vez em quando(converse com amigos, entre em canais de voz, navegue por servidores) enquanto o bot roda em segundo plano.
 
 ### 📋 Checklist de Sobrevivência
-*   **🚫 NUNCA rode 24/7**: O padrão de atividade ininterrupta é um sinal claro de bot. Utilize pausas manuais ou scripts de agendamento.
 *   **🏠 IP Residencial**: Evite rodar em VPS ou Cloud (AWS, Google Cloud). Use o Wi-Fi de casa ou 4G do celular. IPs de data centers são marcados pelo Discord.
 *   **☕ Coffee Breaks**: O Oracle v2 já possui pausas para "café" integradas (5-15min a cada 1-2h). Não as desative.
-*   **📱 Notificações Telegram**: Mantenha o Telegram configurado. Se a IA falhar em um captcha, você precisa intervir manualmente rápido para evitar o "Jail".
+*   **🌙 Night Sleep (Modo Sono)**: Agora o bot pode se desconectar totalmente em horários específicos (ex: das 23:30 às 07:00) para simular que você foi dormir e está offline, desconectando-se completamente do websocket e fechando a conexão com o discord.
+*   **📱 Notificações Telegram**: Mantenha o Telegram configurado. Se a IA falhar em um captcha, você precisa intervir manualmente rápido para evitar flag pelo EPIC RPG.
 
 ---
 
@@ -35,7 +35,7 @@ python3.11 -m venv venv
 
 # Ativar o ambiente virtual:
 source venv/bin/activate  # Linux/macOS
-# venv\Scripts\activate   # Windows
+ venv\Scripts\activate   # Windows
 
 # Instalar as dependências:
 pip install --upgrade pip
@@ -49,6 +49,7 @@ Edite o arquivo `options.ini` com suas informações:
 *   `guild_id`: ID do servidor.
 *   `admin_ids`: Seu ID (para controle remoto).
 *   `typo_chance`: Chance (ex: 0.05) de simular erros de digitação humanos.
+*   `sleep_at` / `wake_up_at`: Horário (HH:MM) para o bot ficar offline (ex: 23:30 e 07:00).
 
 ### 4. Executando o Bot
 ```bash
@@ -72,4 +73,4 @@ O bot utiliza dois modelos (`oracle_v2_color.h5` e `oracle_v2_gray.h5`) para res
 ---
 
 ## ⚠️ Aviso Legal
-O uso de self-bots viola os Termos de Serviço do Discord. Este software é fornecido para fins educacionais. O Oracle v2 inclui sistemas de anti-detecção, mas o risco de banimento nunca é zero. Use com inteligência.
+O uso de self-bots viola os Termos de Serviço do Discord. Este software é fornecido para fins educacionais. O Oracle v2 inclui sistemas de anti-detecção, mas o risco de banimento nunca é zero. Use com inteligência e sem ganância.
