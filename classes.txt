@@ -1,0 +1,16 @@
+apple
+banana
+chip
+coin
+dragon_scale
+dungeon_key
+epic_coin
+epic_fish
+golden_fish
+life_potion
+marmaid_hair
+normie_fish
+ruby
+unicorn_horn
+wolf_skin
+zombie_eye

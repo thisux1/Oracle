@@ -1,0 +1,439 @@
+import re
+import time
+import asyncio
+from bot.hud import HUD, logger
+import bot.config as config
+from bot.state import (
+    sessionData,
+    add_to_low_priority_queue,
+    add_to_high_priority_queue,
+    bot_state,
+)
+from bot.telegram import send_telegram_notification
+from colorama import Fore, Style
+
+
+
+def process_drops(lines, player_name, loot_data):
+    mob_drops = loot_data["mob_drops"]
+    lootbox_drops = loot_data["lootbox_drops"]
+    work_drops = loot_data["work_drops"]
+    misc = (
+        loot_data.get("misc", sessionData["misc"])
+        if player_name == config.user_name_lower
+        else sessionData["partner_loot_data"]["misc"]
+    )
+    misc_drops = misc["misc"]
+
+    for line in lines:
+        for match in config.drop_regex.finditer(line):
+            qty = int(match.group(1))
+            item_name = (
+                match.group(2).strip().lower().replace('**', '').replace('__', '')
+            )
+            item_name = re.sub(
+                r'\s*!.*$|\s*\(.*?\)$|\s*in one of the leaves.*$|\s*use it with.*$',
+                '',
+                item_name,
+            ).strip()
+
+            card_match = re.match(
+                r"(common|uncommon|epic|omega|godly|eternal) card", item_name
+            )
+            if card_match:
+                card_type = card_match.group(1)
+                misc["cards"][card_type] += qty
+                HUD.loot(player_name, f"{card_type} card", qty)
+                continue
+
+            if "arena cookie" in item_name:
+                misc["arena_cookies"] += qty
+                HUD.loot(player_name, "arena cookie", qty)
+                continue
+
+            if "coolness" in item_name:
+                misc["coolness"] += qty
+                HUD.loot(player_name, "coolness", qty)
+                continue
+
+            lootbox_match = re.match(
+                r"(common|uncommon|rare|epic|edgy|omega|godly|eternal|void) lootbox",
+                item_name,
+            )
+            if lootbox_match and lootbox_match.group(1) in lootbox_drops:
+                lootbox_type = lootbox_match.group(1)
+                lootbox_drops[lootbox_type] += qty
+                logger.info(
+                    f"{player_name} collected: {lootbox_type} lootbox, quantity: {qty:,}"
+                )
+            elif item_name in mob_drops:
+                mob_drops[item_name] += qty
+                logger.info(
+                    f"{player_name} collected: {item_name}, quantity: {qty:,}"
+                )
+            elif item_name in work_drops:
+                work_drops[item_name] += qty
+                logger.info(
+                    f"{player_name} collected: {item_name}, quantity: {qty:,}"
+                )
+            else:
+                misc_drops[item_name] = misc_drops.get(item_name, 0) + qty
+                logger.info(
+                    f"{player_name} collected (misc): {item_name}, quantity: {qty:,}"
+                )
+
+        for match in config.lootbox_drop_regex.finditer(line):
+            qty = int(match.group(1).replace(',', ''))
+            item_name = (
+                match.group(2).strip().lower().replace('**', '').replace('__', '')
+            )
+            item_name = re.sub(
+                r'\s*!.*$|\s*\(.*?\)$|\s*in one of the leaves.*$|\s*use it with.*$',
+                '',
+                item_name,
+            ).strip()
+
+            card_match = re.match(
+                r"(common|uncommon|epic|omega|godly|eternal) card", item_name
+            )
+            if card_match:
+                card_type = card_match.group(1)
+                misc["cards"][card_type] += qty
+                logger.info(
+                    f"{player_name} collected: {card_type} card, quantity: {qty:,}"
+                )
+                continue
+
+            lootbox_match = re.match(
+                r"(common|uncommon|rare|epic|edgy|omega|godly|eternal|void) lootbox",
+                item_name,
+            )
+            if lootbox_match and lootbox_match.group(1) in lootbox_drops:
+                lootbox_type = lootbox_match.group(1)
+                lootbox_drops[lootbox_type] += qty
+                logger.info(
+                    f"{player_name} collected: {lootbox_type} lootbox, quantity: {qty:,}"
+                )
+            elif item_name in mob_drops:
+                mob_drops[item_name] += qty
+                logger.info(
+                    f"{player_name} collected: {item_name}, quantity: {qty:,}"
+                )
+            elif item_name in work_drops:
+                work_drops[item_name] += qty
+                logger.info(
+                    f"{player_name} collected: {item_name}, quantity: {qty:,}"
+                )
+            else:
+                misc_drops[item_name] = misc_drops.get(item_name, 0) + qty
+                logger.info(
+                    f"{player_name} collected (misc): {item_name}, quantity: {qty:,}"
+                )
+
+        for match in config.special_banana_regex.finditer(line):
+            qty = int(match.group(1))
+            item_name = (
+                match.group(2)
+                .strip()
+                .lower()
+                .replace('**', '')
+                .replace('__', '')
+                .replace('??', '')
+            )
+            item_name = re.sub(
+                r'\s*!.*$|\s*\(.*?\)$|\s*in one of the leaves.*$|\s*use it with.*$',
+                '',
+                item_name,
+            ).strip()
+            if item_name in work_drops:
+                work_drops[item_name] += qty
+                logger.info(
+                    f"{player_name} collected: {item_name}, quantity: {qty:,}"
+                )
+            else:
+                misc_drops[item_name] = misc_drops.get(item_name, 0) + qty
+                logger.info(
+                    f"{player_name} collected (misc): {item_name}, quantity: {qty:,}"
+                )
+
+        for match in config.special_tree_regex.finditer(line):
+            qty = int(match.group(1).replace(',', ''))
+            item_name = (
+                match.group(2).strip().lower().replace('**', '').replace('__', '')
+            )
+            item_name = re.sub(
+                r'\s*!.*$|\s*\(.*?\)$|\s*in one of the leaves.*$|\s*use it with.*$',
+                '',
+                item_name,
+            ).strip()
+            if item_name in work_drops:
+                work_drops[item_name] += qty
+                logger.info(
+                    f"{player_name} collected: {item_name}, quantity: {qty:,}"
+                )
+            else:
+                misc_drops[item_name] = misc_drops.get(item_name, 0) + qty
+                logger.info(
+                    f"{player_name} collected (misc): {item_name}, quantity: {qty:,}"
+                )
+
+
+async def rdCheckNavi(message):
+    commands = [
+        "hunt", "adventure", "farm", "training", "work",
+        "daily", "weekly", "lootbox", "pickup", "chop", "fish", "mine",
+    ]
+    msg_lines = (
+        message.strip().splitlines()
+        if isinstance(message, str)
+        else message.content.strip().splitlines()
+    )
+    for line in msg_lines:
+        for cmd in commands:
+            if cmd in line.lower():
+                if cmd == "hunt":
+                    hunt_command = "rpg hunt"
+                    if config.is_ascended:
+                        hunt_command += " h"
+                    if config.is_married:
+                        hunt_command += " t"
+                    add_to_low_priority_queue(hunt_command, suppress_log=True)
+                    logger.info(
+                        f"Command '{hunt_command}' added to LPQ from Navi Lite."
+                    )
+                elif cmd == "farm":
+                    add_to_low_priority_queue(
+                        f"rpg farm {config.farm_seed}", suppress_log=True
+                    )
+                    logger.info(
+                        f"Command 'rpg farm {config.farm_seed}' added to LPQ from Navi Lite."
+                    )
+                elif cmd == "work":
+                    add_to_low_priority_queue(
+                        f"rpg {config.userOptions['work_command']}", suppress_log=True
+                    )
+                    logger.info(
+                        f"Command 'rpg {config.userOptions['work_command']}' added to LPQ from Navi Lite."
+                    )
+                else:
+                    add_to_low_priority_queue(f"rpg {cmd}", suppress_log=True)
+                    logger.info(f"Command 'rpg {cmd}' added to LPQ from Navi Lite.")
+                break
+
+
+async def rdCheckEpicRPG(message):
+    target_name = (
+        config.user_name_lower
+        if config.user_name_lower
+        else config.userMentionText.lower()
+        .replace('<@', '')
+        .replace('>', '')
+        .replace('!', '')
+        .strip()
+    )
+
+    all_lines = []
+    ready_for_user = False
+
+    if message.embeds:
+        embed = message.embeds[0]
+        embed_dict = embed.to_dict()
+
+        if "author" in embed_dict:
+            author_name = embed_dict["author"].get("name", "").lower()
+            ready_match = re.match(r"(.+?) — ready", author_name)
+            if ready_match:
+                mentioned_user = ready_match.group(1).lower().strip()
+                if (
+                    mentioned_user == target_name
+                    or str(config.userID) in str(embed_dict).lower()
+                    or target_name in mentioned_user
+                ):
+                    ready_for_user = True
+                    logger.info(
+                        f"Processing ready message for user {mentioned_user}"
+                    )
+                    if "fields" in embed_dict:
+                        for field in embed_dict["fields"]:
+                            if (
+                                "name" in field
+                                and field["name"]
+                                and "value" in field
+                            ):
+                                all_lines.extend(field["value"].splitlines())
+                else:
+                    logger.debug(
+                        f"Ready message ignored (not for user): {author_name}"
+                    )
+                    return
+    else:
+        all_lines = message.content.lower().splitlines()
+
+    if not ready_for_user and not message.content.lower():
+        return
+
+    command_aliases = {
+        "hunt": ["hunt"],
+        "training": ["training"],
+        "adventure": ["adventure"],
+        "daily": ["daily"],
+        "weekly": ["weekly"],
+        "farm": ["farm"],
+        "work": ["work", "pickup", "chop", "fish", "mine"],
+        "lootbox": ["lootbox"],
+        "quest": ["quest", "epic quest"],
+        "card hand": ["card hand"],
+    }
+
+    processed_commands = set()
+
+    for line in all_lines:
+        line = line.strip().lower()
+        if ":white_check_mark:" in line:
+            clean_line = re.sub(r':[^:]+:', '', line).replace('~-~', '').strip()
+
+            if bot_state.time_cookie_mode:
+                for stop_cond in config.tc_stop_conditions:
+                    if stop_cond and stop_cond in clean_line:
+                        bot_state.time_cookie_mode = False
+                        bot_state.tc_end_time = 0
+                        HUD.system(f"Time Cookie Mode stopped due to condition: {stop_cond}")
+                        asyncio.create_task(send_telegram_notification(
+                            f"🎯 Time Cookie Mode deactivated!\nReason: `{stop_cond}` is ready."
+                        ))
+
+            for cmd_type, aliases in command_aliases.items():
+                if (
+                    any(alias in clean_line for alias in aliases)
+                    and cmd_type not in processed_commands
+                ):
+                    processed_commands.add(cmd_type)
+
+                    if cmd_type == "hunt":
+                        hunt_command = "rpg hunt"
+                        if config.is_ascended:
+                            hunt_command += " h"
+                        if config.is_married:
+                            hunt_command += " t"
+                        add_to_low_priority_queue(hunt_command, suppress_log=True)
+                        logger.info(
+                            f"Command '{hunt_command}' added to LPQ from Epic RPG rd."
+                        )
+
+                    elif cmd_type == "farm":
+                        cmd = f"rpg farm {config.farm_seed}"
+                        add_to_low_priority_queue(cmd, suppress_log=True)
+                        logger.info(
+                            f"Command '{cmd}' added to LPQ from Epic RPG rd."
+                        )
+
+                    elif cmd_type == "work":
+                        cmd = f"rpg {config.userOptions['work_command']}"
+                        add_to_low_priority_queue(cmd, suppress_log=True)
+                        logger.info(
+                            f"Command '{cmd}' added to LPQ from Epic RPG rd."
+                        )
+
+                    elif cmd_type == "lootbox":
+                        lootbox_type = config.userOptions.get("lootbox_type", "none")
+                        if (
+                            lootbox_type != "none"
+                            and time.time() > bot_state.lootbox_cooldown_until
+                        ):
+                            if bot_state.has_bank_account:
+                                add_to_low_priority_queue(
+                                    "rpg withdraw 420666", suppress_log=True
+                                )
+                            add_to_low_priority_queue(
+                                f"rpg buy {lootbox_type}", suppress_log=True
+                            )
+                            if bot_state.has_bank_account:
+                                add_to_low_priority_queue(
+                                    "rpg deposit all", suppress_log=True
+                                )
+                            HUD.system(
+                                f"Lootbox buy sequence ({lootbox_type}) queued."
+                            )
+                        elif time.time() < bot_state.lootbox_cooldown_until:
+                            HUD.system("Lootbox buy skipped (Financial Cooldown).")
+
+                    elif cmd_type == "card hand":
+                        add_to_high_priority_queue("rpg card hand")
+                        HUD.system("Card Hand ready! Queued in HPQ.")
+
+                    elif cmd_type == "quest":
+                        add_to_high_priority_queue("rpg quest")
+                        HUD.system("Quest ready! Queued in HPQ.")
+
+                    else:
+                        cmd = f"rpg {cmd_type}"
+                        add_to_low_priority_queue(cmd, suppress_log=True)
+                        logger.info(
+                            f"Command '{cmd}' added to LPQ from Epic RPG rd."
+                        )
+
+
+def format_session_data(data, title="Session Data"):
+    def filter_non_zero(d):
+        return {
+            k: v
+            for k, v in d.items()
+            if (isinstance(v, (int, float)) and v > 0)
+            or (
+                isinstance(v, dict)
+                and any(
+                    filter_non_zero(v) if isinstance(v, dict) else v > 0
+                    for v in v.values()
+                )
+            )
+        }
+
+    output = []
+    output.append(f"{Fore.CYAN}=== {title} ==={Style.RESET_ALL}")
+
+    command_data = filter_non_zero(data.get("command_data", {}))
+    if command_data:
+        output.append(f"{Fore.GREEN}Commands Executed:{Style.RESET_ALL}")
+        for cmd, count in command_data.items():
+            output.append(f"  {cmd.capitalize()}: {count}")
+
+    progress_data = filter_non_zero(data.get("progress_data", {}))
+    if progress_data:
+        output.append(f"{Fore.GREEN}Progress:{Style.RESET_ALL}")
+        for stat, value in progress_data.items():
+            output.append(f"  {stat.capitalize()}: {value:,}")
+
+    loot_data = data.get("loot_data", {})
+    if loot_data:
+        output.append(f"{Fore.GREEN}Loot:{Style.RESET_ALL}")
+        for category, items in loot_data.items():
+            non_zero_items = filter_non_zero(items)
+            if non_zero_items:
+                output.append(f"  {category.replace('_', ' ').title()}:")
+                for item, qty in non_zero_items.items():
+                    output.append(f"    {item}: {qty:,}")
+
+    misc_data = filter_non_zero(data.get("misc", {}))
+    if misc_data:
+        output.append(f"{Fore.GREEN}Miscellaneous:{Style.RESET_ALL}")
+        for key, value in misc_data.items():
+            if isinstance(value, dict):
+                non_zero_items = filter_non_zero(value)
+                if non_zero_items:
+                    output.append(f"  {key.capitalize()}:")
+                    for item, qty in non_zero_items.items():
+                        output.append(f"    {item}: {qty:,}")
+            else:
+                output.append(f"  {key.capitalize()}: {value:,}")
+
+    partner_loot_data = data.get("partner_loot_data", {})
+    if partner_loot_data:
+        output.append(f"{Fore.GREEN}Partner Loot:{Style.RESET_ALL}")
+        for category, items in partner_loot_data.items():
+            non_zero_items = filter_non_zero(items)
+            if non_zero_items:
+                output.append(f"  {category.replace('_', ' ').title()}:")
+                for item, qty in non_zero_items.items():
+                    output.append(f"    {item}: {qty:,}")
+
+    return "\n".join(output)

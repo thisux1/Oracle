@@ -1,0 +1,5 @@
+discord.py-self
+tensorflow==2.15.0
+numpy
+Pillow
+colorama

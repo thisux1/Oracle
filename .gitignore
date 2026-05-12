@@ -1,0 +1,19 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignorar o ambiente virtual
+venv/
+.venv/
+env/
+ENV/
+
+# Ignorar arquivos de dados locais e opções
+options.ini
+epic_guard.png
+session_data.json
+
+# (Opcional) Ignorar modelos locais se preferir baixar pelo GitHub Releases
+# *.h5
+# *.tflite
