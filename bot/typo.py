@@ -94,6 +94,8 @@ async def send_with_typo_chance(channel, command, priority_label=""):
 
         if typo_text and typo_text != command:
             # Send the typo
+            async with channel.typing():
+                await asyncio.sleep(0.1 + random.random() * 0.3)
             await channel.send(typo_text)
             HUD.system(
                 f"🫢 Typo! Sent '{typo_text}' "
@@ -110,10 +112,14 @@ async def send_with_typo_chance(channel, command, priority_label=""):
             await asyncio.sleep(correction_delay)
 
             # Now send the correct command
+            async with channel.typing():
+                await asyncio.sleep(0.1 + random.random() * 0.3)
             await channel.send(command)
             HUD.system(f"Corrected -> '{command}'")
             return True
 
     # No typo — send normally
+    async with channel.typing():
+        await asyncio.sleep(0.1 + random.random() * 0.3)
     await channel.send(command)
     return False
