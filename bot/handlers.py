@@ -60,6 +60,7 @@ async def handleCoinflipResponse(message):
                 
         next_bet = coinflip_strategy.get_bet_command()
         add_to_high_priority_queue(next_bet)
+        bot_state.coinflip_pending = True
         logger.info(f"Coinflip won. Next bet queued: {next_bet}")
         return True
     elif "you lost" in msg:
@@ -80,6 +81,7 @@ async def handleCoinflipResponse(message):
             return True
         next_bet = coinflip_strategy.get_bet_command()
         add_to_high_priority_queue(next_bet)
+        bot_state.coinflip_pending = True
         logger.info(f"Coinflip lost. Next bet queued: {next_bet}")
         return True
     return False
@@ -320,6 +322,7 @@ async def responseResolver(message):
             if "have been withdrawn" in full_msg:
                 next_bet = coinflip_strategy.get_bet_command()
                 add_to_high_priority_queue(next_bet)
+                bot_state.coinflip_pending = True
                 logger.info(f"Withdraw successful. Next bet queued: {next_bet}")
             else:
                 bot_state.gambling_paused = True

@@ -663,6 +663,34 @@ class DiscordClient(discord.Client):
             )
             logger.debug(f"Embed fields: {message.embeds[0].fields}")
             logger.debug(f"Full embed dict: {embed_dict}")
+
+            # NeonUtil parsing for new messages
+            if message.author.id in config.NEON_BOT_IDS and not bot_state.paused:
+                embed_text = str(embed_dict).lower()
+                if "expected tc per choice" in embed_text:
+                    text_to_parse = ""
+                    if "description" in embed_dict and embed_dict["description"]:
+                        text_to_parse = embed_dict["description"]
+                    if not text_to_parse and "fields" in embed_dict:
+                        for field in embed_dict["fields"]:
+                            field_name = field.get("name", "").lower()
+                            if "expected tc per choice" in field_name:
+                                text_to_parse = field.get("value", "")
+                                break
+                    if text_to_parse:
+                        lines = text_to_parse.split('\n')
+                        for line in lines:
+                            if "(optimal)" in line.lower():
+                                if "pass" in line.lower():
+                                    add_to_high_priority_queue("pass")
+                                    HUD.system("NeonUtil: Optimal card is 'pass'")
+                                    return
+                                card_match = re.search(r'[HDCS][2-9AJQK]|[HDCS]10|EN', line, re.IGNORECASE)
+                                if card_match:
+                                    card = card_match.group(0).lower()
+                                    add_to_high_priority_queue(card)
+                                    HUD.system(f"NeonUtil: Optimal card is '{card}'")
+                                    return
         try:
             await responseResolver(message)
         except Exception as e:
@@ -673,7 +701,7 @@ class DiscordClient(discord.Client):
             reset_bot_state()
 
     async def on_message_edit(self, before, after):
-        if after.author.id not in config.NEON_BOT_IDS:
+        if after.author.id not in config.NEON_BOT_IDS and after.author.id != config.EPIC_RPG_ID:
             return
         if after.channel.id != config.channelID:
             return
@@ -682,6 +710,13 @@ class DiscordClient(discord.Client):
         if not after.embeds:
             return
         if before.embeds == after.embeds:
+            return
+
+        if after.author.id == config.EPIC_RPG_ID:
+            try:
+                await responseResolver(after)
+            except Exception as e:
+                logger.error(f"Error processing edited message: {e}\n{traceback.format_exc()}")
             return
 
         embed_dict = after.embeds[0].to_dict()
