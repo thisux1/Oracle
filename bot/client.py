@@ -115,7 +115,6 @@ class DiscordClient(discord.Client):
                 if (
                     not bot_state.paused
                     and not bot_state.jailed
-                    and not bot_state.awaiting_withdraw
                     and not bot_state.is_on_coffee_break
                 ):
                     # Human Curiosity: Random stats check
@@ -465,8 +464,9 @@ class DiscordClient(discord.Client):
 
             # Profile detection (update bankroll)
             elif f"{config.user_name_lower} — profile" in combined_content:
-                coins_match = re.search(r"coins:\s*([\d,]+)", combined_content)
-                bank_match = re.search(r"bank:\s*([\d,]+)", combined_content)
+                clean_content_for_profile = re.sub(r'<:[a-zA-Z0-9_]+:\d+>', '', combined_content)
+                coins_match = re.search(r"coins:\s*([\d,]+)", clean_content_for_profile)
+                bank_match = re.search(r"bank:\s*([\d,]+)", clean_content_for_profile)
                 if coins_match or bank_match:
                     coins = int(coins_match.group(1).replace(",", "")) if coins_match else 0
                     bank = int(bank_match.group(1).replace(",", "")) if bank_match else 0
