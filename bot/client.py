@@ -244,7 +244,6 @@ class DiscordClient(discord.Client):
                         logger.info("Command rpg rd queued")
 
                     if current_time - bot_state.last_save_time >= 300:
-                        from bot.state import sessionData
                         from bot.persistence import save_session_data
                         
                         is_hourly = False

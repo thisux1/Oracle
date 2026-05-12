@@ -143,19 +143,32 @@ async def responseResolver(message):
         elif msg == "rpg u":
             logger.info(str(time.time() - config.startTime) + " seconds")
             return
-        elif msg == "rpg f":
+        elif msg == "sb pause":
             if not bot_state.paused:
                 bot_state.paused = True
                 logger.info("Bot freeze.")
             else:
                 logger.info("Bot already paused.")
             return
-        elif msg == "rpg uf":
+        elif msg == "sb start":
             if bot_state.paused:
                 bot_state.paused = False
                 logger.info("Bot started.")
             else:
                 logger.info("Bot already running.")
+        elif msg in ["sb help", "sb ajuda"]:
+            help_text = (
+                "\n=== Oracle v2 Admin Commands ===\n"
+                "sb help / sb ajuda : Shows this help message\n"
+                "sb pause           : Pause the bot (Freeze)\n"
+                "sb start           : Unpause the bot (Unfreeze)\n"
+                "sb stats           : Show all-time session stats\n"
+                "sb stats [time]    : Show stats for period (e.g., sb stats 10h, 7d, 1m)\n"
+                "sb g start         : Start the gambling/coinflip module\n"
+                "sb g pause         : Stop the gambling module\n"
+                "rpg u              : Show bot uptime\n"
+            )
+            logger.info(help_text)
             return
         elif msg == "sb g pause":
             bot_state.gambling_paused = True

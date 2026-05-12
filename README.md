@@ -60,10 +60,14 @@ python main2.py
 
 ## 🛠️ Comandos de Controle (Discord)
 Envie estes comandos no canal (apenas administradores):
-*   `sb start` / `sb pause`: Inicia ou pausa o farm.
-*   `sb stats`: Relatório de XP, Coins e Loot da sessão.
-*   `sb tc start [tempo]m`: Modo **Time Cookie** (ex: `sb tc start 60m`).
-*   `sb reset`: Limpa filas e estados.
+*   `sb help` ou `sb ajuda`: Mostra a lista completa de comandos disponíveis no console.
+*   `sb start` / `sb pause`: Inicia (descongela) ou pausa (congela) a execução automática do bot.
+*   `sb stats`: Exibe o relatório acumulado de XP, Coins e Loot da sessão inteira.
+*   `sb stats [tempo]`: Mostra o relatório de estatísticas calculado para um período específico (ex: `sb stats 10h`, `sb stats 7d`, `sb stats 1m`). Graças ao sistema de persistência, esses dados sobrevivem a reboots!
+*   `sb g start` / `sb g pause`: Inicia ou pausa o ciclo automático do cassino (Fibonacci Coinflip).
+*   `sb tc start [tempo]m`: Ativa o modo **Time Cookie** com timeout explícito (ex: `sb tc start 60m`).
+*   `sb reset`: Limpa filas de alta e baixa prioridade e reseta o estado de jogo.
+*   `rpg u`: Exibe o tempo de atividade do bot (uptime).
 
 ---
 
