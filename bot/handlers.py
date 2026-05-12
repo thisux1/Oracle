@@ -111,6 +111,20 @@ async def responseResolver(message):
                 "\n" + format_session_data(sessionData, "Session Data (Main)")
             )
             return
+        elif msg.startswith("sb stats"):
+            parts = msg.split()
+            if len(parts) > 2:
+                period_str = parts[2]
+                from bot.persistence import get_stats_for_period
+                period_data = get_stats_for_period(sessionData, period_str)
+                logger.info(
+                    f"\n" + format_session_data(period_data, f"Session Data (Last {period_str})")
+                )
+            else:
+                logger.info(
+                    "\n" + format_session_data(sessionData, "Session Data (All Time)")
+                )
+            return
         elif msg == "rpg s p" and config.is_married:
             logger.info(
                 "\n"

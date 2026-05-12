@@ -202,11 +202,12 @@ async def rdCheckNavi(message):
                         f"Command '{hunt_command}' added to LPQ from Navi Lite."
                     )
                 elif cmd == "farm":
+                    farm_cmd = f"rpg farm {config.farm_seed}" if config.farm_seed and config.farm_seed.lower() != "none" else "rpg farm"
                     add_to_low_priority_queue(
-                        f"rpg farm {config.farm_seed}", suppress_log=True
+                        farm_cmd, suppress_log=True
                     )
                     logger.info(
-                        f"Command 'rpg farm {config.farm_seed}' added to LPQ from Navi Lite."
+                        f"Command '{farm_cmd}' added to LPQ from Navi Lite."
                     )
                 elif cmd == "work":
                     add_to_low_priority_queue(
@@ -321,7 +322,7 @@ async def rdCheckEpicRPG(message):
                         )
 
                     elif cmd_type == "farm":
-                        cmd = f"rpg farm {config.farm_seed}"
+                        cmd = f"rpg farm {config.farm_seed}" if config.farm_seed and config.farm_seed.lower() != "none" else "rpg farm"
                         add_to_low_priority_queue(cmd, suppress_log=True)
                         logger.info(
                             f"Command '{cmd}' added to LPQ from Epic RPG rd."

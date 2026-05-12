@@ -243,6 +243,19 @@ class DiscordClient(discord.Client):
                         add_to_low_priority_queue("rpg rd", suppress_log=True)
                         logger.info("Command rpg rd queued")
 
+                    if current_time - bot_state.last_save_time >= 300:
+                        from bot.state import sessionData
+                        from bot.persistence import save_session_data
+                        
+                        is_hourly = False
+                        if current_time - getattr(bot_state, "last_snapshot_time", 0) >= 3600:
+                            is_hourly = True
+                            bot_state.last_snapshot_time = current_time
+                            
+                        save_session_data(sessionData, save_snapshot=is_hourly)
+                        bot_state.last_save_time = current_time
+
+
             except Exception as e:
                 logger.error(
                     f"Error in background task: {e}\n{traceback.format_exc()}"

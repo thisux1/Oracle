@@ -108,6 +108,7 @@ class BotState:
         self.last_sent_time = 0
         # Pet Adventure
         self.pet_adventure_return_time = 0
+        self.last_save_time = time.time()
 
     @property
     def paused(self):
@@ -152,7 +153,7 @@ lowPriorityQueueSet = set()
 highPriorityQueueSet = set()
 
 # ─── Session Tracking ───
-sessionData = {
+DEFAULT_SESSION_DATA = {
     "command_data": {
         "hunt": 0, "adventure": 0, "farm": 0, "training": 0,
         "work": 0, "quest": 0, "daily": 0, "weekly": 0, "lootbox": 0,
@@ -220,6 +221,9 @@ sessionData = {
     if config.is_married
     else {},
 }
+
+from bot.persistence import load_session_data
+sessionData = load_session_data(DEFAULT_SESSION_DATA)
 
 runtimeErrors = []
 
