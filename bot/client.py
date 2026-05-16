@@ -221,8 +221,24 @@ class DiscordClient(discord.Client):
                             elif current_time - bot_state.last_tc_use_time > 10:
                                 bot_state.last_tc_use_time = current_time
                                 add_to_high_priority_queue(f"rpg use tc {bot_state.tc_quantity}")
+
+                                if config.do_hunt:
+                                    hunt_cmd = "rpg hunt"
+                                    if config.is_ascended:
+                                        hunt_cmd += " h"
+                                    if config.is_married:
+                                        hunt_cmd += " t"
+                                    add_to_low_priority_queue(hunt_cmd, suppress_log=True)
+
+                                if config.do_work:
+                                    add_to_low_priority_queue(f"rpg {config.userOptions['work_command']}", suppress_log=True)
+
+                                if config.do_farm:
+                                    farm_cmd = f"rpg farm {config.farm_seed}" if config.farm_seed and config.farm_seed.lower() != "none" else "rpg farm"
+                                    add_to_low_priority_queue(farm_cmd, suppress_log=True)
+
                                 add_to_low_priority_queue("rpg rd", suppress_log=True)
-                                HUD.system("Time Cookie Cycle: Empty queue, using cookie and checking rd.")
+                                HUD.tc(f"Cycle: use tc {bot_state.tc_quantity} -> hunt -> work -> farm -> rd")
 
                     # Dungeon State: timeout safety
                     if bot_state.dungeon_in_progress and current_time - bot_state.last_dungeon_time > 60:
@@ -360,49 +376,16 @@ class DiscordClient(discord.Client):
                     return
                 elif cmd.startswith("stats"):
                     parts = cmd.split()
+                    from bot.parsers import format_session_data
+                    
                     if len(parts) > 1 and parts[1].replace("h","").replace("d","").replace("m","").isdigit():
                         period_str = parts[1]
                         from bot.persistence import get_stats_for_period
-                        from bot.parsers import format_session_data
                         period_data = get_stats_for_period(sessionData, period_str)
                         stats_msg = "```ansi\n" + format_session_data(period_data, f"Session Data (Last {period_str})") + "\n```"
                     else:
-                        loot_list = []
-                        for category in [
-                            "mob_drops", "work_drops", "farm_drops", "lootbox_drops",
-                        ]:
-                            for item, qty in sessionData["loot_data"][
-                                category
-                            ].items():
-                                if qty > 0:
-                                    loot_list.append(f"• {item}: {qty}")
-                        for item, val in sessionData["misc"].items():
-                            if isinstance(val, int):
-                                if val > 0:
-                                    loot_list.append(f"• {item}: {val}")
-                            elif isinstance(val, dict):
-                                for sub_item, sub_qty in val.items():
-                                    if sub_qty > 0:
-                                        loot_list.append(
-                                            f"• {sub_item}: {sub_qty}"
-                                        )
-                        loot_summary = (
-                            "\n".join(loot_list[:50]) if loot_list else "None yet"
-                        )
-                        stats_msg = (
-                            f"📊 **Relatório da Sessão Oracle v2**\n"
-                            f"**Progresso:**\n"
-                            f"• Coins: {sessionData['progress_data']['coins']:,}\n"
-                            f"• XP: {sessionData['progress_data']['xp']:,}\n"
-                            f"**Comandos:**\n"
-                            f"• Hunt: {sessionData['command_data']['hunt']} "
-                            f"| Work: {sessionData['command_data']['work']}\n"
-                            f"• Quest: {sessionData['command_data']['quest']} "
-                            f"| Watchdog: {bot_state.no_response_count}/3\n"
-                            f"**Loot:**\n{loot_summary}\n"
-                            f"**Status:** "
-                            f"{'⏸️ PAUSADO' if bot_state.paused else '🏎️ FARMANDO'}"
-                        )
+                        stats_msg = "```ansi\n" + format_session_data(sessionData, "Session Data (All Time)") + "\n```"
+                        
                     await message.channel.send(stats_msg)
                     return
                 elif cmd.startswith("say "):
