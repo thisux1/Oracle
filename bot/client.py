@@ -19,11 +19,11 @@ from bot.state import (
     add_to_high_priority_queue,
     human_delay,
     reset_bot_state,
+    queue_tc_commands,
 )
 from bot.telegram import send_telegram_notification
 from bot.captcha import tentar_resolver_captcha, set_client
 from bot.handlers import responseResolver
-from bot.utils import is_sleep_time
 from colorama import Fore, Back, Style
 
 
@@ -76,17 +76,12 @@ class DiscordClient(discord.Client):
             try:
                 current_time = time.time()
 
+                logger.debug(
+                    f"States - Paused: {bot_state.paused}, "
                     f"Gambling: {not bot_state.gambling_paused}, "
                     f"Coinflip: {bot_state.coinflip_pending}, "
                     f"Withdraw: {bot_state.awaiting_withdraw}"
                 )
-
-                # Stealth: Night Sleep (Truly Offline)
-                if is_sleep_time():
-                    HUD.alert(f"NIGHT SLEEP: Time to go offline ({config.sleep_at} - {config.wake_up_at}).")
-                    HUD.system("Closing connection... See you later!")
-                    await self.close()
-                    return
 
                 # Stealth: Coffee Breaks
                 if (
@@ -185,7 +180,7 @@ class DiscordClient(discord.Client):
                             HUD.system(f"Skipped duplicate command '{cmd}' (Anti-Spam).")
                         else:
                             # Set card hand lock BEFORE sending the command
-                            if cmd.lower() == "rpg card hand":
+                            if cmd.lower() == "rpg card hand" and config.card_hand_action == "auto":
                                 bot_state.cardhand_in_progress = True
                                 bot_state.cardhand_first_pass_done = False
                                 bot_state.cardhand_start_time = current_time
@@ -205,7 +200,7 @@ class DiscordClient(discord.Client):
                             HUD.system(f"Skipped duplicate command '{cmd}' (Anti-Spam).")
                         else:
                             # Set card hand lock BEFORE sending the command (if queued in LPQ too)
-                            if cmd.lower() == "rpg card hand":
+                            if cmd.lower() == "rpg card hand" and config.card_hand_action == "auto":
                                 bot_state.cardhand_in_progress = True
                                 bot_state.cardhand_first_pass_done = False
                                 bot_state.cardhand_start_time = current_time
@@ -225,9 +220,15 @@ class DiscordClient(discord.Client):
                                 await send_telegram_notification("⏳ Modo Time Cookie desativado automaticamente (tempo esgotado).")
                             elif current_time - bot_state.last_tc_use_time > 10:
                                 bot_state.last_tc_use_time = current_time
-                                add_to_high_priority_queue("rpg use time cookie")
+                                add_to_high_priority_queue(f"rpg use tc {bot_state.tc_quantity}")
                                 add_to_low_priority_queue("rpg rd", suppress_log=True)
                                 HUD.system("Time Cookie Cycle: Empty queue, using cookie and checking rd.")
+
+                    # Dungeon State: timeout safety
+                    if bot_state.dungeon_in_progress and current_time - bot_state.last_dungeon_time > 60:
+                        bot_state.dungeon_in_progress = False
+                        bot_state.dragon_alive = False
+                        HUD.dungeon("State timeout, resetting.")
 
                     # Pet Adventure: auto-claim when timer expires
                     if (
@@ -296,13 +297,22 @@ class DiscordClient(discord.Client):
                 elif cmd.startswith("tc start"):
                     parts = cmd.split()
                     bot_state.time_cookie_mode = True
-                    if len(parts) > 2 and parts[2].endswith('m'):
+
+                    bot_state.tc_quantity = config.tc_quantity
+                    for part in parts[2:]:
+                        if part.endswith('c') and part[:-1].isdigit():
+                            bot_state.tc_quantity = int(part[:-1])
+                            break
+
+                    if len(parts) > 2 and parts[2].endswith('m') and parts[2][:-1].isdigit():
                         mins = int(parts[2][:-1])
                         bot_state.tc_end_time = time.time() + (mins * 60)
                     else:
                         bot_state.tc_end_time = 0
-                    HUD.system("Time Cookie mode ACTIVATED.")
-                    await message.channel.send("🍪 **Modo Time Cookie Ativado.**")
+
+                    HUD.tc(f"Time Cookie mode ACTIVATED ({bot_state.tc_quantity} cookies/use).")
+                    await message.channel.send(f"🍪 **Modo Time Cookie Ativado ({bot_state.tc_quantity}c/uso).**")
+                    await queue_tc_commands()
                     return
                 elif cmd in ["tc stop", "tc pause"]:
                     bot_state.time_cookie_mode = False
@@ -677,7 +687,7 @@ class DiscordClient(discord.Client):
             logger.debug(f"Full embed dict: {embed_dict}")
 
             # NeonUtil parsing for new messages
-            if message.author.id in config.NEON_BOT_IDS and not bot_state.paused:
+            if message.author.id in config.NEON_BOT_IDS and not bot_state.paused and config.card_hand_action == "auto":
                 embed_text = str(embed_dict).lower()
                 if "expected tc per choice" in embed_text:
                     text_to_parse = ""
@@ -729,6 +739,9 @@ class DiscordClient(discord.Client):
                 await responseResolver(after)
             except Exception as e:
                 logger.error(f"Error processing edited message: {e}\n{traceback.format_exc()}")
+            return
+
+        if config.card_hand_action != "auto":
             return
 
         embed_dict = after.embeds[0].to_dict()

@@ -9,7 +9,7 @@ from bot.state import (
     add_to_high_priority_queue,
     bot_state,
 )
-from bot.telegram import send_telegram_notification
+from bot.telegram import send_telegram_notification, make_channel_link
 from colorama import Fore, Style
 
 
@@ -191,32 +191,54 @@ async def rdCheckNavi(message):
     for line in msg_lines:
         for cmd in commands:
             if cmd in line.lower():
-                if cmd == "hunt":
+                if cmd == "hunt" and config.do_hunt:
                     hunt_command = "rpg hunt"
                     if config.is_ascended:
                         hunt_command += " h"
                     if config.is_married:
                         hunt_command += " t"
                     add_to_low_priority_queue(hunt_command, suppress_log=True)
-                    logger.info(
-                        f"Command '{hunt_command}' added to LPQ from Navi Lite."
-                    )
-                elif cmd == "farm":
+                    logger.info(f"Command '{hunt_command}' added to LPQ from Navi Lite.")
+                elif cmd == "adventure" and config.do_adv:
+                    adv_cmd = "rpg adv"
+                    if config.is_ascended:
+                        adv_cmd += " h"
+                    if config.life_boost_before_adv != "none":
+                        add_to_high_priority_queue("rpg withdraw all")
+                        add_to_high_priority_queue(f"rpg buy life boost {config.life_boost_before_adv}")
+                        add_to_high_priority_queue("rpg deposit all")
+                    if config.adventure_area != "none":
+                        add_to_low_priority_queue(f"rpg area {config.adventure_area}", suppress_log=True)
+                        add_to_low_priority_queue(adv_cmd, suppress_log=True)
+                        add_to_low_priority_queue(f"rpg area {config.current_area}", suppress_log=True)
+                    else:
+                        add_to_low_priority_queue(adv_cmd, suppress_log=True)
+                    logger.info(f"Adventure queued from Navi Lite: {adv_cmd}")
+                elif cmd == "farm" and config.do_farm:
                     farm_cmd = f"rpg farm {config.farm_seed}" if config.farm_seed and config.farm_seed.lower() != "none" else "rpg farm"
-                    add_to_low_priority_queue(
-                        farm_cmd, suppress_log=True
-                    )
-                    logger.info(
-                        f"Command '{farm_cmd}' added to LPQ from Navi Lite."
-                    )
-                elif cmd == "work":
-                    add_to_low_priority_queue(
-                        f"rpg {config.userOptions['work_command']}", suppress_log=True
-                    )
-                    logger.info(
-                        f"Command 'rpg {config.userOptions['work_command']}' added to LPQ from Navi Lite."
-                    )
-                else:
+                    add_to_low_priority_queue(farm_cmd, suppress_log=True)
+                    logger.info(f"Command '{farm_cmd}' added to LPQ from Navi Lite.")
+                elif cmd == "training" and (config.do_training or config.do_ultr):
+                    if config.training_command_sequence:
+                        for tc_cmd in config.training_command_sequence:
+                            add_to_low_priority_queue(tc_cmd, suppress_log=True)
+                        logger.info(f"Training sequence queued from Navi Lite: {config.training_command_sequence}")
+                    else:
+                        add_to_low_priority_queue("rpg training", suppress_log=True)
+                        logger.info("Command 'rpg training' added to LPQ from Navi Lite.")
+                elif cmd == "work" and config.do_work:
+                    add_to_low_priority_queue(f"rpg {config.userOptions['work_command']}", suppress_log=True)
+                    logger.info(f"Command 'rpg {config.userOptions['work_command']}' added to LPQ from Navi Lite.")
+                elif cmd == "daily" and config.do_daily:
+                    add_to_low_priority_queue("rpg daily", suppress_log=True)
+                    logger.info("Command 'rpg daily' added to LPQ from Navi Lite.")
+                elif cmd == "weekly" and config.do_weekly:
+                    add_to_low_priority_queue("rpg weekly", suppress_log=True)
+                    logger.info("Command 'rpg weekly' added to LPQ from Navi Lite.")
+                elif cmd == "lootbox" and config.do_lootbox:
+                    add_to_low_priority_queue("rpg lootbox", suppress_log=True)
+                    logger.info("Command 'rpg lootbox' added to LPQ from Navi Lite.")
+                elif cmd in ["pickup", "chop", "fish", "mine"] and config.do_work:
                     add_to_low_priority_queue(f"rpg {cmd}", suppress_log=True)
                     logger.info(f"Command 'rpg {cmd}' added to LPQ from Navi Lite.")
                 break
@@ -287,6 +309,18 @@ async def rdCheckEpicRPG(message):
     }
 
     processed_commands = set()
+    COMMAND_FLAGS = {
+        "hunt": "do_hunt",
+        "adventure": "do_adv",
+        "farm": "do_farm",
+        "work": "do_work",
+        "training": "do_training",
+        "daily": "do_daily",
+        "weekly": "do_weekly",
+        "quest": "do_quest",
+        "lootbox": "do_lootbox",
+        "card hand": "do_card_hand",
+    }
 
     for line in all_lines:
         line = line.strip().lower()
@@ -309,6 +343,16 @@ async def rdCheckEpicRPG(message):
                     and cmd_type not in processed_commands
                 ):
                     processed_commands.add(cmd_type)
+
+                    # ─── CHECK FLAG ───
+                    flag_name = COMMAND_FLAGS.get(cmd_type)
+                    if flag_name:
+                        flag_value = getattr(config, flag_name, True)
+                        if cmd_type == "training":
+                            flag_value = flag_value or config.do_ultr
+                        if not flag_value:
+                            logger.debug(f"Command '{cmd_type}' skipped (disabled via {flag_name})")
+                            continue
 
                     if cmd_type == "hunt":
                         hunt_command = "rpg hunt"
@@ -359,8 +403,41 @@ async def rdCheckEpicRPG(message):
                             HUD.system("Lootbox buy skipped (Financial Cooldown).")
 
                     elif cmd_type == "card hand":
-                        add_to_high_priority_queue("rpg card hand")
-                        HUD.system("Card Hand ready! Queued in HPQ.")
+                        if config.card_hand_action == "auto" and config.do_card_hand:
+                            add_to_high_priority_queue("rpg card hand")
+                            HUD.system("Card Hand ready! Auto-play queued.")
+                        else:
+                            asyncio.create_task(send_telegram_notification(
+                                f"\U0001f9b4 Card Hand PRONTO!\n"
+                                f"Jogue manualmente:\n"
+                                f"{make_channel_link()}"
+                            ))
+                            HUD.system("Card Hand ready! Telegram notification sent.")
+
+                    elif cmd_type == "training":
+                        if config.training_command_sequence:
+                            for tc_cmd in config.training_command_sequence:
+                                add_to_low_priority_queue(tc_cmd, suppress_log=True)
+                            logger.info(f"Training sequence queued from Epic RPG rd: {config.training_command_sequence}")
+                        else:
+                            add_to_low_priority_queue("rpg training", suppress_log=True)
+                            logger.info("Command 'rpg training' added to LPQ from Epic RPG rd.")
+
+                    elif cmd_type == "adventure":
+                        adv_cmd = "rpg adv"
+                        if config.is_ascended:
+                            adv_cmd += " h"
+                        if config.life_boost_before_adv != "none":
+                            add_to_high_priority_queue("rpg withdraw all")
+                            add_to_high_priority_queue(f"rpg buy life boost {config.life_boost_before_adv}")
+                            add_to_high_priority_queue("rpg deposit all")
+                        if config.adventure_area != "none":
+                            add_to_low_priority_queue(f"rpg area {config.adventure_area}", suppress_log=True)
+                            add_to_low_priority_queue(adv_cmd, suppress_log=True)
+                            add_to_low_priority_queue(f"rpg area {config.current_area}", suppress_log=True)
+                        else:
+                            add_to_low_priority_queue(adv_cmd, suppress_log=True)
+                        logger.info(f"Adventure queued from Epic RPG rd: {adv_cmd}")
 
                     elif cmd_type == "quest":
                         add_to_high_priority_queue("rpg quest")

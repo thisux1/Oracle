@@ -67,11 +67,43 @@ GUILD_ID = int(userOptions.get("guild_id", "0"))
 startTime = time.time()
 tc_stop_conditions = [x.strip().lower() for x in userOptions.get("tc_stop_on", "dungeon,miniboss").split(",") if x.strip()]
 
-# Night Sleep settings
-sleep_at = userOptions.get("sleep_at", "none").lower()
-if sleep_at == "none": sleep_at = None
-wake_up_at = userOptions.get("wake_up_at", "none").lower()
-if wake_up_at == "none": wake_up_at = None
+# ─── Togglable Command Flags ───
+do_hunt     = userOptions.get("do_hunt", "true").lower() == "true"
+do_adv      = userOptions.get("do_adv", "true").lower() == "true"
+do_farm     = userOptions.get("do_farm", "true").lower() == "true"
+do_work     = userOptions.get("do_work", "true").lower() == "true"
+do_training = userOptions.get("do_training", "true").lower() == "true"
+do_daily    = userOptions.get("do_daily", "true").lower() == "true"
+do_weekly   = userOptions.get("do_weekly", "true").lower() == "true"
+do_quest    = userOptions.get("do_quest", "true").lower() == "true"
+do_lootbox  = userOptions.get("do_lootbox", "true").lower() == "true"
+do_dungeon  = userOptions.get("do_dungeon", "true").lower() == "true"
+do_card_hand = userOptions.get("do_card_hand", "true").lower() == "true"
+
+# ─── ULTR / Training ───
+do_ultr = userOptions.get("do_ultr", "false").lower() == "true"
+
+# ─── Card Hand Action ───
+card_hand_action = userOptions.get("card_hand_action", "auto").lower()
+
+# ─── TC Quantity ───
+tc_quantity = int(userOptions.get("tc_quantity", "1"))
+
+# ─── ULTR overrides training. If ultr active, training is ignored. ───
+if do_ultr:
+    training_command_sequence = ["rpg ultr", "double", "attack", f"rpg use tc {tc_quantity}"]
+elif do_training:
+    training_command_sequence = ["rpg tr"]
+else:
+    training_command_sequence = []
+
+# ─── Dungeon ───
+is_eternal = userOptions.get("is_eternal", "false").lower() == "true"
+
+# ─── Adventure Optimization ───
+life_boost_before_adv = userOptions.get("life_boost_before_adv", "none").lower()
+adventure_area = userOptions.get("adventure_area", "none").lower()
+current_area = userOptions.get("current_area", "none").lower()
 
 # Parse extra authorized admins
 admin_ids_str = userOptions.get("admin_ids", "")

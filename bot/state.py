@@ -109,6 +109,13 @@ class BotState:
         # Pet Adventure
         self.pet_adventure_return_time = 0
         self.last_save_time = time.time()
+        # Dungeon State
+        self.dungeon_waiting_confirmation = False
+        self.dungeon_in_progress = False
+        self.dragon_alive = False
+        self.last_dungeon_time = 0
+        # TC Quantity (runtime override via sb tc start Xc)
+        self.tc_quantity = config.tc_quantity
 
     @property
     def paused(self):
@@ -277,7 +284,35 @@ def reset_bot_state():
     bot_state.captcha_task = None
     bot_state.cardhand_in_progress = False
     bot_state.cardhand_first_pass_done = False
+    bot_state.dungeon_waiting_confirmation = False
+    bot_state.dungeon_in_progress = False
+    bot_state.dragon_alive = False
+    bot_state.last_dungeon_time = 0
+    bot_state.tc_quantity = config.tc_quantity
     logger.info("Bot state reset to initial values.")
+
+
+async def queue_tc_commands():
+    """Enfileira comandos iniciais ao ativar TC mode para nao desperdicar cooldowns."""
+    tc_qty = bot_state.tc_quantity
+    add_to_high_priority_queue(f"rpg use tc {tc_qty}")
+
+    if config.do_hunt:
+        hunt_cmd = "rpg hunt"
+        if config.is_ascended:
+            hunt_cmd += " h"
+        if config.is_married:
+            hunt_cmd += " t"
+        add_to_low_priority_queue(hunt_cmd, suppress_log=True)
+
+    if config.do_work:
+        add_to_low_priority_queue(f"rpg {config.userOptions['work_command']}", suppress_log=True)
+
+    if config.do_farm:
+        farm_cmd = f"rpg farm {config.farm_seed}" if config.farm_seed and config.farm_seed != "none" else "rpg farm"
+        add_to_low_priority_queue(farm_cmd, suppress_log=True)
+
+    add_to_low_priority_queue("rpg rd", suppress_log=True)
 
 
 async def human_delay(base=1.5, variance=2.5):

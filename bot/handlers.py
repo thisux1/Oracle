@@ -202,6 +202,20 @@ async def responseResolver(message):
         )
         if slash_match:
             cmd_name = slash_match.group(1)
+            cmd_flag_map = {
+                "hunt": config.do_hunt,
+                "adventure": config.do_adv,
+                "tr": config.do_training or config.do_ultr,
+                "training": config.do_training or config.do_ultr,
+                "farm": config.do_farm,
+                "fish": config.do_work,
+                "chop": config.do_work,
+                "mine": config.do_work,
+                "pickup": config.do_work,
+            }
+            if not cmd_flag_map.get(cmd_name, True):
+                logger.debug(f"Navi slash command '{cmd_name}' skipped (disabled via config)")
+                return
             final_cmd = "rpg hunt" if cmd_name == "hunt" else f"rpg {cmd_name}"
             if cmd_name == "hunt":
                 if config.is_ascended:
@@ -381,6 +395,71 @@ async def responseResolver(message):
             embed_text_raw = str(embed_dict).lower()
             # Strip Discord markdown so substring checks match cleanly
             embed_text = embed_text_raw.replace('**', '').replace('__', '').replace('`', '')
+
+            # ─── Dungeon State Machine ───
+            if config.is_eternal and config.do_dungeon:
+                if "are you sure you want to enter" in embed_text and "all players have to say 'yes'" in embed_text:
+                    add_to_high_priority_queue("yes")
+                    bot_state.dungeon_in_progress = True
+                    bot_state.last_dungeon_time = time.time()
+                    HUD.dungeon("Entering with 'yes'")
+                    return
+                if bot_state.dungeon_in_progress:
+                    if "eternal dragon" in embed_text:
+                        if not bot_state.dragon_alive and ("you have encountered" in embed_text or "turn" in embed_text):
+                            bot_state.dragon_alive = True
+                            bot_state.last_dungeon_time = time.time()
+                            add_to_high_priority_queue("bite")
+                            HUD.dungeon("Encountered! Starting bite loop")
+                        elif bot_state.dragon_alive and "died" not in embed_text:
+                            add_to_high_priority_queue("bite")
+                        elif "died" in embed_text or "is dead" in embed_text:
+                            bot_state.dragon_alive = False
+                            bot_state.dungeon_in_progress = False
+                            HUD.dungeon("Defeated!")
+                            return
+
+            # ─── Global Events (processed even if embed is not user-specific) ───
+            if "defenseless monster" in embed_text and "zombie horde" in embed_text:
+                sessionData["misc"]["personal_events"] += 1
+                add_to_high_priority_queue(
+                    config.userOptions.get("zombie_horde_event_response", "fight")
+                )
+                if config.current_area != "none":
+                    add_to_high_priority_queue(f"rpg area {config.current_area}")
+                HUD.system("zombie horde event detected, commands queued")
+                return
+            if "matter how much you look around" in embed_text:
+                sessionData["misc"]["personal_events"] += 1
+                add_to_high_priority_queue("move")
+                add_to_high_priority_queue("fight")
+                HUD.system("Command queued for move and fight event")
+                return
+            if "You planted a seed, but for some reason it's not growing up" in embed_text:
+                sessionData["misc"]["personal_events"] += 1
+                add_to_high_priority_queue("fight")
+                HUD.system("Command fight queued for seed event")
+                return
+            if "You have encountered a mysterious man" in embed_text:
+                sessionData["misc"]["personal_events"] += 1
+                add_to_high_priority_queue("cry")
+                HUD.system("Command cry queued for mysterious event")
+                return
+            if "God accidentally dropped" in embed_text or "I have a special trade today" in embed_text:
+                sessionData["misc"]["personal_events"] += 1
+                if embed_dict.get("fields") and len(embed_dict["fields"]) > 0:
+                    add_to_low_priority_queue(
+                        embed_dict["fields"][0]["value"]
+                        .splitlines()[1]
+                        .replace("**", "")
+                        .lower(),
+                        suppress_log=True,
+                    )
+                    HUD.system("Command for special trade queued")
+                else:
+                    logger.warning("Embed with special trade has no fields.")
+                return
+
             target_name = (
                 config.user_name_lower
                 if config.user_name_lower
@@ -518,54 +597,6 @@ async def responseResolver(message):
                 sessionData["command_data"]["lootbox"] += 1
                 logger.info("Lootbox opened, drops processed")
                 return
-
-            if "  a defenseless monster" in embed_text:
-                sessionData["misc"]["personal_events"] += 1
-                add_to_high_priority_queue(
-                    config.userOptions["zombie_horde_event_response"]
-                )
-                add_to_high_priority_queue(
-                    "rpg area " + config.userOptions["current_area"]
-                )
-                logger.info("zombie horde event detected, commands queued")
-            elif "matter how much you look around" in embed_text:
-                sessionData["misc"]["personal_events"] += 1
-                add_to_high_priority_queue("move")
-                add_to_high_priority_queue("fight")
-                logger.info("Command queued for move and fight event")
-            elif (
-                "You planted a seed, but for some reason it's not growing up"
-                in embed_text
-            ):
-                sessionData["misc"]["personal_events"] += 1
-                add_to_high_priority_queue("fight")
-                logger.info("Command fight queued for seed event")
-            elif "You have encountered a mysterious man" in embed_text:
-                sessionData["misc"]["personal_events"] += 1
-                add_to_high_priority_queue("cry")
-                logger.info("Command cry queued for mysterious event")
-            elif (
-                "God accidentally dropped" in embed_text
-                or "I have a special trade today" in embed_text
-            ):
-                sessionData["misc"]["personal_events"] += 1
-                if (
-                    embed_dict.get("fields")
-                    and len(embed_dict["fields"]) > 0
-                ):
-                    add_to_low_priority_queue(
-                        embed_dict["fields"][0]["value"]
-                        .splitlines()[1]
-                        .replace("**", "")
-                        .lower(),
-                        suppress_log=True,
-                    )
-                    logger.info("Command for special trade queued")
-                else:
-                    logger.warning(
-                        "Embed with 'God accidentally dropped' or "
-                        "'I have a special trade today' has no fields."
-                    )
 
         # ─── Plain-text Responses ───
         else:

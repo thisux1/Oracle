@@ -34,6 +34,28 @@ class HUD:
     def cooldown(msg):
         print(f"{Fore.BLACK}{Back.CYAN} [COOLDOWN] {HUD.clean_markdown(msg)} {Style.RESET_ALL}")
 
+    SEPARATOR = f"{Fore.LIGHTBLACK_EX}{'─' * 50}{Style.RESET_ALL}"
+
+    @staticmethod
+    def dungeon(msg):
+        print(f"{Fore.LIGHTMAGENTA_EX}{Back.BLACK} [DUNGEON] {msg} {Style.RESET_ALL}")
+
+    @staticmethod
+    def tc(msg):
+        print(f"{Fore.LIGHTYELLOW_EX} [TC] {msg} {Style.RESET_ALL}")
+
+    @staticmethod
+    def cardhand(msg):
+        print(f"{Fore.LIGHTCYAN_EX} [CARD HAND] {msg} {Style.RESET_ALL}")
+
+    @staticmethod
+    def separator():
+        print(HUD.SEPARATOR)
+
+    @staticmethod
+    def navi(msg):
+        print(f"{Fore.LIGHTBLUE_EX} [NAVI] {msg} {Style.RESET_ALL}")
+
     @staticmethod
     def clean_markdown(text):
         """Purge Discord IDs and translate markdown to ANSI."""
