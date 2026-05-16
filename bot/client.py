@@ -328,7 +328,6 @@ class DiscordClient(discord.Client):
                         "• `sb reset`: Limpa todas as filas e reseta variáveis de estado\n"
                         "• `sb tc start [Xc] [m]`: Ativa modo Time Cookie. "
                         "Ex: `sb tc start 4c 60m` (4 cookies, 60 min). "
-                        "Já enfileira hunt, work, farm e rd automaticamente\n"
                         "• `sb tc stop`: Desativa o modo Time Cookie\n"
                         "• `sb g start` / `sb g pause`: Inicia ou pausa o gambling (Fibonacci)\n"
                         "• `sb stats [tempo]`: Mostra progresso, loot e status da sessão. "
@@ -349,53 +348,61 @@ class DiscordClient(discord.Client):
                         "• `adventure_area` / `current_area`: Troca de área no adv\n"
                         "• `user_id` / `channel_id` / `admin_ids`: IDs fundamentais\n"
                         "• `work_command` / `seed` / `lootbox_type`: Ações padrão\n"
-                        "• `is_married` / `is_ascended` / `partner_name`: Bônus casado\n"
+                        "• `is_married` / `is_ascended` / `partner_name`: partner tracking\n"
                         "• `telegram_bot_token` / `chat_id`: Alertas de captcha e prisão\n"
                         "• `random_interval` / `typo_chance`: Anti-detecção humana\n"
-                        "• `tc_stop_on`: Desliga TC automaticamente quando evento aparece\n"
+                        "• `tc_stop_on`: Desliga TC automaticamente quando cd estiver pronto\n"
                         "• `current_area` / `zombie_horde_event_response`: Eventos\n"
                         "• `bankroll` / `max_losses` / `initial_step`: Gambling (Fibonacci)\n"
-                        "• `daysToCloseVoid`: Resposta do treinamento no Void"
+                        "• `daysToCloseVoid`: Quantidade de dias para fechamento da área atual (void tr)"
                     )
                     await message.channel.send(tutorial_msg)
                     return
-                elif cmd == "stats":
-                    loot_list = []
-                    for category in [
-                        "mob_drops", "work_drops", "farm_drops", "lootbox_drops",
-                    ]:
-                        for item, qty in sessionData["loot_data"][
-                            category
-                        ].items():
-                            if qty > 0:
-                                loot_list.append(f"• {item}: {qty}")
-                    for item, val in sessionData["misc"].items():
-                        if isinstance(val, int):
-                            if val > 0:
-                                loot_list.append(f"• {item}: {val}")
-                        elif isinstance(val, dict):
-                            for sub_item, sub_qty in val.items():
-                                if sub_qty > 0:
-                                    loot_list.append(
-                                        f"• {sub_item}: {sub_qty}"
-                                    )
-                    loot_summary = (
-                        "\n".join(loot_list[:50]) if loot_list else "None yet"
-                    )
-                    stats_msg = (
-                        f"📊 **Relatório da Sessão Oracle v2**\n"
-                        f"**Progresso:**\n"
-                        f"• Coins: {sessionData['progress_data']['coins']:,}\n"
-                        f"• XP: {sessionData['progress_data']['xp']:,}\n"
-                        f"**Comandos:**\n"
-                        f"• Hunt: {sessionData['command_data']['hunt']} "
-                        f"| Work: {sessionData['command_data']['work']}\n"
-                        f"• Quest: {sessionData['command_data']['quest']} "
-                        f"| Watchdog: {bot_state.no_response_count}/3\n"
-                        f"**Loot:**\n{loot_summary}\n"
-                        f"**Status:** "
-                        f"{'⏸️ PAUSADO' if bot_state.paused else '🏎️ FARMANDO'}"
-                    )
+                elif cmd.startswith("stats"):
+                    parts = cmd.split()
+                    if len(parts) > 1 and parts[1].replace("h","").replace("d","").replace("m","").isdigit():
+                        period_str = parts[1]
+                        from bot.persistence import get_stats_for_period
+                        from bot.parsers import format_session_data
+                        period_data = get_stats_for_period(sessionData, period_str)
+                        stats_msg = "```ansi\n" + format_session_data(period_data, f"Session Data (Last {period_str})") + "\n```"
+                    else:
+                        loot_list = []
+                        for category in [
+                            "mob_drops", "work_drops", "farm_drops", "lootbox_drops",
+                        ]:
+                            for item, qty in sessionData["loot_data"][
+                                category
+                            ].items():
+                                if qty > 0:
+                                    loot_list.append(f"• {item}: {qty}")
+                        for item, val in sessionData["misc"].items():
+                            if isinstance(val, int):
+                                if val > 0:
+                                    loot_list.append(f"• {item}: {val}")
+                            elif isinstance(val, dict):
+                                for sub_item, sub_qty in val.items():
+                                    if sub_qty > 0:
+                                        loot_list.append(
+                                            f"• {sub_item}: {sub_qty}"
+                                        )
+                        loot_summary = (
+                            "\n".join(loot_list[:50]) if loot_list else "None yet"
+                        )
+                        stats_msg = (
+                            f"📊 **Relatório da Sessão Oracle v2**\n"
+                            f"**Progresso:**\n"
+                            f"• Coins: {sessionData['progress_data']['coins']:,}\n"
+                            f"• XP: {sessionData['progress_data']['xp']:,}\n"
+                            f"**Comandos:**\n"
+                            f"• Hunt: {sessionData['command_data']['hunt']} "
+                            f"| Work: {sessionData['command_data']['work']}\n"
+                            f"• Quest: {sessionData['command_data']['quest']} "
+                            f"| Watchdog: {bot_state.no_response_count}/3\n"
+                            f"**Loot:**\n{loot_summary}\n"
+                            f"**Status:** "
+                            f"{'⏸️ PAUSADO' if bot_state.paused else '🏎️ FARMANDO'}"
+                        )
                     await message.channel.send(stats_msg)
                     return
                 elif cmd.startswith("say "):
