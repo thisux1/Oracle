@@ -162,11 +162,22 @@ async def responseResolver(message):
                 "sb help / sb ajuda : Shows this help message\n"
                 "sb pause           : Pause the bot (Freeze)\n"
                 "sb start           : Unpause the bot (Unfreeze)\n"
+                "sb reset           : Clear queues and reset state\n"
                 "sb stats           : Show all-time session stats\n"
                 "sb stats [time]    : Show stats for period (e.g., sb stats 10h, 7d, 1m)\n"
+                "sb tc start [Xc][m] : Activate TC mode (e.g. sb tc start 4c 60m)\n"
+                "sb tc stop         : Deactivate TC mode\n"
                 "sb g start         : Start the gambling/coinflip module\n"
                 "sb g pause         : Stop the gambling module\n"
+                "sb say <text>      : Send a message in the channel\n"
                 "rpg u              : Show bot uptime\n"
+                "\n=== New Features ===\n"
+                "do_[cmd]=true/false  : Toggle individual commands in options.ini\n"
+                "do_ultr=true         : ULTR training sequence override\n"
+                "is_eternal=true      : Dungeon auto-enter + dragon bite loop\n"
+                "card_hand_action     : auto (play) or notify (Telegram only)\n"
+                "tc_quantity=N        : Default cookies per use\n"
+                "life_boost_before_adv: Buy life boost before adventure\n"
             )
             logger.info(help_text)
             return

@@ -44,12 +44,34 @@ pip install -r requirements.txt
 
 ### 3. Configurando o `options.ini`
 Edite o arquivo `options.ini` com suas informações:
+
+**Essenciais:**
 *   `user_token`: Seu token do Discord.
 *   `channel_id`: ID do canal de farm.
 *   `guild_id`: ID do servidor.
 *   `admin_ids`: Seu ID (para controle remoto).
 *   `typo_chance`: Chance (ex: 0.05) de simular erros de digitação humanos.
 *   `sleep_at` / `wake_up_at`: Horário (HH:MM) para o bot ficar offline (ex: 23:30 e 07:00).
+
+**Comandos Togglable (opcional, default=true):**
+*   `do_hunt`, `do_adv`, `do_farm`, `do_work`, `do_training`, `do_daily`, `do_weekly`, `do_quest`, `do_lootbox`, `do_dungeon`, `do_card_hand`: Habilita/desabilita comandos individuais sem precisar editar código.
+
+**ULTR Training:**
+*   `do_ultr=false`: Quando `true`, substitui `rpg training` pela sequência: `rpg ultr` → `double` → `attack` → `rpg use tc N`.
+
+**Dungeon Automática:**
+*   `is_eternal=false`: Ativa auto-enter em dungeon (`yes`) e bite loop automático no dragão eternal.
+
+**Card Hand:**
+*   `card_hand_action=auto`: `auto` (joga automaticamente via IA) ou `notify` (apenas notifica no Telegram para você jogar manualmente).
+
+**Time Cookie:**
+*   `tc_quantity=1`: Quantidade padrão de cookies por uso. Sobrescrito via comando `sb tc start Xc`.
+
+**Adventure Optimization:**
+*   `life_boost_before_adv=none`: Nível do life boost (a, b, c) para comprar antes de adventure.
+*   `adventure_area=none`: Área para trocar antes do adventure (menos dano).
+*   `current_area=none`: Área para voltar depois do adventure/eventos.
 
 ### 4. Executando o Bot
 ```bash
@@ -62,17 +84,34 @@ python main2.py
 Envie estes comandos no canal (apenas administradores):
 *   `sb help` ou `sb ajuda`: Mostra a lista completa de comandos disponíveis no console.
 *   `sb start` / `sb pause`: Inicia (descongela) ou pausa (congela) a execução automática do bot.
-*   `sb stats`: Exibe o relatório acumulado de XP, Coins e Loot da sessão inteira.
-*   `sb stats [tempo]`: Mostra o relatório de estatísticas calculado para um período específico (ex: `sb stats 10h`, `sb stats 7d`, `sb stats 1m`). Graças ao sistema de persistência, esses dados sobrevivem a reboots!
-*   `sb g start` / `sb g pause`: Inicia ou pausa o ciclo automático do cassino (Fibonacci Coinflip).
-*   `sb tc start [tempo]m`: Ativa o modo **Time Cookie** com timeout explícito (ex: `sb tc start 60m`).
 *   `sb reset`: Limpa filas de alta e baixa prioridade e reseta o estado de jogo.
+*   `sb stats`: Exibe o relatório acumulado de XP, Coins e Loot da sessão inteira.
+*   `sb stats [tempo]`: Mostra o relatório de estatísticas calculado para um período específico (ex: `sb stats 10h`, `sb stats 7d`, `sb stats 1m`). Os dados sobrevivem a reboots!
+*   `sb tc start [Xc] [tempo]m`: Ativa o modo **Time Cookie**. Ex: `sb tc start 4c 60m` (4 cookies, 60 minutos). Ao ativar, enfileira automaticamente hunt, work, farm e rd.
+*   `sb tc stop`: Desativa o modo Time Cookie.
+*   `sb g start` / `sb g pause`: Inicia ou pausa o ciclo automático do cassino (Fibonacci Coinflip).
+*   `sb say [texto]`: Envia uma mensagem no canal.
 *   `rpg u`: Exibe o tempo de atividade do bot (uptime).
 
 ---
 
 ## 🧠 Inteligência Artificial (Oracle)
 O bot utiliza dois modelos (`oracle_v2_color.h5` e `oracle_v2_gray.h5`) para resolver os captchas do Epic Guard. Se a confiança for baixa, ele enviará a foto para o seu Telegram para ajuda manual.
+---
+
+---
+
+## 📋 Changelog (Oracle v2 — Donut Features Migration)
+
+*   **Comandos Togglable**: 11 flags `do_*` no `options.ini` para desabilitar comandos individualmente.
+*   **ULTR Training**: `do_ultr=true` substitui training pela sequência ultr → double → attack → rpg use tc.
+*   **TC Startup Queue**: Ao ativar TC mode, hunt, work, farm e rd são enfileirados automaticamente.
+*   **TC Quantity**: `sb tc start 4c` usa 4 cookies por vez. Configurável via `tc_quantity` no `.ini`.
+*   **Dungeon State Machine**: Auto-enter em dungeon + bite loop no dragão eternal (gated por `is_eternal`).
+*   **Card Hand Toggle**: `card_hand_action=notify` só avisa no Telegram sem jogar automaticamente.
+*   **Adventure Optimization**: Compra life boost e troca de área antes de adventure.
+*   **HUD Melhorado**: Métodos especializados `dungeon()`, `tc()`, `cardhand()`, `separator()`, `navi()`.
+*   **Eventos Globais**: Handlers de zombie horde, mysterious man, seed event e god drop movidos para antes do filtro `is_for_user` — agora funcionam mesmo sem o nome do usuário no embed.
 
 ---
 
