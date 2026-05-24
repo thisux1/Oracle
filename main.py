@@ -19,9 +19,9 @@ async def main():
 {Fore.LIGHTCYAN_EX}     / / / / ___/ __ `/ ___/ / _ \\
 {Fore.CYAN}    / /_/ / /  / /_/ / /__/ /  __/
 {Fore.BLUE}    \\____/_/   \\__,_/\\___/_/\\___/  {Fore.LIGHTWHITE_EX}v2.0.0
-{Fore.LIGHTBLACK_EX}    ─────────────────────────────────────
-{Fore.CYAN}     AI-POWERED EPIC RPG AUTOMATION SYSTEM
-{Fore.LIGHTBLACK_EX}    ─────────────────────────────────────{Style.RESET_ALL}
+{Fore.LIGHTBLACK_EX}    ─────────────────────────────────────────────
+{Fore.CYAN}     🔮 AI-POWERED EPIC RPG AUTOMATION SYSTEM
+{Fore.LIGHTBLACK_EX}    ─────────────────────────────────────────────{Style.RESET_ALL}
 """
     print(banner)
     print(f" ⚙️  {Fore.LIGHTBLACK_EX}Config: {Fore.WHITE}{options_resolver.optionsFilePath}")
@@ -39,14 +39,14 @@ async def main():
             if not in_sleep_mode:
                 in_sleep_mode = True
                 moon_art = f"""
-{Fore.LIGHTBLUE_EX}        *   .         .   *
-{Fore.LIGHTBLUE_EX}             *  .  *
-{Fore.LIGHTCYAN_EX}           .---.
-{Fore.LIGHTCYAN_EX}          /     \\  *    {Fore.CYAN}🌙 SYSTEM HIBERNATING (SLEEP MODE)
-{Fore.CYAN}         |  🌙   |      {Fore.WHITE}Closed all gateway channels.
-{Fore.CYAN}          \\     /       {Fore.LIGHTBLACK_EX}Safe offline status until morning.
-{Fore.BLUE}           '---'        {Fore.LIGHTBLUE_EX}Offline period: {config.sleep_at} - {config.wake_up_at}
-{Style.RESET_ALL}"""
+{Fore.LIGHTBLACK_EX}    ─────────────────────────────────────────────
+{Fore.LIGHTBLUE_EX}        *   .       .   *     {Fore.CYAN}🌙 SYSTEM HIBERNATING
+{Fore.LIGHTBLUE_EX}             *  .  *          {Fore.LIGHTCYAN_EX}Sleep Mode Active
+{Fore.LIGHTCYAN_EX}           .---.              {Fore.WHITE}Closed Discord connection
+{Fore.LIGHTCYAN_EX}          /     \\  *          {Fore.LIGHTBLACK_EX}Stealth offline status
+{Fore.CYAN}         |  🌙   |            {Fore.LIGHTBLUE_EX}Offline: {config.sleep_at} - {config.wake_up_at}
+{Fore.BLUE}          '---'               {Fore.GREEN}Safe auto-wakeup scheduled
+{Fore.LIGHTBLACK_EX}    ─────────────────────────────────────────────{Style.RESET_ALL}"""
                 print(moon_art)
             retry_delay = 5
             await asyncio.sleep(60)

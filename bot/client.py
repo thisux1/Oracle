@@ -78,14 +78,14 @@ class DiscordClient(discord.Client):
             from bot.utils import is_sleep_time
             if is_sleep_time():
                 moon_art = f"""
-{Fore.LIGHTBLUE_EX}        *   .         .   *
-{Fore.LIGHTBLUE_EX}             *  .  *
-{Fore.LIGHTCYAN_EX}           .---.
-{Fore.LIGHTCYAN_EX}          /     \\  *    {Fore.CYAN}🌙 SYSTEM HIBERNATING (SLEEP MODE)
-{Fore.CYAN}         |  🌙   |      {Fore.WHITE}Closed all gateway channels.
-{Fore.CYAN}          \\     /       {Fore.LIGHTBLACK_EX}Safe offline status until morning.
-{Fore.BLUE}           '---'        {Fore.LIGHTBLUE_EX}Offline period: {config.sleep_at} - {config.wake_up_at}
-{Style.RESET_ALL}"""
+{Fore.LIGHTBLACK_EX}    ─────────────────────────────────────────────
+{Fore.LIGHTBLUE_EX}        *   .       .   *     {Fore.CYAN}🌙 SYSTEM HIBERNATING
+{Fore.LIGHTBLUE_EX}             *  .  *          {Fore.LIGHTCYAN_EX}Sleep Mode Active
+{Fore.LIGHTCYAN_EX}           .---.              {Fore.WHITE}Closed Discord connection
+{Fore.LIGHTCYAN_EX}          /     \\  *          {Fore.LIGHTBLACK_EX}Stealth offline status
+{Fore.CYAN}         |  🌙   |            {Fore.LIGHTBLUE_EX}Offline: {config.sleep_at} - {config.wake_up_at}
+{Fore.BLUE}          '---'               {Fore.GREEN}Safe auto-wakeup scheduled
+{Fore.LIGHTBLACK_EX}    ─────────────────────────────────────────────{Style.RESET_ALL}"""
                 print(moon_art)
                 await self.close()
                 break
@@ -118,14 +118,15 @@ class DiscordClient(discord.Client):
                     bot_state.is_on_coffee_break = True
                     
                     coffee_art = f"""
-{Fore.YELLOW}             ~ ~ ~
-{Fore.YELLOW}            ~ ~ ~
-{Fore.YELLOW}           .------.
-{Fore.YELLOW}          /  ☕   /|
-{Fore.YELLOW}         |       | |__  {Fore.CYAN}☕ COFFEE BREAK ACTIVE
-{Fore.YELLOW}         |  ☕   |/  /  {Fore.WHITE}Simulating natural human break...
-{Fore.YELLOW}          \\_____/___/   {Fore.LIGHTBLACK_EX}Duration: {break_duration/60:.1f}m
-{Style.RESET_ALL}"""
+{Fore.LIGHTBLACK_EX}    ─────────────────────────────────────────────
+{Fore.YELLOW}             ~ ~ ~            {Fore.CYAN}☕ COFFEE BREAK ACTIVE
+{Fore.YELLOW}            ~ ~ ~             {Fore.LIGHTCYAN_EX}Stealth Idle State
+{Fore.YELLOW}           .------.           {Fore.WHITE}Simulating human break
+{Fore.YELLOW}          /  ☕   /|          {Fore.LIGHTBLACK_EX}Queues locked for safety
+{Fore.YELLOW}         |       | |__        {Fore.YELLOW}Duration: {break_duration/60:.1f}m
+{Fore.YELLOW}         |  ☕   |/  /        {Fore.GREEN}Resuming automatically
+{Fore.YELLOW}          \\_____/___/         {Fore.LIGHTWHITE_EX}Next break in 1-2h
+{Fore.LIGHTBLACK_EX}    ─────────────────────────────────────────────{Style.RESET_ALL}"""
                     print(coffee_art)
                     
                     await asyncio.sleep(break_duration)
