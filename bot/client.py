@@ -698,13 +698,22 @@ class DiscordClient(discord.Client):
                 return
 
         # ─── 6. Live Feed + Response Processing ───
-        prefix = f"{Fore.WHITE}{Back.BLACK} 💬 {Style.RESET_ALL}"
         if content_to_log:
-            print(
-                f"{prefix} {Fore.WHITE}{message.author.name}"
-                f"{Style.RESET_ALL}: "
-                f"{HUD.clean_markdown(content_to_log)}"
-            )
+            author_name = message.author.name.upper()
+            if message.author.id == config.EPIC_RPG_ID:
+                prefix = f"{Fore.LIGHTRED_EX}🎮 [EPIC RPG]{Style.RESET_ALL}"
+                color = Fore.LIGHTYELLOW_EX
+            elif message.author.id == config.NAVI_LITE_ID or message.author.name.lower() == "navi lite":
+                prefix = f"{Fore.LIGHTBLUE_EX}🧚 [NAVI LITE]{Style.RESET_ALL}"
+                color = Fore.LIGHTCYAN_EX
+            elif message.author.id == config.userID:
+                prefix = f"{Fore.LIGHTGREEN_EX}👤 [PLAYER]{Style.RESET_ALL}"
+                color = Fore.WHITE
+            else:
+                prefix = f"{Fore.LIGHTBLACK_EX}💬 [{author_name}]{Style.RESET_ALL}"
+                color = Fore.LIGHTBLACK_EX
+            
+            print(f"{prefix} {color}{HUD.clean_markdown(content_to_log)}{Style.RESET_ALL}")
 
         if message.embeds:
             embed_dict = message.embeds[0].to_dict()

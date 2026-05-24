@@ -11,42 +11,51 @@ logger = logging.getLogger("OracleHUD")
 class HUD:
     @staticmethod
     def loot(player, item, qty):
-        print(f"{Fore.YELLOW}[LOOT] {player.upper()} found {qty:,}x {item.upper()}{Style.RESET_ALL}")
+        # Premium green/yellow loot logs
+        print(f"{Fore.GREEN}📦 [LOOT]{Fore.LIGHTGREEN_EX} {player.upper()} found {qty:,}x {item.upper()}{Style.RESET_ALL}")
 
     @staticmethod
     def oracle(msg):
-        print(f"{Fore.CYAN}{Back.BLACK} [ORACLE] {msg} {Style.RESET_ALL}")
+        # Oracle cyan/black logs
+        print(f"{Fore.CYAN}{Back.BLACK} 🔮 [ORACLE] {msg} {Style.RESET_ALL}")
 
     @staticmethod
     def alert(msg):
-        print(f"{Fore.WHITE}{Back.RED} [ALERT] {msg.upper()} {Style.RESET_ALL}")
+        # Alert red/black logs
+        print(f"{Fore.RED}{Back.BLACK} 🚨 [ALERT] {msg.upper()} {Style.RESET_ALL}")
 
     @staticmethod
     def command(cmd, priority="LPQ"):
-        color = Fore.MAGENTA if priority == "HPQ" else Fore.BLUE
-        print(f"{color}[{priority}] EXECUTING: {cmd}{Style.RESET_ALL}")
+        # Commands styled beautifully
+        if priority == "HPQ":
+            prefix = f"{Fore.LIGHTMAGENTA_EX}⚡ [HPQ]{Fore.MAGENTA}"
+        else:
+            prefix = f"{Fore.LIGHTBLUE_EX}⚙️ [LPQ]{Fore.BLUE}"
+        print(f"{prefix} ➔ {cmd}{Style.RESET_ALL}")
 
     @staticmethod
     def system(msg):
-        print(f"{Fore.GREEN}[SYS] {msg}{Style.RESET_ALL}")
+        # System black/gray logs
+        print(f"{Fore.LIGHTBLACK_EX}⚙️ [SYS]{Fore.WHITE} {msg}{Style.RESET_ALL}")
 
     @staticmethod
     def cooldown(msg):
-        print(f"{Fore.BLACK}{Back.CYAN} [COOLDOWN] {HUD.clean_markdown(msg)} {Style.RESET_ALL}")
+        # Cooldown logs
+        print(f"{Fore.CYAN}⏳ [COOLDOWN]{Fore.LIGHTCYAN_EX} {HUD.clean_markdown(msg)}{Style.RESET_ALL}")
 
-    SEPARATOR = f"{Fore.LIGHTBLACK_EX}{'─' * 50}{Style.RESET_ALL}"
+    SEPARATOR = f"{Fore.LIGHTBLACK_EX}{'─' * 60}{Style.RESET_ALL}"
 
     @staticmethod
     def dungeon(msg):
-        print(f"{Fore.LIGHTMAGENTA_EX}{Back.BLACK} [DUNGEON] {msg} {Style.RESET_ALL}")
+        print(f"{Fore.MAGENTA}⚔️ [DUNGEON]{Fore.LIGHTMAGENTA_EX} {msg}{Style.RESET_ALL}")
 
     @staticmethod
     def tc(msg):
-        print(f"{Fore.LIGHTYELLOW_EX} [TC] {msg} {Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}🍪 [TIME COOKIE]{Fore.LIGHTYELLOW_EX} {msg}{Style.RESET_ALL}")
 
     @staticmethod
     def cardhand(msg):
-        print(f"{Fore.LIGHTCYAN_EX} [CARD HAND] {msg} {Style.RESET_ALL}")
+        print(f"{Fore.LIGHTCYAN_EX}🃏 [CARD HAND]{Fore.CYAN} {msg}{Style.RESET_ALL}")
 
     @staticmethod
     def separator():
@@ -54,7 +63,7 @@ class HUD:
 
     @staticmethod
     def navi(msg):
-        print(f"{Fore.LIGHTBLUE_EX} [NAVI] {msg} {Style.RESET_ALL}")
+        print(f"{Fore.LIGHTBLUE_EX}🧚 [NAVI]{Fore.BLUE} {msg}{Style.RESET_ALL}")
 
     @staticmethod
     def clean_markdown(text):
