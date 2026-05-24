@@ -80,7 +80,7 @@ def build_bot():
         "--hidden-import", "colorama",
     ])
 
-    cmd.append(os.path.join(SCRIPT_DIR, "main2.py"))
+    cmd.append(os.path.join(SCRIPT_DIR, "main.py"))
     subprocess.check_call(cmd, cwd=SCRIPT_DIR)
     print("✅ Bot built → dist/Oracle-v2-Bot")
 

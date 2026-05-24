@@ -75,7 +75,7 @@ Edite o arquivo `options.ini` com suas informações:
 
 ### 4. Executando o Bot
 ```bash
-python main2.py
+python main.py
 ```
 
 ---
