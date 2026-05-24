@@ -1,7 +1,17 @@
 import time
-import requests
+import aiohttp
 from bot.hud import logger
 import bot.config as config
+
+
+_http_session = None
+
+
+def _get_session():
+    global _http_session
+    if _http_session is None or _http_session.closed:
+        _http_session = aiohttp.ClientSession()
+    return _http_session
 
 
 async def send_telegram_notification(text):
@@ -21,11 +31,13 @@ async def send_telegram_notification(text):
         "parse_mode": "MarkdownV2",
     }
     try:
-        response = requests.post(url, json=payload, timeout=10)
-        if response.status_code != 200:
-            logger.error(f"Failed to send Telegram notification: {response.text}")
-        else:
-            logger.info("Telegram notification sent successfully.")
+        session = _get_session()
+        async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=10)) as response:
+            if response.status != 200:
+                text = await response.text()
+                logger.error(f"Failed to send Telegram notification: {text}")
+            else:
+                logger.info("Telegram notification sent successfully.")
     except Exception as e:
         logger.error(f"Error sending Telegram notification: {e}")
 
@@ -36,15 +48,19 @@ async def send_telegram_photo(photo_path, caption):
 
     url = f"https://api.telegram.org/bot{config.TelegramBotToken}/sendPhoto"
     try:
-        with open(photo_path, 'rb') as photo:
-            files = {'photo': photo}
-            data = {
-                'chat_id': config.TelegramChatID,
-                'caption': caption,
-            }
-            response = requests.post(url, files=files, data=data, timeout=15)
-            if response.status_code != 200:
-                logger.error(f"Failed to send Telegram photo: {response.text}")
+        session = _get_session()
+        with open(photo_path, 'rb') as f:
+            photo_data = f.read()
+
+        data = aiohttp.FormData()
+        data.add_field('chat_id', config.TelegramChatID)
+        data.add_field('caption', caption)
+        data.add_field('photo', photo_data, filename='captcha.png')
+
+        async with session.post(url, data=data, timeout=aiohttp.ClientTimeout(total=15)) as response:
+            if response.status != 200:
+                text = await response.text()
+                logger.error(f"Failed to send Telegram photo: {text}")
             else:
                 logger.info("Telegram photo sent successfully.")
     except Exception as e:
@@ -61,18 +77,18 @@ async def get_telegram_override(start_time):
         return None
     url = f"https://api.telegram.org/bot{config.TelegramBotToken}/getUpdates"
     try:
+        session = _get_session()
         params = {"offset": -1, "limit": 1, "timeout": 0}
-        response = requests.get(url, params=params, timeout=5)
-        data = response.json()
-        if data.get("ok") and data.get("result"):
-            last_update = data["result"][0]
-            msg = last_update.get("message", {})
-            msg_time = msg.get("date", 0)
-            msg_text = msg.get("text", "").strip().lower()
+        async with session.get(url, params=params, timeout=aiohttp.ClientTimeout(total=5)) as response:
+            data = await response.json()
+            if data.get("ok") and data.get("result"):
+                last_update = data["result"][0]
+                msg = last_update.get("message", {})
+                msg_time = msg.get("date", 0)
+                msg_text = msg.get("text", "").strip().lower()
 
-            # Must be newer than when we started AND within the last minute
-            if msg_time > start_time and (time.time() - msg_time < 60):
-                return msg_text
+                if msg_time > start_time and (time.time() - msg_time < 60):
+                    return msg_text
     except Exception as e:
         logger.error(f"Error polling Telegram: {e}")
     return None

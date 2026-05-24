@@ -88,6 +88,7 @@ class BotState:
         self.awaiting_withdraw = False
         self.captcha_task = None
         self.no_response_count = 0
+        self.watchdog_paused_until = 0
         self.is_on_coffee_break = False
         self.next_break_time = time.time() + randint(3600, 7200)
         self.last_curiosity_time = 0
@@ -289,6 +290,7 @@ def reset_bot_state():
     bot_state.dragon_alive = False
     bot_state.last_dungeon_time = 0
     bot_state.tc_quantity = config.tc_quantity
+    bot_state.watchdog_paused_until = 0
     logger.info("Bot state reset to initial values.")
 
 

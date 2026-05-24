@@ -28,8 +28,7 @@ async def handleCoinflipResponse(message):
         
     embed_text = ""
     if message.embeds:
-        for embed in message.embeds:
-            embed_text += str(embed.to_dict()).lower() + " "
+        embed_text = " ".join(str(e.to_dict()).lower() for e in message.embeds) + " "
             
     msg = message.content.lower() + " " + embed_text
     if "you won" in msg:
@@ -92,11 +91,12 @@ async def responseResolver(message):
 
     if message.author.id == config.EPIC_RPG_ID and config.is_married:
         logger.debug(
-            f"Partner name config: '{config.partner_name}' "
-            f"(lower: '{config.partner_name.lower()}')"
+            "Partner name config: '%s' (lower: '%s')",
+            config.partner_name,
+            config.partner_name.lower(),
         )
-        logger.debug(f"User name: '{config.user_name_lower}'")
-        logger.debug(f"Message content: {message.content}")
+        logger.debug("User name: '%s'", config.user_name_lower)
+        logger.debug("Message content: %s", message.content)
 
     # ─── User Commands ───
     if message.author.id == config.userID:
@@ -225,7 +225,7 @@ async def responseResolver(message):
                 "pickup": config.do_work,
             }
             if not cmd_flag_map.get(cmd_name, True):
-                logger.debug(f"Navi slash command '{cmd_name}' skipped (disabled via config)")
+                logger.debug("Navi slash command '%s' skipped (disabled via config)", cmd_name)
                 return
             final_cmd = "rpg hunt" if cmd_name == "hunt" else f"rpg {cmd_name}"
             if cmd_name == "hunt":
@@ -269,6 +269,8 @@ async def responseResolver(message):
                     "%Y/%m/%d %H:%M:%S - unexpected helper response " + _temp
                 )
             )
+            if len(runtimeErrors) > 1000:
+                runtimeErrors.pop(0)
             logger.error(f"Unexpected helper response: {_temp}")
         
         if any(
@@ -292,10 +294,10 @@ async def responseResolver(message):
         elif message.embeds:
             embed_dict = message.embeds[0].to_dict()
             embed_text = str(embed_dict).lower()
-            logger.debug(f"Full embed: {embed_dict}")
+            logger.debug("Full embed: %s", embed_dict)
             if "is approaching" in embed_text and config.user_name_lower in embed_text:
                 is_pet_message = True
-                logger.debug(f"Pet message found in embed: {embed_text[:100]}...")
+                logger.debug("Pet message found in embed: %s...", embed_text[:100])
 
         if is_pet_message:
             add_to_low_priority_queue("feed feed feed pat pat pat")
@@ -322,8 +324,7 @@ async def responseResolver(message):
 
         full_msg = msg
         if message.embeds:
-            for embed in message.embeds:
-                full_msg += " " + str(embed.to_dict()).lower()
+            full_msg += " " + " ".join(str(e.to_dict()).lower() for e in message.embeds)
 
         # Coinflip insufficient funds
         if (

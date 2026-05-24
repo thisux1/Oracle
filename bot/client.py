@@ -24,6 +24,8 @@ from bot.state import (
 from bot.telegram import send_telegram_notification
 from bot.captcha import tentar_resolver_captcha, set_client
 from bot.handlers import responseResolver
+from bot.parsers import format_session_data
+from bot.persistence import save_session_data, get_stats_for_period
 from colorama import Fore, Back, Style
 
 
@@ -73,8 +75,23 @@ class DiscordClient(discord.Client):
         last_check = time.time() - 120
 
         while not self.is_closed():
+            from bot.utils import is_sleep_time
+            if is_sleep_time():
+                HUD.alert("💤 [Sleep Mode] Active. Going offline...")
+                await self.close()
+                break
+
             try:
                 current_time = time.time()
+
+                # Watchdog/Maintenance Auto-Resume Check
+                if bot_state.paused and bot_state.watchdog_paused_until > 0 and current_time >= bot_state.watchdog_paused_until:
+                    bot_state.paused = False
+                    bot_state.watchdog_paused_until = 0
+                    bot_state.no_response_count = 0
+                    HUD.system("Watchdog/Maintenance cooldown over. Auto-resuming...")
+                    await send_telegram_notification("🔄 Cooldown do Watchdog/Manutenção expirou. Tentando retomar atividades...")
+                    add_to_low_priority_queue("rpg rd")
 
                 logger.debug(
                     f"States - Paused: {bot_state.paused}, "
@@ -100,10 +117,11 @@ class DiscordClient(discord.Client):
                 if bot_state.no_response_count >= 3:
                     bot_state.paused = True
                     bot_state.no_response_count = 0
-                    HUD.alert("WATCHDOG: No response. Emergency pause!")
+                    bot_state.watchdog_paused_until = current_time + 3600
+                    HUD.alert("WATCHDOG: No response. Emergency pause (1h cooldown)!")
                     await send_telegram_notification(
-                        "🚨 WATCHDOG: Pausa de Emergência ativada "
-                        "devido à falta de respostas do jogo."
+                        "🚨 WATCHDOG: Pausa de Emergência ativada por 1 hora "
+                        "devido à falta de respostas do jogo. Tentará auto-retomar depois."
                     )
                     continue
 
@@ -261,8 +279,6 @@ class DiscordClient(discord.Client):
                         logger.info("Command rpg rd queued")
 
                     if current_time - bot_state.last_save_time >= 300:
-                        from bot.persistence import save_session_data
-                        
                         is_hourly = False
                         if current_time - getattr(bot_state, "last_snapshot_time", 0) >= 3600:
                             is_hourly = True
@@ -303,11 +319,10 @@ class DiscordClient(discord.Client):
                     highPriorityQueueSet.clear()
                     lowPriorityQueue.clear()
                     lowPriorityQueueSet.clear()
-                    bot_state.no_response_count = 0
-                    bot_state.lootbox_cooldown_until = 0
-                    HUD.system("Queues and Cooldowns RESET via Discord.")
+                    reset_bot_state()
+                    HUD.system("Queues, State and Cooldowns RESET via Discord.")
                     await message.channel.send(
-                        "🔄 **Filas e Cooldowns Financeiros Resetados.**"
+                        "🔄 **Filas, Estados e Cooldowns Resetados. Bot Despausado!**"
                     )
                     return
                 elif cmd.startswith("tc start"):
@@ -376,11 +391,9 @@ class DiscordClient(discord.Client):
                     return
                 elif cmd.startswith("stats"):
                     parts = cmd.split()
-                    from bot.parsers import format_session_data
                     
                     if len(parts) > 1 and parts[1].replace("h","").replace("d","").replace("m","").isdigit():
                         period_str = parts[1]
-                        from bot.persistence import get_stats_for_period
                         period_data = get_stats_for_period(sessionData, period_str)
                         stats_msg = "```ansi\n" + format_session_data(period_data, f"Session Data (Last {period_str})") + "\n```"
                     else:
@@ -428,8 +441,24 @@ class DiscordClient(discord.Client):
 
         # ─── 3. Status Detection (bypasses pause) ───
         if message.author.id == config.EPIC_RPG_ID:
+            # Maintenance Detection
+            if "bot is under maintenance" in combined_content or "is under maintenance" in combined_content:
+                if not bot_state.paused:
+                    bot_state.paused = True
+                    bot_state.no_response_count = 0
+                    bot_state.watchdog_paused_until = time.time() + 3600
+                    highPriorityQueue.clear()
+                    highPriorityQueueSet.clear()
+                    lowPriorityQueue.clear()
+                    lowPriorityQueueSet.clear()
+                    HUD.alert("MAINTENANCE DETECTED! Bot paused for safety.")
+                    await send_telegram_notification(
+                        "🛠️ EPIC RPG em Manutenção! O bot foi pausado automaticamente por 1 hora e tentará retomar atividades depois."
+                    )
+                return
+
             # Captcha Detection
-            if (
+            elif (
                 "check you are actually playing" in combined_content
                 or "stop there" in combined_content
             ):
@@ -679,11 +708,9 @@ class DiscordClient(discord.Client):
 
         if message.embeds:
             embed_dict = message.embeds[0].to_dict()
-            logger.debug(
-                f"Embed description: {message.embeds[0].description}"
-            )
-            logger.debug(f"Embed fields: {message.embeds[0].fields}")
-            logger.debug(f"Full embed dict: {embed_dict}")
+            logger.debug("Embed description: %s", message.embeds[0].description)
+            logger.debug("Embed fields: %s", message.embeds[0].fields)
+            logger.debug("Full embed dict: %s", embed_dict)
 
             # NeonUtil parsing for new messages
             if message.author.id in config.NEON_BOT_IDS and not bot_state.paused and config.card_hand_action == "auto":

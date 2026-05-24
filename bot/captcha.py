@@ -67,7 +67,8 @@ def _get_model_for(mode):
 
 def predict_item_from_captcha(img_path):
     try:
-        img = Image.open(img_path).convert('RGB')
+        with Image.open(img_path) as img:
+            img = img.convert('RGB')
         preferred = 'gray' if is_grayscale(img) else 'color'
         model, actual_mode = _get_model_for(preferred)
 
@@ -96,7 +97,8 @@ async def tentar_resolver_captcha(message):
             return
 
         # AI Prediction — with cross-model fallback
-        img = Image.open(img_path).convert('RGB')
+        with Image.open(img_path) as img:
+            img = img.convert('RGB')
         preferred = 'gray' if is_grayscale(img) else 'color'
         model, actual_mode = _get_model_for(preferred)
 

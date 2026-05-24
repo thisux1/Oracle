@@ -351,7 +351,7 @@ async def rdCheckEpicRPG(message):
                         if cmd_type == "training":
                             flag_value = flag_value or config.do_ultr
                         if not flag_value:
-                            logger.debug(f"Command '{cmd_type}' skipped (disabled via {flag_name})")
+                            logger.debug("Command '%s' skipped (disabled via %s)", cmd_type, flag_name)
                             continue
 
                     if cmd_type == "hunt":
