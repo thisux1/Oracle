@@ -170,8 +170,8 @@ class DiscordClient(discord.Client):
                                 cmd_to_send = highPriorityQueue.pop(i)
                                 highPriorityQueueSet.discard(cmd_to_send)
                                 bot_state.no_response_count += 1
-                                await send_with_typo_chance(channel, cmd_to_send, "HPQ-MG")
                                 HUD.command(cmd_to_send, "HPQ-MG")
+                                await send_with_typo_chance(channel, cmd_to_send, "HPQ-MG")
                                 break
                         # else: wait silently for minigame to resolve
                     elif bot_state.cardhand_in_progress:
@@ -186,8 +186,8 @@ class DiscordClient(discord.Client):
                                     await human_delay(1.5, 2.0)
                                     cmd_to_send = highPriorityQueue.pop(i)
                                     highPriorityQueueSet.discard(cmd_to_send)
-                                    await send_with_typo_chance(channel, cmd_to_send, "HPQ-CH")
                                     HUD.command(cmd_to_send, "HPQ-CH")
+                                    await send_with_typo_chance(channel, cmd_to_send, "HPQ-CH")
                                     break
                     elif highPriorityQueue:
                         await human_delay(1.5, 2.0)
@@ -207,8 +207,8 @@ class DiscordClient(discord.Client):
                             bot_state.no_response_count += 1
                             bot_state.last_sent_command = cmd
                             bot_state.last_sent_time = current_time
-                            await send_with_typo_chance(channel, cmd, "HPQ")
                             HUD.command(cmd, "HPQ")
+                            await send_with_typo_chance(channel, cmd, "HPQ")
                     elif lowPriorityQueue and bot_state.gambling_paused:
                         await human_delay(1.5, 2.5)
                         cmd = lowPriorityQueue.pop(0)
@@ -227,8 +227,8 @@ class DiscordClient(discord.Client):
                             bot_state.no_response_count += 1
                             bot_state.last_sent_command = cmd
                             bot_state.last_sent_time = current_time
-                            await send_with_typo_chance(channel, cmd, "LPQ")
                             HUD.command(cmd, "LPQ")
+                            await send_with_typo_chance(channel, cmd, "LPQ")
                     else:
                         if bot_state.time_cookie_mode:
                             if 0 < bot_state.tc_end_time < current_time:
