@@ -77,7 +77,16 @@ class DiscordClient(discord.Client):
         while not self.is_closed():
             from bot.utils import is_sleep_time
             if is_sleep_time():
-                HUD.alert("💤 [Sleep Mode] Active. Going offline...")
+                moon_art = f"""
+{Fore.LIGHTBLUE_EX}        *   .         .   *
+{Fore.LIGHTBLUE_EX}             *  .  *
+{Fore.LIGHTCYAN_EX}           .---.
+{Fore.LIGHTCYAN_EX}          /     \\  *    {Fore.CYAN}🌙 SYSTEM HIBERNATING (SLEEP MODE)
+{Fore.CYAN}         |  🌙   |      {Fore.WHITE}Closed all gateway channels.
+{Fore.CYAN}          \\     /       {Fore.LIGHTBLACK_EX}Safe offline status until morning.
+{Fore.BLUE}           '---'        {Fore.LIGHTBLUE_EX}Offline period: {config.sleep_at} - {config.wake_up_at}
+{Style.RESET_ALL}"""
+                print(moon_art)
                 await self.close()
                 break
 
@@ -107,7 +116,18 @@ class DiscordClient(discord.Client):
                 ):
                     break_duration = randint(300, 900)
                     bot_state.is_on_coffee_break = True
-                    HUD.alert(f"Human Coffee Break: {break_duration/60:.1f}m...")
+                    
+                    coffee_art = f"""
+{Fore.YELLOW}             ~ ~ ~
+{Fore.YELLOW}            ~ ~ ~
+{Fore.YELLOW}           .------.
+{Fore.YELLOW}          /  ☕   /|
+{Fore.YELLOW}         |       | |__  {Fore.CYAN}☕ COFFEE BREAK ACTIVE
+{Fore.YELLOW}         |  ☕   |/  /  {Fore.WHITE}Simulating natural human break...
+{Fore.YELLOW}          \\_____/___/   {Fore.LIGHTBLACK_EX}Duration: {break_duration/60:.1f}m
+{Style.RESET_ALL}"""
+                    print(coffee_art)
+                    
                     await asyncio.sleep(break_duration)
                     bot_state.is_on_coffee_break = False
                     bot_state.next_break_time = time.time() + randint(3600, 7200)
