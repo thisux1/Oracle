@@ -105,6 +105,7 @@ class BotState:
         self.cardhand_in_progress = False
         self.cardhand_first_pass_done = False
         self.cardhand_start_time = 0
+        self.cardhand_turn_count = 1
         self.last_sent_command = ""
         self.last_sent_time = 0
         # Pet Adventure
@@ -162,6 +163,7 @@ highPriorityQueueSet = set()
 
 # ─── Session Tracking ───
 DEFAULT_SESSION_DATA = {
+    "start_time": 0.0,
     "command_data": {
         "hunt": 0, "adventure": 0, "farm": 0, "training": 0,
         "work": 0, "quest": 0, "daily": 0, "weekly": 0, "lootbox": 0,
@@ -230,8 +232,14 @@ DEFAULT_SESSION_DATA = {
     else {},
 }
 
-from bot.persistence import load_session_data
+import copy
+import time
+from bot.persistence import load_session_data, save_session_data
 sessionData = load_session_data(DEFAULT_SESSION_DATA)
+if not sessionData.get("start_time") or sessionData["start_time"] == 0.0:
+    sessionData["start_time"] = time.time()
+    save_session_data(sessionData)
+initialSessionData = copy.deepcopy(sessionData)
 
 runtimeErrors = []
 
@@ -285,6 +293,7 @@ def reset_bot_state():
     bot_state.captcha_task = None
     bot_state.cardhand_in_progress = False
     bot_state.cardhand_first_pass_done = False
+    bot_state.cardhand_turn_count = 1
     bot_state.dungeon_waiting_confirmation = False
     bot_state.dungeon_in_progress = False
     bot_state.dragon_alive = False

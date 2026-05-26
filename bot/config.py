@@ -68,6 +68,7 @@ startTime = time.time()
 tc_stop_conditions = [x.strip().lower() for x in userOptions.get("tc_stop_on", "dungeon,miniboss").split(",") if x.strip()]
 sleep_at = userOptions.get("sleep_at", "")
 wake_up_at = userOptions.get("wake_up_at", "")
+theme = userOptions.get("theme", "cathedral")
 
 # ─── Togglable Command Flags ───
 do_hunt     = userOptions.get("do_hunt", "true").lower() == "true"
