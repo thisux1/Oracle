@@ -1,27 +1,27 @@
-# 🔮 Oracle v2 — Epic RPG Automation
+# Oracle v2 — Epic RPG Automation
 
 Este repositório contém o **Oracle v2**, um macro avançado para automação do Epic RPG com inteligência artificial para resolução de captchas e sistema de anti-detecção.
 
 ---
 
-## 🛡️ Segurança e Diretrizes de Uso (MUITO IMPORTANTE)
+## Segurança e Diretrizes de Uso (MUITO IMPORTANTE)
 
 Para garantir a longevidade da sua conta, siga estas diretrizes baseadas em heurísticas de anti-detecção:
 
-### ⚠️ Não utilize em contas secundárias sem atividade orgânica
+### Não utilize em contas secundárias sem atividade orgânica
 O Discord utiliza Machine Learning para analisar padrões comportamentais. Uma conta que **apenas** envia comandos de RPG e não tem outras atividades é facilmente detectada.
 *   **POR QUÊ**: O endpoint `/science` do Discord rastreia movimentos do mouse, troca de canais e foco da tela. O bot não simula isso.
-*   **MITIGAÇÃO**: Use a conta normalmente de vez em quando(converse com amigos, entre em canais de voz, navegue por servidores) enquanto o bot roda em segundo plano.
+*   **MITIGAÇÃO**: Use a conta normalmente de vez em quando (converse com amigos, entre em canais de voz, navegue por servidores) enquanto o bot roda em segundo plano.
 
-### 📋 Checklist de Sobrevivência
-*   **🏠 IP Residencial**: Evite rodar em VPS ou Cloud (AWS, Google Cloud). Use o Wi-Fi de casa ou 4G do celular. IPs de data centers são marcados pelo Discord.
-*   **☕ Coffee Breaks**: O Oracle v2 já possui pausas para "café" integradas (5-15min a cada 1-2h). Não as desative.
-*   **🌙 Night Sleep (Modo Sono)**: Agora o bot pode se desconectar totalmente em horários específicos (ex: das 23:30 às 07:00) para simular que você foi dormir e está offline, desconectando-se completamente do websocket e fechando a conexão com o discord.
-*   **📱 Notificações Telegram**: Mantenha o Telegram configurado. Se a IA falhar em um captcha, você precisa intervir manualmente rápido para evitar flag pelo EPIC RPG.
+### Checklist de Sobrevivência
+*   **IP Residencial**: Evite rodar em VPS ou Cloud (AWS, Google Cloud). Use o Wi-Fi de casa ou 4G do celular. IPs de data centers são marcados pelo Discord.
+*   **Coffee Breaks**: O Oracle v2 já possui pausas para café integradas (5-15min a cada 1-2h). Não as desative.
+*   **Night Sleep (Modo Sono)**: O bot pode se desconectar totalmente em horários específicos (ex: das 23:30 às 07:00) para simular que você foi dormir e está offline, desconectando-se completamente do websocket e fechando a conexão com o discord.
+*   **Notificações Telegram**: Mantenha o Telegram configurado. Se a IA falhar em um captcha, você precisa intervir manualmente rápido para evitar flag pelo EPIC RPG.
 
 ---
 
-## 🚀 Como Começar
+## Como Começar
 
 ### 1. Requisitos
 *   **Python 3.11** (Recomendado para compatibilidade com os modelos `.h5`)
@@ -74,13 +74,31 @@ Edite o arquivo `options.ini` com suas informações:
 *   `current_area=none`: Área para voltar depois do adventure/eventos.
 
 ### 4. Executando o Bot
+
+Você pode rodar o bot diretamente:
 ```bash
 python main.py
 ```
 
+### 5. Atalho de Inicialização Rápida (Comando `oracle`)
+
+Para maior comodidade, incluímos um script portátil (`setup.sh`) que adiciona um comando global `oracle` ao seu terminal (compatível com `bash` e `zsh`). Ele detecta automaticamente o diretório de instalação e o ambiente virtual (`.venv`, `venv` ou diretório do macro principal).
+
+Para configurá-lo, execute:
+```bash
+# Executar o script de setup automático
+./setup.sh
+
+# Recarregar as configurações no terminal atual
+source ~/.zshrc  # ou source ~/.bashrc
+
+# Iniciar o bot de qualquer lugar com:
+oracle
+```
+
 ---
 
-## 🛠️ Comandos de Controle (Discord)
+## Comandos de Controle (Discord)
 Envie estes comandos no canal (apenas administradores):
 *   `sb help` ou `sb ajuda`: Mostra a lista completa de comandos disponíveis no console.
 *   `sb start` / `sb pause`: Inicia (descongela) ou pausa (congela) a execução automática do bot.
@@ -95,13 +113,12 @@ Envie estes comandos no canal (apenas administradores):
 
 ---
 
-## 🧠 Inteligência Artificial (Oracle)
+## Inteligência Artificial (Oracle)
 O bot utiliza dois modelos (`oracle_v2_color.h5` e `oracle_v2_gray.h5`) para resolver os captchas do Epic Guard. Se a confiança for baixa, ele enviará a foto para o seu Telegram para ajuda manual.
----
 
 ---
 
-## 📋 Changelog (Oracle v2 — Donut Features Migration)
+## Changelog (Oracle v2 — Donut Features Migration)
 
 *   **Comandos Togglable**: 11 flags `do_*` no `options.ini` para desabilitar comandos individualmente.
 *   **ULTR Training**: `do_ultr=true` substitui training pela sequência ultr → double → attack → rpg use tc.
@@ -115,5 +132,5 @@ O bot utiliza dois modelos (`oracle_v2_color.h5` e `oracle_v2_gray.h5`) para res
 
 ---
 
-## ⚠️ Aviso Legal
-O uso de self-bots viola os Termos de Serviço do Discord. Este software é fornecido para fins educacionais. O Oracle v2 inclui sistemas de anti-detecção, mas o risco de banimento nunca é zero. Use com inteligência e sem ganância.
+## Aviso Legal
+O uso de self-bots viola os Termos de Serviço do Discord. Este software é fornecido para fins educacionais. O Oracle v2 inclui sistemas de anti-detecção, mas o risco de banimento nunca é zero. Use com inteligência e sem ganância.e é fornecido para fins educacionais. O Oracle v2 inclui sistemas de anti-detecção, mas o risco de banimento nunca é zero. Use com inteligência e sem ganância.
