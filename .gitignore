@@ -13,6 +13,10 @@ ENV/
 options.ini
 epic_guard.png
 session_data.json
+opencode.json
+stats_history.json
+stats_totals.json
+TUI_PLAN.md
 
 # (Opcional) Ignorar modelos locais se preferir baixar pelo GitHub Releases
 # *.h5
