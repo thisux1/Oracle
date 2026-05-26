@@ -71,6 +71,89 @@ def make_channel_link():
     return f"https://discord.com/channels/{config.GUILD_ID}/{config.channelID}"
 
 
+async def send_telegram_keyboard(text, buttons):
+    if not config.TelegramBotToken or not config.TelegramChatID:
+        return None
+    url = f"https://api.telegram.org/bot{config.TelegramBotToken}/sendMessage"
+    payload = {
+        "chat_id": config.TelegramChatID,
+        "text": text,
+        "reply_markup": {
+            "inline_keyboard": buttons
+        }
+    }
+    try:
+        session = _get_session()
+        async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=10)) as response:
+            if response.status != 200:
+                res_text = await response.text()
+                logger.error(f"Failed to send Telegram keyboard: {res_text}")
+                return None
+            data = await response.json()
+            return data.get("result", {}).get("message_id")
+    except Exception as e:
+        logger.error(f"Error sending Telegram keyboard: {e}")
+    return None
+
+
+async def edit_telegram_message(message_id, text, buttons=None):
+    if not config.TelegramBotToken or not config.TelegramChatID:
+        return False
+    url = f"https://api.telegram.org/bot{config.TelegramBotToken}/editMessageText"
+    payload = {
+        "chat_id": config.TelegramChatID,
+        "message_id": message_id,
+        "text": text,
+    }
+    if buttons is not None:
+        payload["reply_markup"] = {"inline_keyboard": buttons}
+    try:
+        session = _get_session()
+        async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=10)) as response:
+            return response.status == 200
+    except Exception as e:
+        logger.error(f"Error editing Telegram message: {e}")
+    return False
+
+
+async def get_telegram_callback_query(start_time):
+    """Polls Telegram for any callback query or message sent AFTER start_time."""
+    if not config.TelegramBotToken:
+        return None
+    url = f"https://api.telegram.org/bot{config.TelegramBotToken}/getUpdates"
+    try:
+        session = _get_session()
+        params = {"offset": -1, "limit": 10, "timeout": 0}
+        async with session.get(url, params=params, timeout=aiohttp.ClientTimeout(total=5)) as response:
+            data = await response.json()
+            if data.get("ok") and data.get("result"):
+                for update in reversed(data["result"]):
+                    # 1. Check for callback query
+                    cb = update.get("callback_query")
+                    if cb:
+                        msg_time = cb.get("message", {}).get("date", 0)
+                        if msg_time > start_time:
+                            # Answer the callback query to clear loading spinner
+                            cb_id = cb.get("id")
+                            ans_url = f"https://api.telegram.org/bot{config.TelegramBotToken}/answerCallbackQuery"
+                            try:
+                                await session.post(ans_url, json={"callback_query_id": cb_id}, timeout=2)
+                            except Exception:
+                                pass
+                            return cb.get("data")
+                    
+                    # 2. Check for regular text message
+                    msg = update.get("message")
+                    if msg:
+                        msg_time = msg.get("date", 0)
+                        msg_text = msg.get("text", "").strip().lower()
+                        if msg_time > start_time and (time.time() - msg_time < 60):
+                            return msg_text
+    except Exception as e:
+        logger.error(f"Error polling Telegram updates: {e}")
+    return None
+
+
 async def get_telegram_override(start_time):
     """Polls Telegram for the latest message sent AFTER start_time."""
     if not config.TelegramBotToken:
@@ -92,3 +175,4 @@ async def get_telegram_override(start_time):
     except Exception as e:
         logger.error(f"Error polling Telegram: {e}")
     return None
+

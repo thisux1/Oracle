@@ -43,6 +43,8 @@ class DiscordClient(discord.Client):
         add_to_low_priority_queue("rpg pet")
         logger.info("Queued 'rpg pet' at session start.")
         
+        self.tg_task = self.loop.create_task(self.telegram_listener_loop())
+        
         config.userID = self.user.id
         
         # Resolve server nickname
@@ -86,7 +88,7 @@ class DiscordClient(discord.Client):
 {Fore.CYAN}         |  🌙   |            {Fore.LIGHTBLUE_EX}Offline: {config.sleep_at} - {config.wake_up_at}
 {Fore.BLUE}          '---'               {Fore.GREEN}Safe auto-wakeup scheduled
 {Fore.LIGHTBLACK_EX}    ─────────────────────────────────────────────{Style.RESET_ALL}"""
-                print(moon_art)
+                HUD._write(moon_art)
                 await self.close()
                 break
 
@@ -98,7 +100,7 @@ class DiscordClient(discord.Client):
                     bot_state.paused = False
                     bot_state.watchdog_paused_until = 0
                     bot_state.no_response_count = 0
-                    HUD.system("Watchdog/Maintenance cooldown over. Auto-resuming...")
+                    HUD.system("Fim do cooldown do Watchdog/Manutenção. Retomando automaticamente...")
                     await send_telegram_notification("🔄 Cooldown do Watchdog/Manutenção expirou. Tentando retomar atividades...")
                     add_to_low_priority_queue("rpg rd")
 
@@ -119,27 +121,27 @@ class DiscordClient(discord.Client):
                     
                     coffee_art = f"""
 {Fore.LIGHTBLACK_EX}    ─────────────────────────────────────────────
-{Fore.YELLOW}             ~ ~ ~            {Fore.CYAN}☕ COFFEE BREAK ACTIVE
-{Fore.YELLOW}            ~ ~ ~             {Fore.LIGHTCYAN_EX}Stealth Idle State
-{Fore.YELLOW}           .------.           {Fore.WHITE}Simulating human break
-{Fore.YELLOW}          /  ☕   /|          {Fore.LIGHTBLACK_EX}Queues locked for safety
-{Fore.YELLOW}         |       | |__        {Fore.YELLOW}Duration: {break_duration/60:.1f}m
-{Fore.YELLOW}         |  ☕   |/  /        {Fore.GREEN}Resuming automatically
-{Fore.YELLOW}          \\_____/___/         {Fore.LIGHTWHITE_EX}Next break in 1-2h
+{Fore.YELLOW}             ~ ~ ~            {Fore.CYAN}☕ PAUSA PARA CAFÉ ATIVA
+{Fore.YELLOW}            ~ ~ ~             {Fore.LIGHTCYAN_EX}Estado Inativo Furtivo
+{Fore.YELLOW}           .------.           {Fore.WHITE}Simulando pausa humana
+{Fore.YELLOW}          /  ☕   /|          {Fore.LIGHTBLACK_EX}Filas bloqueadas por segurança
+{Fore.YELLOW}         |       | |__        {Fore.YELLOW}Duração: {break_duration/60:.1f}m
+{Fore.YELLOW}         |  ☕   |/  /        {Fore.GREEN}Retomando automaticamente
+{Fore.YELLOW}          \\_____/___/         {Fore.LIGHTWHITE_EX}Próxima pausa em 1-2h
 {Fore.LIGHTBLACK_EX}    ─────────────────────────────────────────────{Style.RESET_ALL}"""
-                    print(coffee_art)
+                    HUD._write(coffee_art)
                     
                     await asyncio.sleep(break_duration)
                     bot_state.is_on_coffee_break = False
                     bot_state.next_break_time = time.time() + randint(3600, 7200)
-                    HUD.system("Break over. Resuming.")
+                    HUD.system("Fim da pausa. Retomando.")
 
                 # Watchdog: Emergency Pause
                 if bot_state.no_response_count >= 3:
                     bot_state.paused = True
                     bot_state.no_response_count = 0
                     bot_state.watchdog_paused_until = current_time + 3600
-                    HUD.alert("WATCHDOG: No response. Emergency pause (1h cooldown)!")
+                    HUD.alert("WATCHDOG: Sem resposta. Pausa de emergência (1h de cooldown)!")
                     await send_telegram_notification(
                         "🚨 WATCHDOG: Pausa de Emergência ativada por 1 hora "
                         "devido à falta de respostas do jogo. Tentará auto-retomar depois."
@@ -166,7 +168,7 @@ class DiscordClient(discord.Client):
                             )
                             bot_state.last_curiosity_time = current_time
                             HUD.system(
-                                f"Feeling curious... checking '{curiosity_cmd}'"
+                                f"Curioso... checando '{curiosity_cmd}'"
                             )
 
                     def track_command(command):
@@ -200,7 +202,7 @@ class DiscordClient(discord.Client):
                         # Safety timeout: reset after 120s
                         if current_time - bot_state.cardhand_start_time > 120:
                             bot_state.cardhand_in_progress = False
-                            HUD.system("Card Hand timeout (120s). Queues released.")
+                            HUD.system("Timeout do Card Hand (120s). Filas liberadas.")
                         else:
                             for i, cmd in enumerate(highPriorityQueue):
                                 if not cmd.lower().startswith("rpg"):
@@ -216,14 +218,14 @@ class DiscordClient(discord.Client):
                         highPriorityQueueSet.discard(cmd)
                         current_time = time.time()
                         if cmd == bot_state.last_sent_command and (current_time - bot_state.last_sent_time) < 5.0 and not cmd.startswith("rpg cf"):
-                            HUD.system(f"Skipped duplicate command '{cmd}' (Anti-Spam).")
+                            HUD.system(f"Comando duplicado '{cmd}' ignorado (Anti-Spam).")
                         else:
                             # Set card hand lock BEFORE sending the command
-                            if cmd.lower() == "rpg card hand" and config.card_hand_action == "auto":
+                            if cmd.lower() == "rpg card hand" and config.card_hand_action in ["auto", "notify"]:
                                 bot_state.cardhand_in_progress = True
                                 bot_state.cardhand_first_pass_done = False
                                 bot_state.cardhand_start_time = current_time
-                                HUD.system("Card Hand started! Queues locked.")
+                                HUD.system("Card Hand iniciado! Filas bloqueadas.")
                             track_command(cmd)
                             bot_state.no_response_count += 1
                             bot_state.last_sent_command = cmd
@@ -236,14 +238,14 @@ class DiscordClient(discord.Client):
                         lowPriorityQueueSet.discard(cmd)
                         current_time = time.time()
                         if cmd == bot_state.last_sent_command and (current_time - bot_state.last_sent_time) < 5.0 and not cmd.startswith("rpg cf"):
-                            HUD.system(f"Skipped duplicate command '{cmd}' (Anti-Spam).")
+                            HUD.system(f"Comando duplicado '{cmd}' ignorado (Anti-Spam).")
                         else:
                             # Set card hand lock BEFORE sending the command (if queued in LPQ too)
-                            if cmd.lower() == "rpg card hand" and config.card_hand_action == "auto":
+                            if cmd.lower() == "rpg card hand" and config.card_hand_action in ["auto", "notify"]:
                                 bot_state.cardhand_in_progress = True
                                 bot_state.cardhand_first_pass_done = False
                                 bot_state.cardhand_start_time = current_time
-                                HUD.system("Card Hand started! Queues locked.")
+                                HUD.system("Card Hand iniciado! Filas bloqueadas.")
                             track_command(cmd)
                             bot_state.no_response_count += 1
                             bot_state.last_sent_command = cmd
@@ -255,7 +257,7 @@ class DiscordClient(discord.Client):
                             if 0 < bot_state.tc_end_time < current_time:
                                 bot_state.time_cookie_mode = False
                                 bot_state.tc_end_time = 0
-                                HUD.system("Time Cookie mode expired.")
+                                HUD.system("Modo Time Cookie expirado.")
                                 await send_telegram_notification("⏳ Modo Time Cookie desativado automaticamente (tempo esgotado).")
                             elif current_time - bot_state.last_tc_use_time > 10:
                                 bot_state.last_tc_use_time = current_time
@@ -277,13 +279,13 @@ class DiscordClient(discord.Client):
                                     add_to_low_priority_queue(farm_cmd, suppress_log=True)
 
                                 add_to_low_priority_queue("rpg rd", suppress_log=True)
-                                HUD.tc(f"Cycle: use tc {bot_state.tc_quantity} -> hunt -> work -> farm -> rd")
+                                HUD.tc(f"Ciclo: use tc {bot_state.tc_quantity} -> hunt -> work -> rd")
 
                     # Dungeon State: timeout safety
                     if bot_state.dungeon_in_progress and current_time - bot_state.last_dungeon_time > 60:
                         bot_state.dungeon_in_progress = False
                         bot_state.dragon_alive = False
-                        HUD.dungeon("State timeout, resetting.")
+                        HUD.dungeon("Timeout do estado, resetando.")
 
                     # Pet Adventure: auto-claim when timer expires
                     if (
@@ -292,7 +294,7 @@ class DiscordClient(discord.Client):
                     ):
                         bot_state.pet_adventure_return_time = 0
                         add_to_low_priority_queue("rpg pet claim")
-                        HUD.system("Pet adventure complete! Claiming rewards...")
+                        HUD.system("Aventura do pet completa! Resgatando recompensas...")
 
                     if current_time - last_check >= 120:
                         last_check = current_time
@@ -323,17 +325,17 @@ class DiscordClient(discord.Client):
                 cmd = msg_clean.split("sb ")[1]
                 if cmd in ["pause", "stop"]:
                     bot_state.paused = True
-                    HUD.alert("Bot PAUSED via Discord command.")
+                    HUD.alert("Bot PAUSADO via comando do Discord.")
                     await message.channel.send("⏸️ **Bot Pausado.**")
                     return
                 elif cmd in ["start", "resume"]:
                     bot_state.paused = False
-                    HUD.system("Bot RESUMED via Discord command.")
+                    HUD.system("Bot RETOMADO via comando do Discord.")
                     await message.channel.send("▶️ **Bot Retomado.**")
                     return
                 elif cmd == "force":
                     await responseResolver(message)
-                    HUD.system("FORCED processing executed.")
+                    HUD.system("Processamento FORÇADO executado.")
                     return
                 elif cmd == "reset":
                     highPriorityQueue.clear()
@@ -341,7 +343,7 @@ class DiscordClient(discord.Client):
                     lowPriorityQueue.clear()
                     lowPriorityQueueSet.clear()
                     reset_bot_state()
-                    HUD.system("Queues, State and Cooldowns RESET via Discord.")
+                    HUD.system("Filas, Estado e Cooldowns RESETADOS via Discord.")
                     await message.channel.send(
                         "🔄 **Filas, Estados e Cooldowns Resetados. Bot Despausado!**"
                     )
@@ -362,14 +364,14 @@ class DiscordClient(discord.Client):
                     else:
                         bot_state.tc_end_time = 0
 
-                    HUD.tc(f"Time Cookie mode ACTIVATED ({bot_state.tc_quantity} cookies/use).")
+                    HUD.tc(f"Modo Time Cookie ATIVADO ({bot_state.tc_quantity} cookies/uso).")
                     await message.channel.send(f"🍪 **Modo Time Cookie Ativado ({bot_state.tc_quantity}c/uso).**")
                     await queue_tc_commands()
                     return
                 elif cmd in ["tc stop", "tc pause"]:
                     bot_state.time_cookie_mode = False
                     bot_state.tc_end_time = 0
-                    HUD.system("Time Cookie mode DEACTIVATED.")
+                    HUD.system("Modo Time Cookie DESATIVADO.")
                     await message.channel.send("🛑 **Modo Time Cookie Desativado.**")
                     return
                 elif cmd in ["ajuda", "tutorial"]:
@@ -416,16 +418,16 @@ class DiscordClient(discord.Client):
                     if len(parts) > 1 and parts[1].replace("h","").replace("d","").replace("m","").isdigit():
                         period_str = parts[1]
                         period_data = get_stats_for_period(sessionData, period_str)
-                        stats_msg = "```ansi\n" + format_session_data(period_data, f"Session Data (Last {period_str})") + "\n```"
+                        stats_msg = "```ansi\n" + format_session_data(period_data, f"Dados da Sessão (Último(s) {period_str})") + "\n```"
                     else:
-                        stats_msg = "```ansi\n" + format_session_data(sessionData, "Session Data (All Time)") + "\n```"
+                        stats_msg = "```ansi\n" + format_session_data(sessionData, "Dados da Sessão (Histórico Completo)") + "\n```"
                         
                     await message.channel.send(stats_msg)
                     return
                 elif cmd.startswith("say "):
                     text_to_say = msg_clean.split("sb say ")[1]
                     add_to_high_priority_queue(text_to_say)
-                    HUD.system(f"Remote command queued: {text_to_say}")
+                    HUD.system(f"Comando remoto enfileirado: {text_to_say}")
                     await message.channel.send(
                         f"🚀 **Enviado para o canal <#{config.channelID}>:** `{text_to_say}`"
                     )
@@ -472,7 +474,7 @@ class DiscordClient(discord.Client):
                     highPriorityQueueSet.clear()
                     lowPriorityQueue.clear()
                     lowPriorityQueueSet.clear()
-                    HUD.alert("MAINTENANCE DETECTED! Bot paused for safety.")
+                    HUD.alert("MANUTENÇÃO DETECTADA! Bot pausado por segurança.")
                     await send_telegram_notification(
                         "🛠️ EPIC RPG em Manutenção! O bot foi pausado automaticamente por 1 hora e tentará retomar atividades depois."
                     )
@@ -484,7 +486,7 @@ class DiscordClient(discord.Client):
                 or "stop there" in combined_content
             ):
                 bot_state.paused = True
-                HUD.alert("CAPTCHA DETECTED! Bot paused for safety.")
+                HUD.alert("CAPTCHA DETECTADO! Bot pausado por segurança.")
                 highPriorityQueue.clear()
                 highPriorityQueueSet.clear()
                 lowPriorityQueue.clear()
@@ -509,7 +511,7 @@ class DiscordClient(discord.Client):
             ):
                 bot_state.jailed = True
                 bot_state.paused = True
-                HUD.alert("JAIL DETECTED! Automation suspended.")
+                HUD.alert("PRISÃO DETECTADA! Automação suspensa.")
                 await send_telegram_notification(
                     "🚨 BOT PRESO! Captcha falhou ou expirou. "
                     "Intervenção manual necessária."
@@ -530,7 +532,7 @@ class DiscordClient(discord.Client):
                 bot_state.jailed = False
                 bot_state.paused = False
                 bot_state.captcha_pending = False
-                HUD.system("Freedom detected! Resuming automation.")
+                HUD.system("Liberdade detectada! Retomando automação.")
                 return
 
             # Profile detection (update bankroll)
@@ -545,7 +547,7 @@ class DiscordClient(discord.Client):
                     if coinflip_strategy:
                         coinflip_strategy.bankroll = total_balance
                         coinflip_strategy.update_base_unit()
-                        HUD.system(f"Bankroll updated via profile: {total_balance:,} coins")
+                        HUD.system(f"Saldo atualizado via perfil: {total_balance:,} moedas")
                 return
 
             # Jail Interaction (processed even when paused)
@@ -568,7 +570,7 @@ class DiscordClient(discord.Client):
             if bot_state.time_cookie_mode and "you don't have that item" in combined_content:
                 bot_state.time_cookie_mode = False
                 bot_state.tc_end_time = 0
-                HUD.alert("Time Cookies depleted! TC mode disabled.")
+                HUD.alert("Time Cookies esgotados! Modo TC desativado.")
                 await send_telegram_notification("🚨 Fim dos Time Cookies! Modo Time Cookie desativado automaticamente.")
                 return
 
@@ -585,12 +587,12 @@ class DiscordClient(discord.Client):
                         bot_state.pending_trade_letter = next_letter
                         add_to_low_priority_queue(f"rpg trade {next_letter} 1")
                         HUD.system(
-                            f"Trade {letters[idx]} failed. "
-                            f"Trying '{next_letter}'..."
+                            f"Troca {letters[idx]} falhou. "
+                            f"Tentando '{next_letter}'..."
                         )
                     else:
                         bot_state.pending_trade_letter = None
-                        HUD.alert("All trade options (A-F) failed.")
+                        HUD.alert("Todas as opções de troca (A-F) falharam.")
                 except ValueError:
                     bot_state.pending_trade_letter = None
 
@@ -598,7 +600,7 @@ class DiscordClient(discord.Client):
                 "our trade is done then" in combined_content
             ):
                 bot_state.pending_trade_letter = None
-                HUD.system("Trade Quest Successfully Completed!")
+                HUD.system("Quest de Troca Concluída com Sucesso!")
 
             if (
                 "don't have enough money" in combined_content
@@ -627,7 +629,7 @@ class DiscordClient(discord.Client):
         ):
             days = config.userOptions.get("daysToCloseVoid", "3")
             add_to_high_priority_queue(days)
-            HUD.system(f"Answered Void question: {days}")
+            HUD.system(f"Respondida pergunta do Void: {days}")
             return
 
         # ─── 4. Pause Gatekeeper ───
@@ -642,17 +644,17 @@ class DiscordClient(discord.Client):
             message.author.id == config.EPIC_RPG_ID
             or "EPIC NPC" in message.author.name
         ):
-            HUD.system("NPC dialog detected. Analyzing quest...")
+            HUD.system("Diálogo de NPC detectado. Analisando quest...")
             if any(
                 x in combined_content
                 for x in ["arena", "miniboss", "guild raid"]
             ):
                 add_to_high_priority_queue("no")
-                HUD.alert("Quest Declined (Manual/Annoying type).")
+                HUD.alert("Quest Recusada (Tipo Manual/Chato).")
                 return
 
             add_to_high_priority_queue("yes")
-            HUD.system("Quest Accepted. Initiating strategy...")
+            HUD.system("Quest Aceita. Iniciando estratégia...")
 
             clean_quest = combined_content.replace('*', '').replace('_', '').replace('`', '')
             craft_match = re.search(
@@ -668,7 +670,7 @@ class DiscordClient(discord.Client):
                 add_to_low_priority_queue(
                     "rpg trade a 1", suppress_log=True
                 )
-                HUD.system("Trade quest accepted. Trying 'a'...")
+                HUD.system("Quest de troca aceita. Tentando 'a'...")
                 return
 
             gamble_match = re.search(
@@ -682,10 +684,10 @@ class DiscordClient(discord.Client):
                 first_bet = coinflip_strategy.get_bet_command()
                 add_to_high_priority_queue(first_bet)
                 bot_state.coinflip_pending = True
-                HUD.system(f"Casino Mode Active. Goal: {goal:,}. First bet queued.")
+                HUD.system(f"Modo Cassino Ativo. Meta: {goal:,}. Primeira aposta enviada para a fila.")
                 return
 
-            HUD.system("Quest accepted (Passive Hunt/Adv type).")
+            HUD.system("Quest aceita (Tipo Hunt/Adventure passiva).")
             return
 
         # ─── 5.5 Active Quest Detection ───
@@ -695,7 +697,7 @@ class DiscordClient(discord.Client):
             if craft_match:
                 qty, item = craft_match.groups()
                 add_to_low_priority_queue(f"rpg craft {item.strip()} {qty}")
-                HUD.system(f"Active Craft Quest detected: craft {qty} {item.strip()}")
+                HUD.system(f"Quest de Craft Ativa detectada: craft {qty} {item.strip()}")
                 return
 
             if "trading quest" in clean_quest:
@@ -733,8 +735,7 @@ class DiscordClient(discord.Client):
             else:
                 prefix = f"{Fore.LIGHTBLACK_EX}💬 [{author_name}]{Style.RESET_ALL}"
                 color = Fore.LIGHTBLACK_EX
-            
-            print(f"{prefix} {color}{HUD.clean_markdown(content_to_log)}{Style.RESET_ALL}")
+            HUD._write(f"{prefix} {color}{HUD.clean_markdown(content_to_log)}{Style.RESET_ALL}")
 
         if message.embeds:
             embed_dict = message.embeds[0].to_dict()
@@ -761,13 +762,13 @@ class DiscordClient(discord.Client):
                             if "(optimal)" in line.lower():
                                 if "pass" in line.lower():
                                     add_to_high_priority_queue("pass")
-                                    HUD.system("NeonUtil: Optimal card is 'pass'")
+                                    HUD.system("NeonUtil: Carta ideal é 'pass'")
                                     return
                                 card_match = re.search(r'[HDCS][2-9AJQK]|[HDCS]10|EN', line, re.IGNORECASE)
                                 if card_match:
                                     card = card_match.group(0).lower()
                                     add_to_high_priority_queue(card)
-                                    HUD.system(f"NeonUtil: Optimal card is '{card}'")
+                                    HUD.system(f"NeonUtil: Carta ideal é '{card}'")
                                     return
         try:
             await responseResolver(message)
@@ -797,7 +798,7 @@ class DiscordClient(discord.Client):
                 logger.error(f"Error processing edited message: {e}\n{traceback.format_exc()}")
             return
 
-        if config.card_hand_action != "auto":
+        if config.card_hand_action != "legacy_auto":
             return
 
         embed_dict = after.embeds[0].to_dict()
@@ -821,14 +822,150 @@ class DiscordClient(discord.Client):
                     if "(optimal)" in line.lower():
                         if "pass" in line.lower():
                             add_to_high_priority_queue("pass")
-                            HUD.system("NeonUtil: Optimal card is 'pass'")
+                            HUD.system("NeonUtil: Carta ideal é 'pass'")
                             return
                         card_match = re.search(r'[HDCS][2-9AJQK]|[HDCS]10|EN', line, re.IGNORECASE)
                         if card_match:
                             card = card_match.group(0).lower()
                             add_to_high_priority_queue(card)
-                            HUD.system(f"NeonUtil: Optimal card is '{card}'")
+                            HUD.system(f"NeonUtil: Carta ideal é '{card}'")
                             return
+
+    async def telegram_listener_loop(self):
+        if not config.TelegramBotToken or not config.TelegramChatID:
+            logger.warning("Telegram token ou chat ID não configurado no options.ini. Controle remoto via Telegram desabilitado.")
+            return
+
+        HUD.system("Iniciando controle remoto interativo via Telegram...")
+        
+        last_update_id = 0
+        
+        # Poll once at start to flush old updates
+        try:
+            from bot.telegram import _get_session
+            session = _get_session()
+            url = f"https://api.telegram.org/bot{config.TelegramBotToken}/getUpdates"
+            async with session.get(url, params={"offset": -1, "timeout": 0}) as resp:
+                data = await resp.json()
+                if data.get("ok") and data.get("result"):
+                    last_update_id = data["result"][0]["update_id"]
+        except Exception:
+            pass
+
+        while True:
+            try:
+                from bot.telegram import _get_session
+                session = _get_session()
+                url = f"https://api.telegram.org/bot{config.TelegramBotToken}/getUpdates"
+                params = {"offset": last_update_id + 1, "timeout": 10}
+                async with session.get(url, params=params, timeout=15) as resp:
+                    data = await resp.json()
+                    if data.get("ok") and data.get("result"):
+                        for update in data["result"]:
+                            last_update_id = update["update_id"]
+                            
+                            # Skip if it is a callback query (handled by interactive minigames)
+                            if "callback_query" in update:
+                                continue
+                                
+                            msg = update.get("message")
+                            if msg:
+                                chat_id = msg.get("chat", {}).get("id")
+                                if str(chat_id) != str(config.TelegramChatID):
+                                    continue
+                                    
+                                text = msg.get("text", "").strip()
+                                if text:
+                                    await self.handle_telegram_command(text)
+            except Exception as e:
+                logger.error(f"Erro no loop de comandos do Telegram: {e}")
+                
+            await asyncio.sleep(3)
+
+    async def handle_telegram_command(self, text):
+        cmd = text.lower().strip()
+        
+        if cmd == "/stats" or cmd == "stats":
+            stats_msg = "📊 *ESTATÍSTICAS DA SESSÃO* 📊\n\n"
+            raw_stats = format_session_data(sessionData, "Dados da Sessão")
+            # Strip ANSI escape codes
+            clean_stats = re.sub(r'\x1b\[[0-9;]*m', '', raw_stats)
+            stats_msg += f"```\n{clean_stats}\n```"
+            await send_telegram_notification(stats_msg)
+            
+        elif cmd == "/status" or cmd == "status":
+            status_emoji = "🟢 RUNNING"
+            if bot_state.paused:
+                status_emoji = "🔴 PAUSED"
+            elif bot_state.is_on_coffee_break:
+                status_emoji = "☕ COFFEE BREAK"
+            elif bot_state.jailed:
+                status_emoji = "💀 JAILED (PRESO)"
+                
+            msg = (
+                f"ℹ️ *STATUS DO ORÁCULO*\n\n"
+                f"• Estado: {status_emoji}\n"
+                f"• Time Cookie Mode: {'Ativo' if bot_state.time_cookie_mode else 'Inativo'}\n"
+                f"• Cooldowns pendentes: {len(lowPriorityQueue)} no LPQ, {len(highPriorityQueue)} no HPQ\n"
+                f"• Telegram Notifier: Ativo\n"
+                f"• Configs:\n"
+                f"  - Hunt: {'Ativo' if config.do_hunt else 'Inativo'}\n"
+                f"  - Adventure: {'Ativo' if config.do_adventure else 'Inativo'}\n"
+                f"  - Farm: {'Ativo' if config.do_farm else 'Inativo'}\n"
+                f"  - Coinflip: {'Pausado' if bot_state.gambling_paused else 'Jogando'}"
+            )
+            await send_telegram_notification(msg)
+            
+        elif cmd == "/pause" or cmd == "pause":
+            bot_state.paused = True
+            HUD.alert("📲 COMANDO TELEGRAM: Bot PAUSADO.")
+            await send_telegram_notification("⏸️ O bot foi PAUSADO pelo Telegram.")
+            
+        elif cmd == "/resume" or cmd == "resume":
+            bot_state.paused = False
+            HUD.system("📲 COMANDO TELEGRAM: Bot RETOMADO.")
+            await send_telegram_notification("▶️ O bot foi RETOMADO pelo Telegram.")
+            
+        elif cmd.startswith("/toggle ") or cmd.startswith("toggle "):
+            parts = cmd.split()
+            if len(parts) > 1:
+                opt = parts[1]
+                if opt in ["hunt", "do_hunt"]:
+                    config.do_hunt = not config.do_hunt
+                    await send_telegram_notification(f"🔄 `do_hunt` alterado para: {config.do_hunt}")
+                elif opt in ["adv", "adventure", "do_adventure"]:
+                    config.do_adventure = not config.do_adventure
+                    await send_telegram_notification(f"🔄 `do_adventure` alterado para: {config.do_adventure}")
+                elif opt in ["farm", "do_farm"]:
+                    config.do_farm = not config.do_farm
+                    await send_telegram_notification(f"🔄 `do_farm` alterado para: {config.do_farm}")
+                elif opt in ["work", "do_work"]:
+                    config.do_work = not config.do_work
+                    await send_telegram_notification(f"🔄 `do_work` alterado para: {config.do_work}")
+                elif opt in ["cf", "coinflip", "gamble"]:
+                    bot_state.gambling_paused = not bot_state.gambling_paused
+                    await send_telegram_notification(f"🔄 Coinflip (Cassino) alterado para: {'Pausado' if bot_state.gambling_paused else 'Jogando'}")
+                else:
+                    await send_telegram_notification(f"❌ Opção desconhecida: {opt}")
+            else:
+                await send_telegram_notification("⚠️ Use: `/toggle [hunt/adv/farm/work/cf]`")
+                
+        elif cmd == "/help" or cmd == "help":
+            help_msg = (
+                "🎯 *COMANDOS DISPONÍVEIS NO TELEGRAM* 🎯\n\n"
+                "• `stats` ou `/stats` - Envia estatísticas de progresso e Drops\n"
+                "• `status` ou `/status` - Envia o estado atual do bot e queues\n"
+                "• `pause` ou `/pause` - Pausa todas as ações do bot\n"
+                "• `resume` ou `/resume` - Retoma as ações do bot\n"
+                "• `toggle [hunt/adv/farm/cf]` - Inverte as configs ligando/desligando em tempo real\n"
+                "• `help` ou `/help` - Exibe esta ajuda"
+            )
+            await send_telegram_notification(help_msg)
+        else:
+            if bot_state.cardhand_in_progress:
+                return
+            if not cmd.startswith("/start"):
+                await send_telegram_notification("❓ Comando não reconhecido. Digite `/help` para ver as opções.")
 
 
 UserBot = DiscordClient()
