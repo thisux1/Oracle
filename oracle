@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+
+# ─── Oracle V2 Portable Launcher ───
+
+# Colors for terminal output
+RED='\033[0;31m'
+GREEN='\033[0;32'
+YELLOW='\033[0;33m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+NC='\033[0m' # No Color
+
+# Output header
+echo -e "${CYAN}${BOLD}Oracle V2 Launcher${NC}"
+echo -e "${CYAN}──────────────────────────────────────────────────${NC}"
+
+# Resolve script directory dynamically
+PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$PROJECT_DIR"
+
+# 1. Check if Python is installed
+if ! command -v python3 &> /dev/null; then
+    echo -e "${RED}${BOLD}ERROR: Python 3 could not be found!${NC}"
+    echo -e "Please install Python 3.11 (recommended) or newer to run Oracle V2."
+    exit 1
+fi
+
+# 2. Dynamic Virtual Environment Detection
+VENV_PATH=""
+if [ -d "$PROJECT_DIR/.venv" ]; then
+    VENV_PATH="$PROJECT_DIR/.venv"
+elif [ -d "$PROJECT_DIR/venv" ]; then
+    VENV_PATH="$PROJECT_DIR/venv"
+elif [ -d "$PROJECT_DIR/../Epic-Rpg-Macro-main/venv_311" ]; then
+    VENV_PATH="$PROJECT_DIR/../Epic-Rpg-Macro-main/venv_311"
+fi
+
+if [ -n "$VENV_PATH" ]; then
+    echo -e "Found virtual environment: ${GREEN}$VENV_PATH${NC}"
+    if [ -f "$VENV_PATH/bin/activate" ]; then
+        source "$VENV_PATH/bin/activate"
+        echo -e "Activated virtual environment successfully."
+    else
+        echo -e "${YELLOW}WARNING: Found virtual environment directory but 'bin/activate' script is missing.${NC}"
+    fi
+else
+    echo -e "${YELLOW}No local virtual environment (.venv/venv) detected.${NC}"
+    echo -e "Running with current active shell Python. (Assuming dependencies are installed globally or in your current shell environment)"
+fi
+
+# 3. Verify core dependencies
+echo -e "Verifying application dependencies..."
+if ! python3 -c "import textual" &> /dev/null; then
+    echo -e "\n${RED}${BOLD}DEPENDENCY ERROR: 'textual' library is not installed in the active environment.${NC}"
+    echo -e "${YELLOW}Active Python:${NC} $(which python3)"
+    echo -e "\nTo fix this, please run one of the following commands to install dependencies:"
+    echo -e "  ${BOLD}pip install -r requirements.txt${NC}"
+    echo -e "  or"
+    echo -e "  ${BOLD}python3 -m pip install -r requirements.txt${NC}\n"
+    exit 1
+fi
+
+echo -e "${GREEN}All dependencies verified. Launching Oracle V2...${NC}\n"
+
+# 4. Start the application
+python3 main.py
