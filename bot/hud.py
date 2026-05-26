@@ -4,25 +4,70 @@ from colorama import init, Fore, Back, Style
 
 init()
 
-logging.basicConfig(level=logging.INFO, format="%(message)s")
-logger = logging.getLogger("OracleHUD")
+class HUDHandler(logging.Handler):
+    def emit(self, record):
+        msg = self.format(record)
+        HUD._write(msg)
 
+# Setup root logger and OracleHUD logger to use HUDHandler
+logger = logging.getLogger("OracleHUD")
+logger.setLevel(logging.INFO)
+logger.propagate = False
+
+# Remove old handlers to prevent stdout tearing
+for handler in logging.root.handlers[:]:
+    logging.root.removeHandler(handler)
+
+hud_handler = HUDHandler()
+hud_handler.setFormatter(logging.Formatter("%(message)s"))
+logging.root.addHandler(hud_handler)
+logger.addHandler(hud_handler)
 
 class HUD:
+    tui_callback = None
+    _paused = False
+    _buffer: list[str] = []
+
+    @staticmethod
+    def pause():
+        """Pause log output — buffer messages instead of writing."""
+        HUD._paused = True
+
+    @staticmethod
+    def resume():
+        """Resume log output and flush buffered messages."""
+        HUD._paused = False
+        for msg in HUD._buffer:
+            if HUD.tui_callback:
+                HUD.tui_callback(msg)
+            else:
+                print(msg)
+        HUD._buffer.clear()
+
+    @staticmethod
+    def _write(msg):
+        if HUD._paused:
+            HUD._buffer.append(msg)
+            return
+        if HUD.tui_callback:
+            HUD.tui_callback(msg)
+        else:
+            print(msg)
+
     @staticmethod
     def loot(player, item, qty):
         # Premium green/yellow loot logs
-        print(f"{Fore.GREEN}📦 [LOOT]{Fore.LIGHTGREEN_EX} {player.upper()} found {qty:,}x {item.upper()}{Style.RESET_ALL}")
+        HUD._write(f"{Fore.GREEN}📦 [LOOT]{Fore.LIGHTGREEN_EX} {player.upper()} encontrou {qty:,}x {item.upper()}{Style.RESET_ALL}")
 
     @staticmethod
     def oracle(msg):
         # Oracle cyan/black logs
-        print(f"{Fore.CYAN}{Back.BLACK} 🔮 [ORACLE] {msg} {Style.RESET_ALL}")
+        HUD._write(f"{Fore.CYAN}{Back.BLACK} 🔮 [ORÁCULO] {msg} {Style.RESET_ALL}")
 
     @staticmethod
     def alert(msg):
         # Alert red/black logs
-        print(f"{Fore.RED}{Back.BLACK} 🚨 [ALERT] {msg.upper()} {Style.RESET_ALL}")
+        HUD._write(f"{Fore.RED}{Back.BLACK} 🚨 [ALERTA] {msg.upper()} {Style.RESET_ALL}")
 
     @staticmethod
     def command(cmd, priority="LPQ"):
@@ -31,39 +76,39 @@ class HUD:
             prefix = f"{Fore.LIGHTMAGENTA_EX}⚡ [HPQ]{Fore.MAGENTA}"
         else:
             prefix = f"{Fore.LIGHTBLUE_EX}⚙️ [LPQ]{Fore.BLUE}"
-        print(f"{prefix} ➔ {cmd}{Style.RESET_ALL}")
+        HUD._write(f"{prefix} ➔ {cmd}{Style.RESET_ALL}")
 
     @staticmethod
     def system(msg):
         # System black/gray logs
-        print(f"{Fore.LIGHTBLACK_EX}⚙️ [SYS]{Fore.WHITE} {msg}{Style.RESET_ALL}")
+        HUD._write(f"{Fore.LIGHTBLACK_EX}⚙️ [SIS]{Fore.WHITE} {msg}{Style.RESET_ALL}")
 
     @staticmethod
     def cooldown(msg):
         # Cooldown logs
-        print(f"{Fore.CYAN}⏳ [COOLDOWN]{Fore.LIGHTCYAN_EX} {HUD.clean_markdown(msg)}{Style.RESET_ALL}")
+        HUD._write(f"{Fore.CYAN}⏳ [COOLDOWN]{Fore.LIGHTCYAN_EX} {HUD.clean_markdown(msg)}{Style.RESET_ALL}")
 
     SEPARATOR = f"{Fore.LIGHTBLACK_EX}{'─' * 60}{Style.RESET_ALL}"
 
     @staticmethod
     def dungeon(msg):
-        print(f"{Fore.MAGENTA}⚔️ [DUNGEON]{Fore.LIGHTMAGENTA_EX} {msg}{Style.RESET_ALL}")
+        HUD._write(f"{Fore.MAGENTA}⚔️ [MASMORRA]{Fore.LIGHTMAGENTA_EX} {msg}{Style.RESET_ALL}")
 
     @staticmethod
     def tc(msg):
-        print(f"{Fore.YELLOW}🍪 [TIME COOKIE]{Fore.LIGHTYELLOW_EX} {msg}{Style.RESET_ALL}")
+        HUD._write(f"{Fore.YELLOW}🍪 [COOKIE DE TEMPO]{Fore.LIGHTYELLOW_EX} {msg}{Style.RESET_ALL}")
 
     @staticmethod
     def cardhand(msg):
-        print(f"{Fore.LIGHTCYAN_EX}🃏 [CARD HAND]{Fore.CYAN} {msg}{Style.RESET_ALL}")
+        HUD._write(f"{Fore.LIGHTCYAN_EX}🃏 [MÃO DE CARTAS]{Fore.CYAN} {msg}{Style.RESET_ALL}")
 
     @staticmethod
     def separator():
-        print(HUD.SEPARATOR)
+        HUD._write(HUD.SEPARATOR)
 
     @staticmethod
     def navi(msg):
-        print(f"{Fore.LIGHTBLUE_EX}🧚 [NAVI]{Fore.BLUE} {msg}{Style.RESET_ALL}")
+        HUD._write(f"{Fore.LIGHTBLUE_EX}🧚 [NAVI]{Fore.BLUE} {msg}{Style.RESET_ALL}")
 
     @staticmethod
     def clean_markdown(text):

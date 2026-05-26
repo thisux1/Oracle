@@ -25,18 +25,23 @@ def importData(filePath=optionsFilePath):
     
     return retList
 
-def editData(option,value,filePath=optionsFilePath): #unused
+def editData(option, value, filePath=optionsFilePath):
     newOptionsData = ""
-    with open(filePath,"r") as optionsFile:
+    with open(filePath, "r") as optionsFile:
         optionsData = optionsFile.read()
+    
+    found = False
     for line in optionsData.splitlines():
-        key = line.split("=")[0]
-        if key == option:
-            newOptionsData += option+"="+value+"\n"
-        else:
-            newOptionsData += line + "\n"
-
-    newOptionsData = newOptionsData[:-1]
-    with open(filePath,"w") as optionsFile:
+        if "=" in line:
+            key = line.split("=", 1)[0].strip()
+            if key == option:
+                newOptionsData += f"{option}={value}\n"
+                found = True
+                continue
+        newOptionsData += line + "\n"
+    
+    if not found:
+        newOptionsData += f"{option}={value}\n"
+        
+    with open(filePath, "w") as optionsFile:
         optionsFile.write(newOptionsData)
-      

@@ -105,6 +105,8 @@ def get_stats_for_period(current_data, period_str):
             
     if closest_timestamp:
         snapshot = history[closest_timestamp]
-        return subtract_dicts(current_data, snapshot)
+        result = subtract_dicts(current_data, snapshot)
+        result["start_time"] = float(closest_timestamp)
+        return result
         
     return current_data
