@@ -332,9 +332,9 @@ async def rdCheckEpicRPG(message):
                     if stop_cond and stop_cond in clean_line:
                         bot_state.time_cookie_mode = False
                         bot_state.tc_end_time = 0
-                        HUD.system(f"Time Cookie Mode stopped due to condition: {stop_cond}")
+                        HUD.system(f"Modo Time Cookie parado devido à condição: {stop_cond}")
                         asyncio.create_task(send_telegram_notification(
-                            f"🎯 Time Cookie Mode deactivated!\nReason: `{stop_cond}` is ready."
+                            f"🎯 Modo Time Cookie desativado!\nMotivo: `{stop_cond}` está pronto."
                         ))
 
             for cmd_type, aliases in command_aliases.items():
@@ -397,22 +397,22 @@ async def rdCheckEpicRPG(message):
                                     "rpg deposit all", suppress_log=True
                                 )
                             HUD.system(
-                                f"Lootbox buy sequence ({lootbox_type}) queued."
+                                f"Sequência de compra de lootbox ({lootbox_type}) enfileirada."
                             )
                         elif time.time() < bot_state.lootbox_cooldown_until:
-                            HUD.system("Lootbox buy skipped (Financial Cooldown).")
+                            HUD.system("Compra de lootbox pulada (Cooldown Financeiro).")
 
                     elif cmd_type == "card hand":
                         if config.card_hand_action == "auto" and config.do_card_hand:
                             add_to_high_priority_queue("rpg card hand")
-                            HUD.system("Card Hand ready! Auto-play queued.")
+                            HUD.system("Mão de cartas pronta! Auto-play enfileirado.")
                         else:
                             asyncio.create_task(send_telegram_notification(
                                 f"\U0001f9b4 Card Hand PRONTO!\n"
                                 f"Jogue manualmente:\n"
                                 f"{make_channel_link()}"
                             ))
-                            HUD.system("Card Hand ready! Telegram notification sent.")
+                            HUD.system("Mão de cartas pronta! Notificação de Telegram enviada.")
 
                     elif cmd_type == "training":
                         if config.training_command_sequence:
@@ -441,7 +441,7 @@ async def rdCheckEpicRPG(message):
 
                     elif cmd_type == "quest":
                         add_to_high_priority_queue("rpg quest")
-                        HUD.system("Quest ready! Queued in HPQ.")
+                        HUD.system("Quest pronta! Enfileirada na HPQ.")
 
                     else:
                         cmd = f"rpg {cmd_type}"
@@ -451,7 +451,7 @@ async def rdCheckEpicRPG(message):
                         )
 
 
-def format_session_data(data, title="Session Data"):
+def format_session_data(data, title="Dados da Sessão"):
     def filter_non_zero(d):
         return {
             k: v
@@ -469,17 +469,27 @@ def format_session_data(data, title="Session Data"):
     output = []
     output.append(f"{Fore.CYAN}=== {title} ==={Style.RESET_ALL}")
 
+    start_time = data.get("start_time", 0.0)
+    if start_time > 0.0:
+        formatted = time.strftime("%d/%m/%Y %H:%M:%S", time.localtime(start_time))
+        output.append(f"{Fore.LIGHTBLACK_EX}desde {formatted}{Style.RESET_ALL}")
+
     command_data = filter_non_zero(data.get("command_data", {}))
     if command_data:
-        output.append(f"{Fore.GREEN}Commands Executed:{Style.RESET_ALL}")
+        output.append(f"{Fore.GREEN}Comandos Executados:{Style.RESET_ALL}")
         for cmd, count in command_data.items():
             output.append(f"  {cmd.capitalize()}: {count}")
 
     progress_data = filter_non_zero(data.get("progress_data", {}))
     if progress_data:
-        output.append(f"{Fore.GREEN}Progress:{Style.RESET_ALL}")
+        output.append(f"{Fore.GREEN}Progresso:{Style.RESET_ALL}")
         for stat, value in progress_data.items():
-            output.append(f"  {stat.capitalize()}: {value:,}")
+            stat_name = {
+                "coins": "Moedas",
+                "xp": "XP",
+                "levels": "Níveis"
+            }.get(stat.lower(), stat.capitalize())
+            output.append(f"  {stat_name}: {value:,}")
 
     loot_data = data.get("loot_data", {})
     if loot_data:
@@ -487,30 +497,52 @@ def format_session_data(data, title="Session Data"):
         for category, items in loot_data.items():
             non_zero_items = filter_non_zero(items)
             if non_zero_items:
-                output.append(f"  {category.replace('_', ' ').title()}:")
+                cat_name = {
+                    "mob_drops": "Drops de Monstros",
+                    "lootbox_drops": "Drops de Lootbox",
+                    "work_drops": "Drops de Trabalho",
+                    "farm_drops": "Drops de Plantação",
+                }.get(category.lower(), category.replace('_', ' ').title())
+                output.append(f"  {cat_name}:")
                 for item, qty in non_zero_items.items():
                     output.append(f"    {item}: {qty:,}")
 
     misc_data = filter_non_zero(data.get("misc", {}))
     if misc_data:
-        output.append(f"{Fore.GREEN}Miscellaneous:{Style.RESET_ALL}")
+        output.append(f"{Fore.GREEN}Diversos:{Style.RESET_ALL}")
         for key, value in misc_data.items():
             if isinstance(value, dict):
                 non_zero_items = filter_non_zero(value)
                 if non_zero_items:
-                    output.append(f"  {key.capitalize()}:")
+                    key_name = {
+                        "cards": "Cartas",
+                    }.get(key.lower(), key.capitalize())
+                    output.append(f"  {key_name}:")
                     for item, qty in non_zero_items.items():
                         output.append(f"    {item}: {qty:,}")
             else:
-                output.append(f"  {key.capitalize()}: {value:,}")
+                key_name = {
+                    "coolness": "Estilo",
+                    "arena_cookies": "Cookies de Arena",
+                    "guard_events": "Eventos de Guarda",
+                    "personal_events": "Eventos Pessoais",
+                    "pets": "Pets",
+                }.get(key.lower(), key.capitalize())
+                output.append(f"  {key_name}: {value:,}")
 
     partner_loot_data = data.get("partner_loot_data", {})
     if partner_loot_data:
-        output.append(f"{Fore.GREEN}Partner Loot:{Style.RESET_ALL}")
+        output.append(f"{Fore.GREEN}Loot do Parceiro:{Style.RESET_ALL}")
         for category, items in partner_loot_data.items():
             non_zero_items = filter_non_zero(items)
             if non_zero_items:
-                output.append(f"  {category.replace('_', ' ').title()}:")
+                cat_name = {
+                    "mob_drops": "Drops de Monstros",
+                    "lootbox_drops": "Drops de Lootbox",
+                    "work_drops": "Drops de Trabalho",
+                    "farm_drops": "Drops de Plantação",
+                }.get(category.lower(), category.replace('_', ' ').title())
+                output.append(f"  {cat_name}:")
                 for item, qty in non_zero_items.items():
                     output.append(f"    {item}: {qty:,}")
 

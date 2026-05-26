@@ -17,7 +17,13 @@ from bot.parsers import (
     rdCheckEpicRPG,
     format_session_data,
 )
-from bot.telegram import send_telegram_notification, make_channel_link
+from bot.telegram import (
+    send_telegram_notification,
+    make_channel_link,
+    send_telegram_keyboard,
+    edit_telegram_message,
+    get_telegram_callback_query,
+)
 from bot.captcha import save_and_crop_attachment
 from colorama import Fore, Style
 
@@ -47,13 +53,13 @@ async def handleCoinflipResponse(message):
         if win_match and bot_state.gamble_quest_goal > 0:
             won_amount = int(win_match.group(1).replace(",", ""))
             bot_state.gamble_quest_current += won_amount
-            HUD.system(f"Casino Quest: {bot_state.gamble_quest_current:,} / {bot_state.gamble_quest_goal:,}")
+            HUD.system(f"Quest do Cassino: {bot_state.gamble_quest_current:,} / {bot_state.gamble_quest_goal:,}")
             
             if bot_state.gamble_quest_current >= bot_state.gamble_quest_goal:
                 bot_state.gambling_paused = True
                 bot_state.gamble_quest_goal = 0
                 bot_state.gamble_quest_current = 0
-                HUD.system("Casino Quest completed! Gambling paused.")
+                HUD.system("Quest do Cassino completada! Apostas pausadas.")
                 add_to_high_priority_queue("rpg quest")
                 return True
                 
@@ -86,6 +92,191 @@ async def handleCoinflipResponse(message):
     return False
 
 
+active_card_hand_msg_id = None
+
+
+def clean_embed_text_for_telegram(embed_dict):
+    desc = embed_dict.get("description", "")
+    fields_text = ""
+    if embed_dict.get("fields"):
+        for f in embed_dict["fields"]:
+            fields_text += f"\n*{f.get('name', '')}*:\n{f.get('value', '')}"
+    
+    full_text = desc + fields_text
+    # Replace some common emojis / text for Telegram friendly presentation
+    full_text = full_text.replace("YOUR HAND", "🃏 *SUA MÃO*")
+    full_text = full_text.replace("try to get the best possible hand", "Tente conseguir a melhor mão possível")
+    return full_text
+
+
+async def find_neon_recommendation(channel):
+    try:
+        # Search the most recent 5 messages in the channel to find Neon's helper recommendation
+        async for msg in channel.history(limit=5):
+            if msg.author.id in config.NEON_BOT_IDS and msg.embeds:
+                emb = msg.embeds[0].to_dict()
+                emb_text = str(emb).lower()
+                if "expected tc per choice" in emb_text:
+                    text_to_parse = ""
+                    if "description" in emb and emb["description"]:
+                        text_to_parse = emb["description"]
+                    if not text_to_parse and "fields" in emb:
+                        for f in emb["fields"]:
+                            if "expected tc per choice" in f.get("name", "").lower():
+                                text_to_parse = f.get("value", "")
+                                break
+                    if text_to_parse:
+                        for line in text_to_parse.split('\n'):
+                            if "(optimal)" in line.lower():
+                                if "pass" in line.lower():
+                                    return "pass"
+                                card_match = re.search(r'[HDCS][2-9AJQK]|[HDCS]10|EN', line, re.IGNORECASE)
+                                if card_match:
+                                    return card_match.group(0).lower()
+    except Exception as e:
+        logger.error(f"Erro ao buscar recomendação do Neon: {e}")
+    return None
+
+
+async def interactive_card_hand_loop(message):
+    global active_card_hand_msg_id
+    HUD.system("Iniciando loop de Card Hand interativo-automático (Estilo Captcha)...")
+    
+    try:
+        for turn in range(15):  # Max 15 interactions
+            if not bot_state.cardhand_in_progress:
+                break
+                
+            try:
+                # Reload message to get latest state
+                message = await message.channel.fetch_message(message.id)
+            except Exception as e:
+                logger.error(f"Erro ao obter mensagem do Card Hand: {e}")
+                break
+                
+            if not message.embeds:
+                break
+                
+            embed_dict = message.embeds[0].to_dict()
+            embed_text = str(embed_dict).lower()
+            
+            # Check if game is finished
+            if "goldened" in embed_text or "deck" in embed_text or "fold" in embed_text:
+                clean_txt = clean_embed_text_for_telegram(embed_dict)
+                final_msg = f"🎯 *CARD HAND CONCLUÍDO!*\n\n{clean_txt}"
+                if active_card_hand_msg_id:
+                    await edit_telegram_message(active_card_hand_msg_id, final_msg, None)
+                else:
+                    await send_telegram_notification(final_msg)
+                
+                bot_state.cardhand_in_progress = False
+                bot_state.cardhand_first_pass_done = False
+                bot_state.cardhand_turn_count = 1
+                HUD.system("Card Hand concluído com sucesso!")
+                active_card_hand_msg_id = None
+                break
+                
+            # Wait up to 3 seconds for Neon's recommendation
+            rec = None
+            for _ in range(6):
+                if not bot_state.cardhand_in_progress:
+                    break
+                rec = await find_neon_recommendation(message.channel)
+                if rec:
+                    break
+                await asyncio.sleep(0.5)
+                
+            # Determine timeout
+            timeout = 15 if bot_state.cardhand_turn_count == 1 else 5
+            rec_display = rec.upper() if rec else "PASS"
+            
+            clean_txt = clean_embed_text_for_telegram(embed_dict)
+            msg_text = (
+                f"🃏 *CARD HAND ATIVO* (Turno {bot_state.cardhand_turn_count})\n\n"
+                f"{clean_txt}\n\n"
+                f"🤖 *Recomendação Auto*: `{rec_display}`\n"
+                f"⏳ *Autoplay em*: `{timeout}s` (Clique para Sobrescrever)"
+            )
+            
+            buttons = [
+                [
+                    {"text": "🃏 1", "callback_data": "ch_1"},
+                    {"text": "🃏 2", "callback_data": "ch_2"},
+                    {"text": "🃏 3", "callback_data": "ch_3"},
+                    {"text": "🃏 4", "callback_data": "ch_4"},
+                    {"text": "🃏 5", "callback_data": "ch_5"},
+                ],
+                [
+                    {"text": "⏩ PASS", "callback_data": "ch_pass"},
+                    {"text": "❌ FOLD", "callback_data": "ch_fold"},
+                ]
+            ]
+            
+            if active_card_hand_msg_id is None:
+                active_card_hand_msg_id = await send_telegram_keyboard(msg_text, buttons)
+            else:
+                await edit_telegram_message(active_card_hand_msg_id, msg_text, buttons)
+                
+            poll_start = time.time()
+            user_choice = None
+            
+            # Poll for the duration of the timeout
+            for t_left in range(timeout, 0, -1):
+                if not bot_state.cardhand_in_progress:
+                    break
+                choice = await get_telegram_callback_query(poll_start)
+                if choice:
+                    if choice.startswith("ch_"):
+                        user_choice = choice.split("_")[1]
+                    else:
+                        user_choice = choice.strip().lower()
+                    break
+                
+                # Edit countdown to keep it visually alive (limit requests to avoid Telegram rate limiting)
+                if t_left in [10, 5, 2] and active_card_hand_msg_id:
+                    msg_text = (
+                        f"🃏 *CARD HAND ATIVO* (Turno {bot_state.cardhand_turn_count})\n\n"
+                        f"{clean_txt}\n\n"
+                        f"🤖 *Recomendação Auto*: `{rec_display}`\n"
+                        f"⏳ *Autoplay em*: `{t_left}s` (Clique para Sobrescrever)"
+                    )
+                    await edit_telegram_message(active_card_hand_msg_id, msg_text, buttons)
+                await asyncio.sleep(1)
+                
+            final_choice = None
+            is_auto = False
+            if user_choice:
+                final_choice = user_choice
+                HUD.oracle(f"Intervenção manual no Card Hand: '{final_choice}'")
+            else:
+                final_choice = rec if rec else "pass"
+                is_auto = True
+                HUD.oracle(f"Nenhuma resposta manual. Enviando escolha automática: '{final_choice}'")
+                
+            status_text = f"🤖 Enviando escolha automática: '{final_choice.upper()}'..." if is_auto else f"📲 Enviando escolha manual: '{final_choice.upper()}'..."
+            
+            await edit_telegram_message(
+                active_card_hand_msg_id,
+                f"🃏 *CARD HAND ATIVO* (Turno {bot_state.cardhand_turn_count})\n\n{clean_txt}\n\n{status_text}",
+                None
+            )
+            
+            # Send choice to Discord channel
+            await message.channel.send(final_choice)
+            bot_state.cardhand_turn_count += 1
+            
+            # Sleep to allow Epic RPG to process choice and edit message
+            await asyncio.sleep(4)
+            
+    except Exception as e:
+        logger.error(f"Erro no loop interativo de Card Hand: {e}")
+    finally:
+        bot_state.cardhand_in_progress = False
+        bot_state.cardhand_first_pass_done = False
+        bot_state.cardhand_turn_count = 1
+        active_card_hand_msg_id = None
+
+
 async def responseResolver(message):
     msg = message.content.lower()
 
@@ -102,13 +293,13 @@ async def responseResolver(message):
     if message.author.id == config.userID:
         if msg == "rpg s t":
             add_to_low_priority_queue(
-                "```" + format_session_data(sessionData, "Session Data (Main)") + "```"
+                "```" + format_session_data(sessionData, "Dados da Sessão (Principal)") + "```"
             )
-            logger.info("Command rpg s t queued")
+            logger.info("Comando rpg s t enfileirado")
             return
         elif msg == "rpg s":
             logger.info(
-                "\n" + format_session_data(sessionData, "Session Data (Main)")
+                "\n" + format_session_data(sessionData, "Dados da Sessão (Principal)")
             )
             return
         elif msg.startswith("sb stats"):
@@ -118,11 +309,11 @@ async def responseResolver(message):
                 from bot.persistence import get_stats_for_period
                 period_data = get_stats_for_period(sessionData, period_str)
                 logger.info(
-                    f"\n" + format_session_data(period_data, f"Session Data (Last {period_str})")
+                    f"\n" + format_session_data(period_data, f"Dados da Sessão (Último(s) {period_str})")
                 )
             else:
                 logger.info(
-                    "\n" + format_session_data(sessionData, "Session Data (All Time)")
+                    "\n" + format_session_data(sessionData, "Dados da Sessão (Histórico Completo)")
                 )
             return
         elif msg == "rpg s p" and config.is_married:
@@ -130,13 +321,13 @@ async def responseResolver(message):
                 "\n"
                 + format_session_data(
                     {"partner_loot_data": sessionData["partner_loot_data"]},
-                    f"Session Data (Partner: {config.partner_name})",
+                    f"Dados da Sessão (Parceiro: {config.partner_name})",
                 )
             )
             return
         elif msg == "rpg u t":
             add_to_high_priority_queue(
-                str(time.time() - config.startTime) + " seconds"
+                f"{int(time.time() - config.startTime)} segundos"
             )
             logger.info("Command rpg u t queued")
             return
@@ -234,7 +425,7 @@ async def responseResolver(message):
                 if config.is_married:
                     final_cmd += " t"
             add_to_high_priority_queue(final_cmd)
-            HUD.system(f"Navi Slash command detected: {final_cmd}")
+            HUD.system(f"Comando de Slash da Navi detectado: {final_cmd}")
             return
 
         # ─── Minigame Answer Extraction ───
@@ -246,7 +437,7 @@ async def responseResolver(message):
             extracted_answer = paren_match.group(1).strip().rstrip('.')
             if extracted_answer:
                 add_to_high_priority_queue(extracted_answer)
-                HUD.system(f"Navi response (parentheses format): {extracted_answer}")
+                HUD.system(f"Resposta da Navi (formato parênteses): {extracted_answer}")
                 return
 
         responses = {
@@ -259,7 +450,7 @@ async def responseResolver(message):
         for cmd, response in responses.items():
             if re.search(rf'^{cmd}$', _temp):
                 add_to_high_priority_queue(response)
-                HUD.system(f"Navi choice detected: {response}")
+                HUD.system(f"Escolha da Navi detectada: {response}")
                 return
 
         # Ignora avisos normais do Navi Lite que não são comandos
@@ -414,7 +605,7 @@ async def responseResolver(message):
                     add_to_high_priority_queue("yes")
                     bot_state.dungeon_in_progress = True
                     bot_state.last_dungeon_time = time.time()
-                    HUD.dungeon("Entering with 'yes'")
+                    HUD.dungeon("Entrando com 'yes'")
                     return
                 if bot_state.dungeon_in_progress:
                     if "eternal dragon" in embed_text:
@@ -422,13 +613,13 @@ async def responseResolver(message):
                             bot_state.dragon_alive = True
                             bot_state.last_dungeon_time = time.time()
                             add_to_high_priority_queue("bite")
-                            HUD.dungeon("Encountered! Starting bite loop")
+                            HUD.dungeon("Encontrado! Iniciando loop de mordida")
                         elif bot_state.dragon_alive and "died" not in embed_text:
                             add_to_high_priority_queue("bite")
                         elif "died" in embed_text or "is dead" in embed_text:
                             bot_state.dragon_alive = False
                             bot_state.dungeon_in_progress = False
-                            HUD.dungeon("Defeated!")
+                            HUD.dungeon("Derrotado!")
                             return
 
             # ─── Global Events (processed even if embed is not user-specific) ───
@@ -439,23 +630,23 @@ async def responseResolver(message):
                 )
                 if config.current_area != "none":
                     add_to_high_priority_queue(f"rpg area {config.current_area}")
-                HUD.system("zombie horde event detected, commands queued")
+                HUD.system("Evento de horda de zumbis detectado, comandos enfileirados")
                 return
             if "matter how much you look around" in embed_text:
                 sessionData["misc"]["personal_events"] += 1
                 add_to_high_priority_queue("move")
                 add_to_high_priority_queue("fight")
-                HUD.system("Command queued for move and fight event")
+                HUD.system("Comando enfileirado para o evento mover e lutar")
                 return
             if "You planted a seed, but for some reason it's not growing up" in embed_text:
                 sessionData["misc"]["personal_events"] += 1
                 add_to_high_priority_queue("fight")
-                HUD.system("Command fight queued for seed event")
+                HUD.system("Comando fight enfileirado para o evento de semente")
                 return
             if "You have encountered a mysterious man" in embed_text:
                 sessionData["misc"]["personal_events"] += 1
                 add_to_high_priority_queue("cry")
-                HUD.system("Command cry queued for mysterious event")
+                HUD.system("Comando cry enfileirado para o evento misterioso")
                 return
             if "God accidentally dropped" in embed_text or "I have a special trade today" in embed_text:
                 sessionData["misc"]["personal_events"] += 1
@@ -467,7 +658,7 @@ async def responseResolver(message):
                         .lower(),
                         suppress_log=True,
                     )
-                    HUD.system("Command for special trade queued")
+                    HUD.system("Comando para troca especial enfileirado")
                 else:
                     logger.warning("Embed with special trade has no fields.")
                 return
@@ -496,17 +687,17 @@ async def responseResolver(message):
                 and "card hand" in embed_text
                 and "try to get the best possible hand" in embed_text
                 and bot_state.cardhand_in_progress
-                and not bot_state.cardhand_first_pass_done
             ):
-                bot_state.cardhand_first_pass_done = True
-                add_to_high_priority_queue("pass")
-                HUD.system("Card Hand embed received - sending 'pass'.")
-                return
+                if config.card_hand_action in ["auto", "notify"]:
+                    if not bot_state.cardhand_first_pass_done:
+                        bot_state.cardhand_first_pass_done = True
+                        asyncio.create_task(interactive_card_hand_loop(message))
+                    return
 
             if bot_state.cardhand_in_progress and "goldened" in embed_text:
                 bot_state.cardhand_in_progress = False
                 bot_state.cardhand_first_pass_done = False
-                HUD.system("Card Hand finished! Queues released.")
+                HUD.system("Card Hand concluído! Filas liberadas.")
 
             # ─── Pet Adventure Detection ───
             if "— pets" in embed_text:
@@ -523,22 +714,22 @@ async def responseResolver(message):
                     total_seconds = h * 3600 + m * 60 + s + 30  # +30s buffer
                     bot_state.pet_adventure_return_time = time.time() + total_seconds
                     HUD.system(
-                        f"Pet on adventure - returns in {h}h {m}m {s}s"
+                        f"Pet em aventura - retorna em {h}h {m}m {s}s"
                     )
                 elif "back from adventure" in embed_text:
                     bot_state.pet_adventure_return_time = 0
                     add_to_low_priority_queue("rpg pet claim")
-                    HUD.system("Pet waiting for claim! Claiming...")
+                    HUD.system("Pet aguardando resgate! Resgatando...")
                 elif "status: idle" in embed_text or "in adventure: 0" in embed_text:
                     add_to_low_priority_queue("rpg pet adv learn a")
-                    HUD.system("Pet idle - sending to adventure!")
+                    HUD.system("Pet ocioso - enviando para aventura!")
                 return
 
             if "pet adventure rewards" in embed_text:
                 # rpg pet claim response: rewards collected, re-send
                 bot_state.pet_adventure_return_time = 0
                 add_to_low_priority_queue("rpg pet adv learn a")
-                HUD.system("Pet rewards claimed! Resending to adventure...")
+                HUD.system("Recompensas do pet resgatadas! Reenviando para aventura...")
                 return
 
             if "— lootbox" in embed_text and "lootbox opened!" in embed_text:
@@ -625,7 +816,7 @@ async def responseResolver(message):
                     total_seconds = h * 3600 + m * 60 + s + 30  # +30s buffer
                     bot_state.pet_adventure_return_time = time.time() + total_seconds
                     HUD.system(
-                        f"Pet adventure started - {h}h {m}m {s}s to return"
+                        f"Aventura do pet iniciada - {h}h {m}m {s}s para retornar"
                     )
                 return
 
