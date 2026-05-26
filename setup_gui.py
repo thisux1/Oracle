@@ -1,17 +1,17 @@
 """
-Oracle v2 - Setup Wizard
-Standalone GUI for editing options.ini — no bot refactoring needed.
-Modernized with a Sidebar Navigation and sleek dark theme.
+Oracle v2 - Assistente de Configuração
+GUI independente para editar o arquivo options.ini.
+Modernizado com navegação lateral e um tema escuro elegante.
 """
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import os
 
-# ─── Paths ───
+# ─── Caminhos ───
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 OPTIONS_PATH = os.path.join(SCRIPT_DIR, "options.ini")
 
-# ─── Modern Color Palette ───
+# ─── Paleta de Cores Moderna ───
 BG_MAIN       = "#121212"
 BG_SIDEBAR    = "#1e1e1e"
 BG_CARD       = "#242424"
@@ -26,59 +26,59 @@ BORDER        = "#333333"
 TOGGLE_ON     = "#03dac6"
 TOGGLE_OFF    = "#555555"
 
-# ─── Field Definitions ───
+# ─── Definições de Campos ───
 FIELD_SECTIONS = [
-    ("🔑 Credentials", [
-        ("user_token",           "User Token",           "password", "",                "Your Discord user token (keep secret!)"),
-        ("user_mention_text",    "User Mention Text",    "text",     "<@0>",            "Your Discord mention (e.g. <@123456789>)"),
-        ("channel_id",           "Channel ID",           "text",     "0",               "Discord channel ID where the bot operates"),
-        ("guild_id",             "Guild (Server) ID",    "text",     "0",               "Server ID — use a private server!"),
+    ("🔑 Credenciais", [
+        ("user_token",           "Token do Usuário",     "password", "",                "Seu token de usuário do Discord (mantenha em segredo!)"),
+        ("user_mention_text",    "Texto de Menção",      "text",     "<@0>",            "Sua menção do Discord (ex: <@123456789>)"),
+        ("channel_id",           "ID do Canal",          "text",     "0",               "ID do canal do Discord onde o bot opera"),
+        ("guild_id",             "ID do Servidor",       "text",     "0",               "ID do servidor (Guild) — use um servidor privado!"),
     ]),
-    ("⚙️ General", [
-        ("random_interval",      "Random Intervals",     "bool",     "true",            "Add 1-4s random delay between commands"),
-        ("typo_chance",          "Typo Chance",          "text",     "0.05",            "Probability of simulated typos (0.0 - 1.0)"),
+    ("⚙️ Geral", [
+        ("random_interval",      "Intervalos Aleatórios", "bool",     "true",            "Adiciona atraso aleatório de 1 a 4s entre os comandos"),
+        ("typo_chance",          "Chance de Digitação",  "text",     "0.05",            "Probabilidade de simular erro de digitação (0.0 - 1.0)"),
     ]),
     ("⚔️ Adventure", [
-        ("life_boost_before_adv","Life Boost Before Adv","dropdown", "none",            "Heal before adventure", ["none", "a", "b", "c"]),
-        ("adventure_area",       "Adventure Area",       "dropdown", "none",            "Lower area for less damage", ["none"] + [str(i) for i in range(1, 22)]),
-        ("current_area",         "Current Area",         "dropdown", "none",            "Your current area (for event recovery)", ["none"] + [str(i) for i in range(1, 22)]),
-        ("zombie_horde_event_response", "Zombie Horde Response", "dropdown", "fight",   "What to do during zombie events", ["fight", "join", "cry"]),
+        ("life_boost_before_adv","Life Boost antes de Adv","dropdown", "none",           "Comprar poção de vida antes de ir na aventura", ["none", "a", "b", "c"]),
+        ("adventure_area",       "Adventure Area",       "dropdown", "none",            "Ir para área menor antes de iniciar aventura para receber menos dano", ["none"] + [str(i) for i in range(1, 22)]),
+        ("current_area",         "Current Area",         "dropdown", "none",            "Sua área atual (para recuperação de eventos)", ["none"] + [str(i) for i in range(1, 22)]),
+        ("zombie_horde_event_response", "Zombie Horde Response", "dropdown", "fight",   "O que fazer durante eventos de horda de zumbis", ["fight", "join", "cry"]),
     ]),
     ("🌾 Economy", [
-        ("lootbox_type",         "Lootbox Type",         "dropdown", "ed lb",           "Which lootbox to buy", ["ed lb", "ep lb", "rare lb", "uncommon lb", "common lb"]),
-        ("seed",                 "Farm Seed",            "dropdown", "carrot",          "Which seed to plant", ["carrot", "potato", "bread"]),
-        ("work_command",         "Work Command",         "dropdown", "chainsaw",        "Work tool to use", ["chainsaw", "pickaxe", "bigboat", "greenhouse", "axe", "net", "pickup"]),
-        ("bankroll",             "Bankroll",             "text",     "1000000000000",   "Your maximum money amount"),
-        ("max_losses",           "Max Losses",           "text",     "20",              "Max consecutive losses (recommended 15-30)"),
-        ("initial_step",         "Initial Step",         "text",     "1",               "Starting step for strategy (recommended 1-3)"),
+        ("lootbox_type",         "Lootbox Type",         "dropdown", "ed lb",           "Qual lootbox comprar automaticamente", ["ed lb", "ep lb", "rare lb", "uncommon lb", "common lb"]),
+        ("seed",                 "Farm Seed",            "dropdown", "carrot",          "Qual semente plantar no comando farm", ["carrot", "potato", "bread"]),
+        ("work_command",         "Work Command",         "dropdown", "chainsaw",        "Ferramenta/comando de trabalho a ser usado", ["chainsaw", "pickaxe", "bigboat", "greenhouse", "axe", "net", "pickup"]),
+        ("bankroll",             "Bankroll",             "text",     "1000000000000",   "Seu valor máximo de moedas em mãos"),
+        ("max_losses",           "Max Losses",           "text",     "20",              "Máximo de perdas consecutivas antes de parar (recomendado 15-30)"),
+        ("initial_step",         "Initial Step",         "text",     "1",               "Passo inicial para estratégias (recomendado 1-3)"),
     ]),
     ("📱 Telegram", [
-        ("telegram_bot_token",   "Bot Token",            "text",     "",                "Get this from @BotFather on Telegram (optional)"),
-        ("telegram_chat_id",     "Chat ID",              "text",     "",                "Your Telegram chat ID (optional)"),
+        ("telegram_bot_token",   "Token do Bot",         "text",     "",                "Obtenha com o @BotFather no Telegram (opcional)"),
+        ("telegram_chat_id",     "ID do Chat",           "text",     "",                "Seu ID de chat do Telegram para receber alertas (opcional)"),
     ]),
     ("✅ Features", [
-        ("do_hunt",              "Hunt",                 "bool",     "true",            "Enable automatic hunting"),
-        ("do_adv",               "Adventure",            "bool",     "true",            "Enable automatic adventures"),
-        ("do_farm",              "Farm",                 "bool",     "true",            "Enable automatic farming"),
-        ("do_work",              "Work",                 "bool",     "true",            "Enable automatic work"),
-        ("do_training",          "Training",             "bool",     "true",            "Enable automatic training"),
-        ("do_daily",             "Daily",                "bool",     "true",            "Enable automatic daily claim"),
-        ("do_weekly",            "Weekly",               "bool",     "true",            "Enable automatic weekly claim"),
-        ("do_quest",             "Quest",                "bool",     "true",            "Enable automatic questing"),
-        ("do_lootbox",           "Lootbox",              "bool",     "true",            "Enable automatic lootbox buying"),
-        ("do_dungeon",           "Dungeon",              "bool",     "true",            "Enable automatic dungeon"),
-        ("do_card_hand",         "Card Hand",            "bool",     "true",            "Enable card hand minigame"),
+        ("do_hunt",              "Hunt",                 "bool",     "true",            "Habilitar Hunt automática"),
+        ("do_adv",               "Adventure",            "bool",     "true",            "Habilitar aventura automática"),
+        ("do_farm",              "Farm",                 "bool",     "true",            "Habilitar plantação automática"),
+        ("do_work",              "Work",                 "bool",     "true",            "Habilitar trabalho automático"),
+        ("do_training",          "Training",             "bool",     "true",            "Habilitar treino automático"),
+        ("do_daily",             "Daily",                "bool",     "true",            "Habilitar resgate diário automático"),
+        ("do_weekly",            "Weekly",               "bool",     "true",            "Habilitar resgate semanal automático"),
+        ("do_quest",             "Quest",                "bool",     "true",            "Habilitar missões automáticas"),
+        ("do_lootbox",           "Lootbox",              "bool",     "true",            "Habilitar compra automática de lootbox"),
+        ("do_dungeon",           "Dungeon",              "bool",     "true",            "Habilitar masmorra automática"),
+        ("do_card_hand",         "Card Hand",            "bool",     "true",            "Habilitar minijogo de mão de cartas"),
     ]),
     ("🧪 Advanced", [
-        ("do_ultr",              "ULTR Mode",            "bool",     "false",           "Overrides training: rpg ultr → double → attack → rpg use tc"),
-        ("card_hand_action",     "Card Hand Action",     "dropdown", "auto",            "Auto-play or just notify", ["auto", "notify"]),
-        ("tc_quantity",          "TC Quantity",           "text",     "1",               "Time capsules per use"),
-        ("is_eternal",           "Eternal Mode",         "bool",     "false",           "Enable dungeon auto-enter + eternal dragon bite loop"),
-        ("is_married",           "Married",              "bool",     "false",           "Enable married partner features"),
-        ("partner_name",         "Partner Name",         "text",     "",                "In-game partner name (if married)"),
-        ("is_ascended",          "Ascended",             "bool",     "false",           "Enable ascended-specific behavior"),
-        ("admin_ids",            "Extra Admin IDs",      "text",     "",                "Comma-separated Discord IDs for admin access"),
-        ("tc_stop_on",           "TC Stop Conditions",   "text",     "dungeon,miniboss","Comma-separated events that pause TC usage"),
+        ("do_ultr",              "ULTR Mode",            "bool",     "false",           "Sobrescreve treino: rpg ultr → double → attack → rpg use tc"),
+        ("card_hand_action",     "Card Hand Action",     "dropdown", "auto",            "Jogar cartas automaticamente ou apenas notificar", ["auto", "notify"]),
+        ("tc_quantity",          "TC Quantity",          "text",     "1",               "Quantidade de cápsulas de tempo (TC) por uso"),
+        ("is_eternal",           "Eternal Mode",         "bool",     "false",           "Habilitar entrar em masmorras + loop eterno de dragon bite"),
+        ("is_married",           "Married",              "bool",     "false",           "Habilitar funcionalidades de parceiro(a) casado"),
+        ("partner_name",         "Partner Name",         "text",     "",                "Nome do parceiro(a) no jogo (se casado)"),
+        ("is_ascended",          "Ascended",             "bool",     "false",           "Habilitar comportamento específico de jogador ascendido"),
+        ("admin_ids",            "Extra Admin IDs",      "text",     "",                "IDs de Discord separados por vírgula para controle remoto administrativo"),
+        ("tc_stop_on",           "TC Stop Conditions",   "text",     "dungeon,miniboss","Eventos separados por vírgula que pausam o uso de TC"),
     ]),
 ]
 
@@ -179,9 +179,9 @@ class ToggleSwitch(tk.Canvas):
 class SetupWizard(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Oracle v2 Configuration")
-        self.geometry("900x650")
-        self.minsize(800, 500)
+        self.title("Configuração do Oracle v2")
+        self.geometry("950x650")
+        self.minsize(850, 500)
         self.configure(bg=BG_MAIN)
         try:
             self.iconname("Oracle v2")
@@ -189,11 +189,13 @@ class SetupWizard(tk.Tk):
             pass
 
         self.widgets = {}
-        self.existing = load_existing_options(OPTIONS_PATH)
+        self.active_profile_path = OPTIONS_PATH
+        self.existing = load_existing_options(self.active_profile_path)
         self.frames = {}
         self.current_frame = None
 
         self._build_layout()
+        self._refresh_profiles()
         if FIELD_SECTIONS:
             self._show_section(FIELD_SECTIONS[0][0])
 
@@ -203,9 +205,26 @@ class SetupWizard(tk.Tk):
         top_bar.pack(side="top", fill="x")
         top_bar.pack_propagate(False)
 
-        title = tk.Label(top_bar, text="🔮 Oracle v2 Settings", font=("Segoe UI", 16, "bold"),
+        title = tk.Label(top_bar, text="🔮 Oracle v2", font=("Segoe UI", 16, "bold"),
                          bg=BG_SIDEBAR, fg=ACCENT)
         title.pack(side="left", padx=20, pady=15)
+
+        # Profile Manager Frame in Top Bar
+        profile_frame = tk.Frame(top_bar, bg=BG_SIDEBAR)
+        profile_frame.pack(side="left", padx=20, pady=15)
+
+        lbl_p = tk.Label(profile_frame, text="Perfil:", font=("Segoe UI", 10, "bold"), bg=BG_SIDEBAR, fg=FG_DIM)
+        lbl_p.pack(side="left", padx=5)
+
+        self.profile_var = tk.StringVar()
+        self.profile_combo = ttk.Combobox(profile_frame, textvariable=self.profile_var, state="readonly", width=18, font=("Segoe UI", 10))
+        self.profile_combo.pack(side="left", padx=5)
+        self.profile_combo.bind("<<ComboboxSelected>>", self._on_profile_change)
+
+        new_profile_btn = tk.Button(profile_frame, text="➕ Novo Perfil", font=("Segoe UI", 9, "bold"),
+                                    bg=SUCCESS, fg="#000", activebackground=ACCENT_HOVER,
+                                    relief="flat", cursor="hand2", padx=8, command=self._create_new_profile)
+        new_profile_btn.pack(side="left", padx=5)
 
         self.status_var = tk.StringVar()
         status_lbl = tk.Label(top_bar, textvariable=self.status_var, font=("Segoe UI", 10),
@@ -230,17 +249,17 @@ class SetupWizard(tk.Tk):
         bottom_bar.pack(side="bottom", fill="x")
         bottom_bar.pack_propagate(False)
 
-        save_btn = tk.Button(bottom_bar, text="💾 Save Config", font=("Segoe UI", 11, "bold"),
+        save_btn = tk.Button(bottom_bar, text="💾 Salvar Configurações", font=("Segoe UI", 11, "bold"),
                              bg=ACCENT, fg="#000", activebackground=ACCENT_HOVER,
                              relief="flat", cursor="hand2", padx=20, command=self._save)
         save_btn.pack(side="right", padx=20, pady=12)
 
-        load_btn = tk.Button(bottom_bar, text="📂 Load", font=("Segoe UI", 10),
+        load_btn = tk.Button(bottom_bar, text="📂 Carregar", font=("Segoe UI", 10),
                              bg=BG_CARD, fg=FG_TEXT, activebackground=BG_INPUT,
                              relief="flat", cursor="hand2", padx=15, command=self._load)
         load_btn.pack(side="right", padx=10, pady=12)
 
-        reset_btn = tk.Button(bottom_bar, text="🔄 Reset Defaults", font=("Segoe UI", 10),
+        reset_btn = tk.Button(bottom_bar, text="🔄 Padrões", font=("Segoe UI", 10),
                               bg=BG_CARD, fg=DANGER, activebackground=BG_INPUT,
                               relief="flat", cursor="hand2", padx=15, command=self._reset)
         reset_btn.pack(side="left", padx=20, pady=12)
@@ -344,40 +363,107 @@ class SetupWizard(tk.Tk):
             info.pack(side="left", padx=0)
             ToolTip(info, tooltip)
 
+    def _refresh_profiles(self):
+        try:
+            ini_files = [f for f in os.listdir(SCRIPT_DIR) if f.endswith(".ini")]
+        except Exception:
+            ini_files = ["options.ini"]
+        if not ini_files:
+            ini_files = ["options.ini"]
+        if "options.ini" in ini_files:
+            ini_files.remove("options.ini")
+            ini_files.insert(0, "options.ini")
+        self.profile_combo["values"] = ini_files
+        
+        current_name = os.path.basename(self.active_profile_path)
+        if current_name in ini_files:
+            self.profile_var.set(current_name)
+        else:
+            self.profile_var.set(ini_files[0])
+
+    def _on_profile_change(self, event=None):
+        name = self.profile_var.get()
+        new_path = os.path.join(SCRIPT_DIR, name)
+        if new_path == self.active_profile_path:
+            return
+        
+        self.active_profile_path = new_path
+        self.existing = load_existing_options(new_path)
+        
+        for k, v in self.widgets.items():
+            default_val = ""
+            for _, fields in FIELD_SECTIONS:
+                for f in fields:
+                    if f[0] == k:
+                        default_val = f[3]
+                        break
+            v.set(self.existing.get(k, default_val))
+            
+        self.status_var.set(f"📂 Perfil '{name}' carregado")
+        self.after(3000, lambda: self.status_var.set(""))
+
+    def _create_new_profile(self):
+        from tkinter import simpledialog
+        name = simpledialog.askstring("Novo Perfil", "Digite o nome do novo perfil (ex: options_alt):\n(Será salvo como .ini)", parent=self)
+        if not name:
+            return
+        name = name.strip()
+        if not name.endswith(".ini"):
+            name += ".ini"
+        
+        new_path = os.path.join(SCRIPT_DIR, name)
+        if os.path.exists(new_path):
+            messagebox.showwarning("Aviso", f"O perfil '{name}' já existe!")
+            return
+            
+        data = {k: v.get() for k, v in self.widgets.items()}
+        try:
+            save_options(data, new_path)
+            self.active_profile_path = new_path
+            self._refresh_profiles()
+            self.status_var.set(f"✨ Perfil '{name}' criado e ativo")
+            self.after(3000, lambda: self.status_var.set(""))
+        except Exception as e:
+            messagebox.showerror("Erro", f"Falha ao criar perfil:\n{e}")
+
     def _save(self):
         data = {k: v.get() for k, v in self.widgets.items()}
         errors = []
-        if not data.get("user_token", "").strip(): errors.append("User Token is required")
-        if not data.get("channel_id", "0").strip().isdigit(): errors.append("Channel ID must be a number")
-        if not data.get("guild_id", "0").strip().isdigit(): errors.append("Guild ID must be a number")
+        if not data.get("user_token", "").strip(): errors.append("Token do Usuário é obrigatório")
+        if not data.get("channel_id", "0").strip().isdigit(): errors.append("ID do Canal deve ser um número")
+        if not data.get("guild_id", "0").strip().isdigit(): errors.append("ID do Servidor deve ser um número")
 
         if errors:
-            messagebox.showwarning("Validation Error", "\n".join(errors))
+            messagebox.showwarning("Erro de Validação", "\n".join(errors))
             return
 
         try:
-            save_options(data, OPTIONS_PATH)
-            self.status_var.set(f"✅ Saved to {os.path.basename(OPTIONS_PATH)}")
+            save_options(data, self.active_profile_path)
+            self.status_var.set(f"✅ Salvo em {os.path.basename(self.active_profile_path)}")
+            self._refresh_profiles()
             self.after(3000, lambda: self.status_var.set(""))
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to save:\n{e}")
+            messagebox.showerror("Erro", f"Falha ao salvar:\n{e}")
 
     def _load(self):
-        path = filedialog.askopenfilename(title="Open Config", filetypes=[("INI", "*.ini"), ("All", "*.*")], initialdir=SCRIPT_DIR)
+        path = filedialog.askopenfilename(title="Carregar Configuração", filetypes=[("INI", "*.ini"), ("Todos", "*.*")], initialdir=SCRIPT_DIR)
         if not path: return
+        self.active_profile_path = path
         loaded = load_existing_options(path)
         for k, v in self.widgets.items():
             if k in loaded: v.set(loaded[k])
-        self.status_var.set("📂 Loaded config")
+        self._refresh_profiles()
+        self.status_var.set("📂 Configuração carregada")
         self.after(3000, lambda: self.status_var.set(""))
 
     def _reset(self):
-        if not messagebox.askyesno("Reset", "Reset all fields to default values?"): return
+        if not messagebox.askyesno("Restaurar", "Restaurar todos os campos para os valores padrão?"): return
         for _, fields in FIELD_SECTIONS:
             for f in fields:
                 if f[0] in self.widgets: self.widgets[f[0]].set(f[3])
-        self.status_var.set("🔄 Reset to defaults")
+        self.status_var.set("🔄 Padrões restaurados")
         self.after(3000, lambda: self.status_var.set(""))
+
 
 def main():
     app = SetupWizard()
@@ -387,6 +473,7 @@ def main():
     style.map("TCombobox", fieldbackground=[("readonly", BG_INPUT)], foreground=[("readonly", FG_TEXT)])
     style.configure("Vertical.TScrollbar", background=BG_CARD, troughcolor=BG_MAIN, bordercolor=BG_MAIN, arrowcolor=ACCENT)
     app.mainloop()
+
 
 if __name__ == "__main__":
     main()
