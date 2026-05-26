@@ -103,22 +103,22 @@ async def tentar_resolver_captcha(message):
         model, actual_mode = _get_model_for(preferred)
 
         if model is None:
-            HUD.alert("NO CAPTCHA MODEL AVAILABLE! Waiting for Telegram override only.")
+            HUD.alert("NENHUM MODELO DE CAPTCHA DISPONÍVEL! Aguardando apenas override do Telegram.")
             await send_telegram_photo(
                 img_path,
-                "🚨 CAPTCHA DETECTED! No AI model available. Type the answer here to solve.",
+                "🚨 CAPTCHA DETECTADO! Nenhum modelo de IA disponível. Digite a resposta aqui para resolver.",
             )
             # Wait extra long for manual input
             for _ in range(30):
                 override = await get_telegram_override(captcha_start_time)
                 if override and override not in ["/start", "rpg", "sb"]:
-                    HUD.alert(f"📲 TELEGRAM OVERRIDE: '{override}'")
+                    HUD.alert(f"📲 OVERRIDE DO TELEGRAM: '{override}'")
                     await message.channel.send(override)
                     return
                 await asyncio.sleep(1)
             return
 
-        HUD.oracle(f"Model Route: {actual_mode.upper()}")
+        HUD.oracle(f"Rota do Modelo: {actual_mode.upper()}")
         x = _prepare_input(img, actual_mode)
         preds = model.predict(x, verbose=0)[0]
         confidence = np.max(preds)
@@ -127,12 +127,12 @@ async def tentar_resolver_captcha(message):
         alt_mode = 'gray' if actual_mode == 'color' else 'color'
         alt_model = config.captcha_model_gray if alt_mode == 'gray' else config.captcha_model_color
         if confidence < 0.80 and alt_model is not None:
-            HUD.oracle(f"Low confidence ({confidence:.1%}), trying {alt_mode.upper()} model...")
+            HUD.oracle(f"Baixa confiança ({confidence:.1%}), tentando modelo {alt_mode.upper()}...")
             x_alt = _prepare_input(img, alt_mode)
             preds_alt = alt_model.predict(x_alt, verbose=0)[0]
             alt_confidence = np.max(preds_alt)
             if alt_confidence > confidence:
-                HUD.oracle(f"Alt model wins: {alt_confidence:.1%} vs {confidence:.1%}")
+                HUD.oracle(f"Modelo alternativo venceu: {alt_confidence:.1%} vs {confidence:.1%}")
                 preds = preds_alt
                 confidence = alt_confidence
 
@@ -142,13 +142,13 @@ async def tentar_resolver_captcha(message):
         ]
         best_guess = topk_names[0]
 
-        HUD.oracle(f"AI Best Guess: {best_guess} ({confidence:.1%})")
+        HUD.oracle(f"Melhor palpite da IA: {best_guess} ({confidence:.1%})")
 
         # INSTANT NOTIFICATION WITH GUESS
-        HUD.alert("CAPTCHA! Blasting Telegram...")
+        HUD.alert("CAPTCHA! Enviando para o Telegram...")
         await send_telegram_photo(
             img_path,
-            f"🚨 CAPTCHA DETECTED!\nAI Guess: {best_guess} ({confidence:.1%})\nType the answer here to override AI.",
+            f"🚨 CAPTCHA DETECTADO!\nPalpite da IA: {best_guess} ({confidence:.1%})\nDigite a resposta aqui para sobrescrever a IA.",
         )
 
         await human_delay(1.5, 2.0)  # 1.5-3.5s human "reading" delay
@@ -157,12 +157,12 @@ async def tentar_resolver_captcha(message):
         for _ in range(7):
             override = await get_telegram_override(captcha_start_time)
             if override and override not in ["/start", "rpg", "sb"]:
-                HUD.alert(f"📲 TELEGRAM OVERRIDE: '{override}'")
+                HUD.alert(f"📲 OVERRIDE DO TELEGRAM: '{override}'")
                 topk_names = [override]
                 break
             await asyncio.sleep(1)
 
-        HUD.oracle(f"Targeting Silhouette: {topk_names}")
+        HUD.oracle(f"Silhuetas Alvo: {topk_names}")
 
         for tentativa, item_name in enumerate(topk_names, start=1):
             if not bot_state.captcha_pending:
@@ -175,11 +175,11 @@ async def tentar_resolver_captcha(message):
                 and override not in ["/start", "rpg", "sb"]
                 and override != item_name
             ):
-                HUD.alert(f"📲 TELEGRAM HIJACK: Switching to '{override}'")
+                HUD.alert(f"📲 HIJACK DO TELEGRAM: Mudando para '{override}'")
                 item_name = override
 
             await human_delay(1.5, 3.0)  # 1.5-4.5s "reading + typing" delay
-            HUD.oracle(f"Attempt {tentativa}: Sending '{item_name}'")
+            HUD.oracle(f"Tentativa {tentativa}: Enviando '{item_name}'")
             sent = await message.channel.send(item_name)
 
             try:
@@ -187,20 +187,20 @@ async def tentar_resolver_captcha(message):
                     aguardar_resposta_epic_guard(message.channel), timeout=3.5
                 )
                 if result == "freed":
-                    HUD.system("🎯 Captcha Solved!")
+                    HUD.system("🎯 Captcha Resolvido!")
                     bot_state.paused = False
                     bot_state.jailed = False
                     return True
                 elif result == "jailed":
-                    HUD.alert("💀 Captcha FAILED — Jailed.")
+                    HUD.alert("💀 Captcha FALHOU — Preso.")
                     bot_state.jailed = True
                     bot_state.paused = True
                     await send_telegram_notification(
-                        "🚨 CAPTCHA FAILED! Bot is JAILED. Manual intervention required."
+                        "🚨 CAPTCHA FALHOU! O bot está PRESO. Intervenção manual necessária."
                     )
                     return False
             except asyncio.TimeoutError:
-                HUD.alert("❌ Missed. Sanitizing...")
+                HUD.alert("❌ Errou. Limpando...")
                 try:
                     await sent.delete()
                 except Exception:
@@ -208,7 +208,7 @@ async def tentar_resolver_captcha(message):
                 await asyncio.sleep(randint(2, 4))
                 continue
 
-        HUD.system("Oracle resolution cycle complete.")
+        HUD.system("Ciclo de resolução do Oráculo concluído.")
     except Exception as e:
         logger.error(f"Error resolving captcha: {e}\n{traceback.format_exc()}")
     finally:
