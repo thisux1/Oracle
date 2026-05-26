@@ -1,81 +1,30 @@
 """
 Oracle v2 - Epic RPG Automation
-Entry point. All logic lives in the bot/ package.
+Entry point. Launches the modern Textual TUI.
 """
-import asyncio
+
+import os
 import sys
-from bot import UserBot, config
-from bot.utils import is_sleep_time
-import options_resolver
 
+# Suppress TensorFlow C++ logs before importing any bot modules
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-from colorama import Fore, Style
-from bot.hud import HUD
+from bot.tui import OracleApp
 
-async def main():
-    banner = f"""
-{Fore.MAGENTA}       ____                  __
-{Fore.LIGHTMAGENTA_EX}      / __ \\_________ ______/ /__
-{Fore.LIGHTCYAN_EX}     / / / / ___/ __ `/ ___/ / _ \\
-{Fore.CYAN}    / /_/ / /  / /_/ / /__/ /  __/
-{Fore.BLUE}    \\____/_/   \\__,_/\\___/_/\\___/  {Fore.LIGHTWHITE_EX}v2.0.0
-{Fore.LIGHTBLACK_EX}    ─────────────────────────────────────────────
-{Fore.CYAN}     🔮 AI-POWERED EPIC RPG AUTOMATION SYSTEM
-{Fore.LIGHTBLACK_EX}    ─────────────────────────────────────────────{Style.RESET_ALL}
-"""
-    print(banner)
-    print(f" ⚙️  {Fore.LIGHTBLACK_EX}Config: {Fore.WHITE}{options_resolver.optionsFilePath}")
-    print(f" 🧚  {Fore.LIGHTBLACK_EX}Channel ID: {Fore.WHITE}{config.channelID}")
-    print(f" 💤  {Fore.LIGHTBLACK_EX}Sleep schedule: {Fore.WHITE}{config.sleep_at} - {config.wake_up_at}")
-    print(f" ⏳  {Fore.LIGHTBLACK_EX}Watchdog Cooldown: {Fore.GREEN}1 Hour Auto-Recover")
-    HUD.separator()
-
-    retry_delay = 5
-    max_retry_delay = 300
-    in_sleep_mode = False
-
-    while True:
-        if is_sleep_time():
-            if not in_sleep_mode:
-                in_sleep_mode = True
-                moon_art = f"""
-{Fore.LIGHTBLACK_EX}    ─────────────────────────────────────────────
-{Fore.LIGHTBLUE_EX}        *   .       .   *     {Fore.CYAN}🌙 SYSTEM HIBERNATING
-{Fore.LIGHTBLUE_EX}             *  .  *          {Fore.LIGHTCYAN_EX}Sleep Mode Active
-{Fore.LIGHTCYAN_EX}           .---.              {Fore.WHITE}Closed Discord connection
-{Fore.LIGHTCYAN_EX}          /     \\  *          {Fore.LIGHTBLACK_EX}Stealth offline status
-{Fore.CYAN}         |  🌙   |            {Fore.LIGHTBLUE_EX}Offline: {config.sleep_at} - {config.wake_up_at}
-{Fore.BLUE}          '---'               {Fore.GREEN}Safe auto-wakeup scheduled
-{Fore.LIGHTBLACK_EX}    ─────────────────────────────────────────────{Style.RESET_ALL}"""
-                print(moon_art)
-            retry_delay = 5
-            await asyncio.sleep(60)
-            continue
-
-        in_sleep_mode = False
-        print("🚀 [Online] Connecting to Discord...")
-        try:
-            await UserBot.start(config.userToken)
-            retry_delay = 5
-        except asyncio.CancelledError:
-            raise
-        except Exception as e:
-            print(f"⚠️ [Error] Bot disconnected: {e}")
-            print(f"Retrying in {retry_delay}s...")
-            await asyncio.sleep(retry_delay)
-            retry_delay = min(retry_delay * 2, max_retry_delay)
-
+def main():
+    app = OracleApp()
+    app.run()
 
 if __name__ == "__main__":
     try:
-        asyncio.run(main())
+        main()
     except KeyboardInterrupt:
-        print("\n👋 Oracle v2 closed by user.")
+        print("\nOracle v2 fechado pelo usuário.")
         try:
             from bot.state import sessionData
             from bot.parsers import format_session_data
             print("\n" + "=" * 45)
-            print(format_session_data(sessionData, "Final Session Summary"))
+            print(format_session_data(sessionData, "Resumo Final da Sessão"))
             print("=" * 45 + "\n")
         except Exception:
             pass
