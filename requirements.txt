@@ -4,3 +4,4 @@ numpy
 Pillow
 colorama
 aiohttp
+textual
