@@ -1,0 +1,3116 @@
+{
+  "version": "2.1.0",
+  "name": "Oracle V2 Mascot",
+  "description": "Gothic eye mascot animation project for the Oracle V2 bot.",
+  "metadata": {
+    "exportedAt": "2026-05-24T04:00:00Z",
+    "exportVersion": "2.1.0",
+    "userAgent": "Antigravity AI Agent"
+  },
+  "canvas": {
+    "width": 80,
+    "height": 24,
+    "canvasBackgroundColor": "#0a0a0a",
+    "showGrid": false
+  },
+  "timeline": {
+    "frameRate": 12,
+    "durationFrames": 16,
+    "looping": true
+  },
+  "layers": [
+    {
+      "id": "layer-ornaments",
+      "name": "Cathedral Ornaments",
+      "visible": true,
+      "solo": false,
+      "locked": true,
+      "opacity": 100,
+      "contentFrames": [
+        {
+          "id": "cf-ornaments-1",
+          "name": "Static Frame",
+          "startFrame": 0,
+          "durationFrames": 16,
+          "data": {
+            "0,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "1,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "2,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "3,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "4,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "5,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "6,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "7,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "8,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "9,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "10,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "11,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "12,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "13,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "14,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "15,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "16,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "17,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "18,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "19,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "20,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "21,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "22,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "23,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "24,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "25,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "26,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "27,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "28,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "29,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "30,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "31,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "32,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "33,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "34,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "35,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "37,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "39,2": {
+              "char": "✦",
+              "color": "#d4a843",
+              "bgColor": "#0a0a0a"
+            },
+            "40,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "41,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "42,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "43,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "44,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "45,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "46,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "47,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "48,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "49,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "50,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "51,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "52,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "53,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "54,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "55,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "56,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "57,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "58,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "59,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "60,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "61,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "62,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "63,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "64,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "65,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "66,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "67,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "68,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "69,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "70,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "71,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "72,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "73,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "74,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "75,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "76,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "77,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "78,2": {
+              "char": "═",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "0,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "1,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "2,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "3,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "4,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "5,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "6,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "7,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "8,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "9,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "10,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "11,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "12,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "13,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "14,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "15,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "16,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "17,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "18,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "19,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "20,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "21,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "22,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "23,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "24,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "25,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "26,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "27,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "28,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "29,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "30,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "31,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "32,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "33,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "34,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "35,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "36,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "37,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "38,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "39,21": {
+              "char": " ",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "40,21": {
+              "char": "⟡",
+              "color": "#d4a843",
+              "bgColor": "#0a0a0a"
+            },
+            "41,21": {
+              "char": " ",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "42,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "43,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "44,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "45,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "46,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "47,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "48,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "49,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "50,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "51,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "52,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "53,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "54,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "55,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "56,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "57,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "58,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "59,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "60,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "61,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "62,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "63,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "64,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "65,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "66,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "67,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "68,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "69,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "70,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "71,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "72,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "73,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "74,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "75,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "76,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "77,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "78,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "79,21": {
+              "char": "─",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "0,1": {
+              "char": "⟡",
+              "color": "#d4a843",
+              "bgColor": "#0a0a0a"
+            },
+            "79,1": {
+              "char": "⟡",
+              "color": "#d4a843",
+              "bgColor": "#0a0a0a"
+            },
+            "0,22": {
+              "char": "⟡",
+              "color": "#d4a843",
+              "bgColor": "#0a0a0a"
+            },
+            "79,22": {
+              "char": "⟡",
+              "color": "#d4a843",
+              "bgColor": "#0a0a0a"
+            }
+          }
+        }
+      ],
+      "propertyTracks": [],
+      "effectTracks": []
+    },
+    {
+      "id": "layer-title",
+      "name": "Gothic Title",
+      "visible": true,
+      "solo": false,
+      "locked": true,
+      "opacity": 100,
+      "contentFrames": [
+        {
+          "id": "cf-title-1",
+          "name": "Static Frame",
+          "startFrame": 0,
+          "durationFrames": 16,
+          "data": {
+            "28,5": {
+              "char": "🔮",
+              "color": "#d4a843",
+              "bgColor": "#0a0a0a"
+            },
+            "29,5": {
+              "char": " ",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "30,5": {
+              "char": " ",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "31,5": {
+              "char": "O",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "32,5": {
+              "char": " ",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "33,5": {
+              "char": "R",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "34,5": {
+              "char": " ",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "35,5": {
+              "char": "A",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "36,5": {
+              "char": " ",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "37,5": {
+              "char": "C",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "38,5": {
+              "char": " ",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "39,5": {
+              "char": "L",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "40,5": {
+              "char": " ",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "41,5": {
+              "char": "E",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "42,5": {
+              "char": " ",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "43,5": {
+              "char": " ",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "44,5": {
+              "char": " ",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "45,5": {
+              "char": "V",
+              "color": "#d4a843",
+              "bgColor": "#0a0a0a"
+            },
+            "46,5": {
+              "char": " ",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "47,5": {
+              "char": "2",
+              "color": "#d4a843",
+              "bgColor": "#0a0a0a"
+            },
+            "48,5": {
+              "char": " ",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "49,5": {
+              "char": " ",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "50,5": {
+              "char": "🔮",
+              "color": "#d4a843",
+              "bgColor": "#0a0a0a"
+            },
+            "27,7": {
+              "char": "✦",
+              "color": "#d4a843",
+              "bgColor": "#0a0a0a"
+            },
+            "28,7": {
+              "char": " ",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "29,7": {
+              "char": " ",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "30,7": {
+              "char": "A",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "31,7": {
+              "char": "I",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "32,7": {
+              "char": " ",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "33,7": {
+              "char": "E",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "34,7": {
+              "char": "p",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "35,7": {
+              "char": "i",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,7": {
+              "char": "c",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "37,7": {
+              "char": " ",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,7": {
+              "char": "R",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "39,7": {
+              "char": "P",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "40,7": {
+              "char": "G",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "41,7": {
+              "char": " ",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "42,7": {
+              "char": "T",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "43,7": {
+              "char": "e",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "44,7": {
+              "char": "r",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "45,7": {
+              "char": "m",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "46,7": {
+              "char": "i",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "47,7": {
+              "char": "n",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "48,7": {
+              "char": "a",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "49,7": {
+              "char": "l",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "50,7": {
+              "char": " ",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "51,7": {
+              "char": " ",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "52,7": {
+              "char": "✦",
+              "color": "#d4a843",
+              "bgColor": "#0a0a0a"
+            }
+          }
+        }
+      ],
+      "propertyTracks": [],
+      "effectTracks": []
+    },
+    {
+      "id": "layer-eye",
+      "name": "Mascot Eye (Animated)",
+      "visible": true,
+      "solo": false,
+      "locked": false,
+      "opacity": 100,
+      "contentFrames": [
+        {
+          "id": "cf-eye-0",
+          "name": "Frame 1 (open)",
+          "startFrame": 0,
+          "durationFrames": 1,
+          "data": {
+            "33,11": {
+              "char": ".",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "34,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "35,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "37,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "39,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "40,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "41,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "42,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "43,11": {
+              "char": ".",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "32,12": {
+              "char": "╱",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,12": {
+              "char": "◉",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "44,12": {
+              "char": "╲",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "31,13": {
+              "char": "│",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,13": {
+              "char": "(",
+              "color": "#d4a843",
+              "bgColor": "#0a0a0a"
+            },
+            "37,13": {
+              "char": "█",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "38,13": {
+              "char": "█",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "39,13": {
+              "char": "█",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "40,13": {
+              "char": ")",
+              "color": "#d4a843",
+              "bgColor": "#0a0a0a"
+            },
+            "45,13": {
+              "char": "│",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "32,14": {
+              "char": "╲",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,14": {
+              "char": "◉",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "44,14": {
+              "char": "╱",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "33,15": {
+              "char": "`",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "34,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "35,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "37,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "39,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "40,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "41,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "42,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "43,15": {
+              "char": "'",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            }
+          }
+        },
+        {
+          "id": "cf-eye-1",
+          "name": "Frame 2 (open)",
+          "startFrame": 1,
+          "durationFrames": 1,
+          "data": {
+            "33,11": {
+              "char": ".",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "34,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "35,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "37,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "39,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "40,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "41,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "42,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "43,11": {
+              "char": ".",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "32,12": {
+              "char": "╱",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,12": {
+              "char": "◉",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "44,12": {
+              "char": "╲",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "31,13": {
+              "char": "│",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,13": {
+              "char": "(",
+              "color": "#d4a843",
+              "bgColor": "#0a0a0a"
+            },
+            "37,13": {
+              "char": "█",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "38,13": {
+              "char": "█",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "39,13": {
+              "char": "█",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "40,13": {
+              "char": ")",
+              "color": "#d4a843",
+              "bgColor": "#0a0a0a"
+            },
+            "45,13": {
+              "char": "│",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "32,14": {
+              "char": "╲",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,14": {
+              "char": "◉",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "44,14": {
+              "char": "╱",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "33,15": {
+              "char": "`",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "34,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "35,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "37,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "39,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "40,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "41,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "42,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "43,15": {
+              "char": "'",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            }
+          }
+        },
+        {
+          "id": "cf-eye-2",
+          "name": "Frame 3 (look)",
+          "startFrame": 2,
+          "durationFrames": 1,
+          "data": {
+            "33,11": {
+              "char": ".",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "34,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "35,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "37,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "39,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "40,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "41,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "42,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "43,11": {
+              "char": ".",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "32,12": {
+              "char": "╱",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "41,12": {
+              "char": "◉",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "44,12": {
+              "char": "╲",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "31,13": {
+              "char": "│",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "39,13": {
+              "char": "(",
+              "color": "#d4a843",
+              "bgColor": "#0a0a0a"
+            },
+            "40,13": {
+              "char": "█",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "41,13": {
+              "char": "█",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "42,13": {
+              "char": ")",
+              "color": "#d4a843",
+              "bgColor": "#0a0a0a"
+            },
+            "44,13": {
+              "char": "│",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "32,14": {
+              "char": "╲",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "41,14": {
+              "char": "◉",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "44,14": {
+              "char": "╱",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "33,15": {
+              "char": "`",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "34,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "35,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "37,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "39,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "40,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "41,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "42,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "43,15": {
+              "char": "'",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            }
+          }
+        },
+        {
+          "id": "cf-eye-3",
+          "name": "Frame 4 (look)",
+          "startFrame": 3,
+          "durationFrames": 1,
+          "data": {
+            "33,11": {
+              "char": ".",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "34,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "35,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "37,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "39,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "40,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "41,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "42,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "43,11": {
+              "char": ".",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "32,12": {
+              "char": "╱",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "41,12": {
+              "char": "◉",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "44,12": {
+              "char": "╲",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "31,13": {
+              "char": "│",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "39,13": {
+              "char": "(",
+              "color": "#d4a843",
+              "bgColor": "#0a0a0a"
+            },
+            "40,13": {
+              "char": "█",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "41,13": {
+              "char": "█",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "42,13": {
+              "char": ")",
+              "color": "#d4a843",
+              "bgColor": "#0a0a0a"
+            },
+            "44,13": {
+              "char": "│",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "32,14": {
+              "char": "╲",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "41,14": {
+              "char": "◉",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "44,14": {
+              "char": "╱",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "33,15": {
+              "char": "`",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "34,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "35,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "37,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "39,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "40,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "41,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "42,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "43,15": {
+              "char": "'",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            }
+          }
+        },
+        {
+          "id": "cf-eye-4",
+          "name": "Frame 5 (open)",
+          "startFrame": 4,
+          "durationFrames": 1,
+          "data": {
+            "33,11": {
+              "char": ".",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "34,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "35,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "37,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "39,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "40,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "41,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "42,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "43,11": {
+              "char": ".",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "32,12": {
+              "char": "╱",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,12": {
+              "char": "◉",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "44,12": {
+              "char": "╲",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "31,13": {
+              "char": "│",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,13": {
+              "char": "(",
+              "color": "#d4a843",
+              "bgColor": "#0a0a0a"
+            },
+            "37,13": {
+              "char": "█",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "38,13": {
+              "char": "█",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "39,13": {
+              "char": "█",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "40,13": {
+              "char": ")",
+              "color": "#d4a843",
+              "bgColor": "#0a0a0a"
+            },
+            "45,13": {
+              "char": "│",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "32,14": {
+              "char": "╲",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,14": {
+              "char": "◉",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "44,14": {
+              "char": "╱",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "33,15": {
+              "char": "`",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "34,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "35,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "37,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "39,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "40,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "41,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "42,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "43,15": {
+              "char": "'",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            }
+          }
+        },
+        {
+          "id": "cf-eye-5",
+          "name": "Frame 6 (open)",
+          "startFrame": 5,
+          "durationFrames": 1,
+          "data": {
+            "33,11": {
+              "char": ".",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "34,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "35,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "37,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "39,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "40,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "41,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "42,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "43,11": {
+              "char": ".",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "32,12": {
+              "char": "╱",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,12": {
+              "char": "◉",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "44,12": {
+              "char": "╲",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "31,13": {
+              "char": "│",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,13": {
+              "char": "(",
+              "color": "#d4a843",
+              "bgColor": "#0a0a0a"
+            },
+            "37,13": {
+              "char": "█",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "38,13": {
+              "char": "█",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "39,13": {
+              "char": "█",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "40,13": {
+              "char": ")",
+              "color": "#d4a843",
+              "bgColor": "#0a0a0a"
+            },
+            "45,13": {
+              "char": "│",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "32,14": {
+              "char": "╲",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,14": {
+              "char": "◉",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "44,14": {
+              "char": "╱",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "33,15": {
+              "char": "`",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "34,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "35,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "37,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "39,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "40,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "41,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "42,15": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "43,15": {
+              "char": "'",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            }
+          }
+        },
+        {
+          "id": "cf-eye-6",
+          "name": "Frame 7 (half)",
+          "startFrame": 6,
+          "durationFrames": 1,
+          "data": {
+            "33,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "35,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "37,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "39,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "41,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "43,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "32,12": {
+              "char": "╱",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,12": {
+              "char": "◐",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "44,12": {
+              "char": "╲",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "31,13": {
+              "char": "│",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,13": {
+              "char": "(",
+              "color": "#d4a843",
+              "bgColor": "#0a0a0a"
+            },
+            "37,13": {
+              "char": "█",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "38,13": {
+              "char": "█",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "39,13": {
+              "char": ")",
+              "color": "#d4a843",
+              "bgColor": "#0a0a0a"
+            },
+            "44,13": {
+              "char": "│",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "32,14": {
+              "char": "╲",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "33,14": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "34,14": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "35,14": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,14": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "37,14": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,14": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "39,14": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "40,14": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "41,14": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "42,14": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "43,14": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "44,14": {
+              "char": "╱",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            }
+          }
+        },
+        {
+          "id": "cf-eye-7",
+          "name": "Frame 8 (slit)",
+          "startFrame": 7,
+          "durationFrames": 1,
+          "data": {
+            "33,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "35,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "37,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "39,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "41,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "43,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "32,12": {
+              "char": "╱",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "34,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,12": {
+              "char": "◒",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "39,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "41,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "43,12": {
+              "char": "╲",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "32,13": {
+              "char": "╲",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "33,13": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "34,13": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "35,13": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,13": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "37,13": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,13": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "39,13": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "40,13": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "41,13": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "42,13": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "43,13": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "44,13": {
+              "char": "╱",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            }
+          }
+        },
+        {
+          "id": "cf-eye-8",
+          "name": "Frame 9 (closed)",
+          "startFrame": 8,
+          "durationFrames": 1,
+          "data": {
+            "32,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "34,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "40,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "42,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "44,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            }
+          }
+        },
+        {
+          "id": "cf-eye-9",
+          "name": "Frame 10 (sleep_a)",
+          "startFrame": 9,
+          "durationFrames": 1,
+          "data": {
+            "32,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "34,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "40,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "42,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "44,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,13": {
+              "char": "z",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "39,13": {
+              "char": "z",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "42,13": {
+              "char": "Z",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            }
+          }
+        },
+        {
+          "id": "cf-eye-10",
+          "name": "Frame 11 (sleep_b)",
+          "startFrame": 10,
+          "durationFrames": 1,
+          "data": {
+            "32,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "34,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "40,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "42,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "44,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,13": {
+              "char": "z",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "41,13": {
+              "char": "Z",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "35,14": {
+              "char": "z",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            }
+          }
+        },
+        {
+          "id": "cf-eye-11",
+          "name": "Frame 12 (sleep_a)",
+          "startFrame": 11,
+          "durationFrames": 1,
+          "data": {
+            "32,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "34,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "40,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "42,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "44,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,13": {
+              "char": "z",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "39,13": {
+              "char": "z",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "42,13": {
+              "char": "Z",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            }
+          }
+        },
+        {
+          "id": "cf-eye-12",
+          "name": "Frame 13 (sleep_b)",
+          "startFrame": 12,
+          "durationFrames": 1,
+          "data": {
+            "32,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "34,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "40,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "42,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "44,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,13": {
+              "char": "z",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "41,13": {
+              "char": "Z",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            },
+            "35,14": {
+              "char": "z",
+              "color": "#c8b89a",
+              "bgColor": "#0a0a0a"
+            }
+          }
+        },
+        {
+          "id": "cf-eye-13",
+          "name": "Frame 14 (closed)",
+          "startFrame": 13,
+          "durationFrames": 1,
+          "data": {
+            "32,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "34,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "40,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "42,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "44,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            }
+          }
+        },
+        {
+          "id": "cf-eye-14",
+          "name": "Frame 15 (slit)",
+          "startFrame": 14,
+          "durationFrames": 1,
+          "data": {
+            "33,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "35,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "37,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "39,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "41,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "43,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "32,12": {
+              "char": "╱",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "34,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,12": {
+              "char": "◒",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "39,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "41,12": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "43,12": {
+              "char": "╲",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "32,13": {
+              "char": "╲",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "33,13": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "34,13": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "35,13": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,13": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "37,13": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,13": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "39,13": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "40,13": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "41,13": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "42,13": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "43,13": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "44,13": {
+              "char": "╱",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            }
+          }
+        },
+        {
+          "id": "cf-eye-15",
+          "name": "Frame 16 (half)",
+          "startFrame": 15,
+          "durationFrames": 1,
+          "data": {
+            "33,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "35,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "37,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "39,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "41,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "43,11": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "32,12": {
+              "char": "╱",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,12": {
+              "char": "◐",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "44,12": {
+              "char": "╲",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "31,13": {
+              "char": "│",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,13": {
+              "char": "(",
+              "color": "#d4a843",
+              "bgColor": "#0a0a0a"
+            },
+            "37,13": {
+              "char": "█",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "38,13": {
+              "char": "█",
+              "color": "#6b0f1a",
+              "bgColor": "#0a0a0a"
+            },
+            "39,13": {
+              "char": ")",
+              "color": "#d4a843",
+              "bgColor": "#0a0a0a"
+            },
+            "44,13": {
+              "char": "│",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "32,14": {
+              "char": "╲",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "33,14": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "34,14": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "35,14": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "36,14": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "37,14": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "38,14": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "39,14": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "40,14": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "41,14": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "42,14": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "43,14": {
+              "char": "─",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            },
+            "44,14": {
+              "char": "╱",
+              "color": "#b8860b",
+              "bgColor": "#0a0a0a"
+            }
+          }
+        }
+      ],
+      "propertyTracks": [],
+      "effectTracks": []
+    }
+  ],
+  "layerGroups": [],
+  "globalEffects": [],
+  "postEffectTracks": []
+}
