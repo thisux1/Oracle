@@ -21,3 +21,10 @@ TUI_PLAN.md
 # (Opcional) Ignorar modelos locais se preferir baixar pelo GitHub Releases
 # *.h5
 # *.tflite
+
+# Ignorar arquivos auxiliares e temporários de animação
+gatinho.asciimtn
+gatinho.tsx
+final.asciimtn
+final2.asciimtn
+classes.txt
