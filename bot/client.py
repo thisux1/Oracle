@@ -903,7 +903,7 @@ class DiscordClient(discord.Client):
                 status_emoji = "💀 JAILED (PRESO)"
                 
             msg = (
-                f"ℹ️ *STATUS DO ORÁCULO*\n\n"
+                f"ℹ️ *STATUS DO ORACLE*\n\n"
                 f"• Estado: {status_emoji}\n"
                 f"• Time Cookie Mode: {'Ativo' if bot_state.time_cookie_mode else 'Inativo'}\n"
                 f"• Cooldowns pendentes: {len(lowPriorityQueue)} no LPQ, {len(highPriorityQueue)} no HPQ\n"

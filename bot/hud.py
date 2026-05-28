@@ -62,7 +62,7 @@ class HUD:
     @staticmethod
     def oracle(msg):
         # Oracle cyan/black logs
-        HUD._write(f"{Fore.CYAN}{Back.BLACK} 🔮 [ORÁCULO] {msg} {Style.RESET_ALL}")
+        HUD._write(f"{Fore.CYAN}{Back.BLACK} 🔮 [ORACLE] {msg} {Style.RESET_ALL}")
 
     @staticmethod
     def alert(msg):

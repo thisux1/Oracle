@@ -31,7 +31,7 @@ from bot.state import (
     add_to_high_priority_queue,
     add_to_low_priority_queue
 )
-from bot.tui_eye import EYE_FRAMES, SLEEP_SEQ, WAKE_SEQ, IDLE_SEQ
+from bot.tui_eye import EYE_FRAMES, CAT_FRAMES, SLEEP_SEQ, WAKE_SEQ, IDLE_SEQ, CAT_SLEEP_SEQ, CAT_COLORS, CAT_FRAME_COLORS
 from bot.tui_frames import separator_heavy, separator_medium, separator_light
 from bot.tui_splash_art import COFFEE_ART, COFFEE_ART_B, SLEEP_ART, SLEEP_ART_B
 from bot.tui_themes import ORACLE_THEMES
@@ -220,20 +220,17 @@ class SplashScreen(ModalScreen):
         yield Static(id="splash_art")
 
     def on_mount(self) -> None:
-        self._progress_timer = self.set_interval(0.04, self._tick_progress)
-        self._anim_timer = self.set_interval(0.05, self._tick_anim)
+        self._splash_timer = self.set_interval(0.05, self._tick_splash)
         self._render_splash()
 
-    def _tick_progress(self) -> None:
+    def _tick_splash(self) -> None:
         if self.progress < 100:
             self.progress += 2
-            self._render_splash()
         else:
-            self._progress_timer.stop()
-            self._anim_timer.stop()
+            self._splash_timer.stop()
             self.dismiss()
+            return
 
-    def _tick_anim(self) -> None:
         self.shine_pos += 2
         if self.shine_pos > 80:
             self.shine_pos = -10
@@ -248,55 +245,145 @@ class SplashScreen(ModalScreen):
         acc = theme_info["colors"][2]
         fg = theme_info["colors"][3]
 
-        # 1. Crop vertical empty space
-        lines = GIANT_EYE_ART.split("\n")
-        cropped_lines = [line for line in lines if line.strip() != ""]
-        
-        # 2. Crop horizontal empty space
-        if cropped_lines:
-            min_leading = min(len(line) - len(line.lstrip()) for line in cropped_lines if line.strip())
-            cropped_lines = [line[min_leading:] for line in cropped_lines]
-        
-        # 3. Dynamic height adjustment to prevent overflowing the terminal
+        def interpolate_color(c1: str, c2: str, factor: float) -> str:
+            c1 = c1.lstrip('#')
+            c2 = c2.lstrip('#')
+            if len(c1) == 3: c1 = "".join(x*2 for x in c1)
+            if len(c2) == 3: c2 = "".join(x*2 for x in c2)
+            r1, g1, b1 = int(c1[0:2], 16), int(c1[2:4], 16), int(c1[4:6], 16)
+            r2, g2, b2 = int(c2[0:2], 16), int(c2[2:4], 16), int(c2[4:6], 16)
+            r = int(r1 + (r2 - r1) * factor)
+            g = int(g1 + (g2 - g1) * factor)
+            b = int(b1 + (b2 - b1) * factor)
+            return f"#{r:02x}{g:02x}{b:02x}"
+
+        def get_line_color(i: int, total_lines: int) -> str:
+            if total_lines <= 1:
+                return acc
+            pos = i / (total_lines - 1)
+            if pos < 0.25:
+                return interpolate_color(sec, pri, pos / 0.25)
+            elif pos < 0.5:
+                return interpolate_color(pri, acc, (pos - 0.25) / 0.25)
+            elif pos < 0.75:
+                return interpolate_color(acc, pri, (pos - 0.5) / 0.25)
+            else:
+                return interpolate_color(pri, sec, (pos - 0.75) / 0.25)
+
+        # Get terminal size
         term_height = self.size.height if self.size.height > 0 else 24
-        reserved_lines = 16  # Title(7) + Progress(1) + texts + padding
-        available_lines = max(5, term_height - reserved_lines)
-        
-        if len(cropped_lines) > available_lines:
-            # Take the bottom portion of the eye (which usually contains the main details)
-            start_idx = len(cropped_lines) - available_lines
-            eye_art = "\n".join(cropped_lines[start_idx:])
+        term_width = self.size.width if self.size.width > 0 else 80
+
+        # Responsive layout settings
+        if term_height < 22:
+            show_title = False
+            spacing = ""
+            reserved_lines = 5
+        elif term_height < 32:
+            show_title = True
+            spacing = ""
+            reserved_lines = 11
         else:
-            eye_art = "\n".join(cropped_lines)
+            show_title = True
+            spacing = "\n"
+            reserved_lines = 15
 
-        bar_w = 40
-        filled = int((self.progress / 100) * bar_w)
-        bar = "█" * filled + "░" * (bar_w - filled)
+        available_lines = max(5, term_height - reserved_lines)
 
-        # Gradient / Shine effect on the giant title (Horizontal Sweep)
-        title_lines = ORACLE_TITLE_ART.strip("\n").split("\n")
-        styled_title_lines = []
-        for line in title_lines:
-            styled_line = ""
-            for i, char in enumerate(line):
-                dist = abs(i - self.shine_pos)
-                if dist <= 1:
-                    styled_line += f"[#ffffff]{char}[/]"
-                elif dist <= 3:
-                    styled_line += f"[{acc}]{char}[/]"
-                elif dist <= 5:
-                    styled_line += f"[{fg}]{char}[/]"
-                else:
-                    styled_line += f"[{pri}]{char}[/]"
-            styled_title_lines.append(styled_line)
+        # 1. Clean vertical empty space
+        lines = GIANT_EYE_ART.split("\n")
+        cropped_lines = [line for line in lines if line.replace(" ", "").replace("\u2800", "") != ""]
         
-        # We need to center the title explicitly since Textual centers the entire block
-        styled_title = "\n".join(styled_title_lines)
+        # 2. Horizontal auto-crop empty space (Braille blank space is \u2800)
+        if cropped_lines:
+            min_leading = 9999
+            max_trailing = 0
+            for line in cropped_lines:
+                left = 0
+                while left < len(line) and line[left] in (' ', '\u2800'):
+                    left += 1
+                if left < len(line) and left < min_leading:
+                    min_leading = left
                 
+                right = len(line)
+                while right > 0 and line[right - 1] in (' ', '\u2800'):
+                    right -= 1
+                if right > max_trailing:
+                    max_trailing = right
+            
+            if min_leading < max_trailing:
+                cropped_lines = [line[min_leading:max_trailing] for line in cropped_lines]
+
+        # 3. Apply coloring and horizontal slicing
+        W_art = len(cropped_lines[0]) if cropped_lines else 0
+        final_lines = []
+        for i, line in enumerate(cropped_lines):
+            line_color = get_line_color(i, len(cropped_lines))
+            if term_width < W_art:
+                crop_left = (W_art - term_width) // 2
+                crop_right = crop_left + term_width
+                line_content = line[crop_left:crop_right]
+            else:
+                line_content = line
+            
+            styled_line = f"[{line_color}]{line_content}[/]"
+            final_lines.append(styled_line)
+
+        # 4. Apply vertical cropping
+        if len(final_lines) > available_lines:
+            start_idx = (len(final_lines) - available_lines) // 2
+            eye_art = "\n".join(final_lines[start_idx : start_idx + available_lines])
+        else:
+            eye_art = "\n".join(final_lines)
+
+        # Giant title horizontal sweep shine
+        styled_title = ""
+        if show_title:
+            title_lines = ORACLE_TITLE_ART.strip("\n").split("\n")
+            styled_title_lines = []
+            for line in title_lines:
+                left_idx = max(0, self.shine_pos - 5)
+                right_idx = min(len(line), self.shine_pos + 6)
+                
+                left_part = line[:left_idx]
+                shine_part = line[left_idx:right_idx]
+                right_part = line[right_idx:]
+                
+                styled_line = ""
+                if left_part:
+                    styled_line += f"[{pri}]{left_part}[/]"
+                
+                for idx_in_shine, char in enumerate(shine_part):
+                    real_idx = left_idx + idx_in_shine
+                    dist = abs(real_idx - self.shine_pos)
+                    if dist <= 1:
+                        styled_line += f"[#ffffff]{char}[/]"
+                    elif dist <= 3:
+                        styled_line += f"[{acc}]{char}[/]"
+                    elif dist <= 5:
+                        styled_line += f"[{fg}]{char}[/]"
+                    else:
+                        styled_line += f"[{pri}]{char}[/]"
+                        
+                if right_part:
+                    styled_line += f"[{pri}]{right_part}[/]"
+                styled_title_lines.append(styled_line)
+            styled_title = "\n".join(styled_title_lines)
+        
+        # Subtitle
         subtitle = "  Terminal de IA do Epic RPG  "
+        left_idx = max(0, self.shine_pos - 15 - 5)
+        right_idx = min(len(subtitle), self.shine_pos - 15 + 6)
+        left_part = subtitle[:left_idx]
+        shine_part = subtitle[left_idx:right_idx]
+        right_part = subtitle[right_idx:]
+        
         styled_subtitle = ""
-        for i, char in enumerate(subtitle):
-            dist = abs((i + 15) - self.shine_pos)
+        if left_part:
+            styled_subtitle += f"[{pri}]{left_part}[/]"
+        for idx_in_shine, char in enumerate(shine_part):
+            real_idx = left_idx + idx_in_shine
+            dist = abs((real_idx + 15) - self.shine_pos)
             if dist <= 1:
                 styled_subtitle += f"[#ffffff]{char}[/]"
             elif dist <= 3:
@@ -305,40 +392,74 @@ class SplashScreen(ModalScreen):
                 styled_subtitle += f"[{fg}]{char}[/]"
             else:
                 styled_subtitle += f"[{pri}]{char}[/]"
+        if right_part:
+            styled_subtitle += f"[{pri}]{right_part}[/]"
 
-        splash = (
-            f"[{pri}]{eye_art}[/]\n"
-            "\n"
-            f"{styled_title}\n"
-            "\n"
-            f"{styled_subtitle}\n"
-            "\n"
-            f"┃ [{pri}]{bar}[/] {self.progress:3d}% ┃\n"
-            "\n"
-            "Conectando…\n"
-            "\n"
-            "---------------------\n"
-            "\n"
-            f"[{fg}][ Pressione qualquer tecla para pular ][/]"
-        )
+        # Progress Bar
+        bar_w = min(40, term_width - 12) if term_width > 15 else 10
+        filled = int((self.progress / 100) * bar_w)
+        bar = "█" * filled + "░" * (bar_w - filled)
+        bar_text = f"┃ [{pri}]{bar}[/] {self.progress:3d}% ┃"
+
+        # Connecting text
+        connecting_text = "Conectando…"
+
+        # Separator
+        separator = "---------------------"
+
+        # Skip prompt
+        skip_text = f"[{fg}][ Pressione qualquer tecla para pular ][/]"
+
+        # Assemble the full layout
+        parts = []
+        parts.append(eye_art)
+        if spacing:
+            parts.append("")
+        
+        if show_title:
+            parts.append(styled_title)
+            if spacing:
+                parts.append("")
+        
+        parts.append(styled_subtitle)
+        if spacing:
+            parts.append("")
+            
+        parts.append(bar_text)
+        if spacing:
+            parts.append("")
+            
+        parts.append(connecting_text)
+        if spacing:
+            parts.append("")
+            
+        parts.append(separator)
+        if spacing:
+            parts.append("")
+            
+        parts.append(skip_text)
+        
+        splash = "\n".join(parts)
         self.query_one("#splash_art", Static).update(splash)
 
+
     def on_key(self, event) -> None:
-        self._progress_timer.stop()
-        self._anim_timer.stop()
+        self._splash_timer.stop()
         self.dismiss()
 
 
 # ─── Eye Widget ───
 class EyeWidget(Static):
-    """Dynamic animated eye mascot with continuous ping-pong idle motion.
+    """Dynamic animated mascot — shows the eye while active, switches to a
+    sleeping-cat animation during hibernation or coffee breaks.
 
     Responsively crops/centers frames to fit the available sidebar width,
-    keeping the visual center of the eye always visible.
+    keeping the visual center always visible.
     """
 
-    # The original frame width in columns
-    _FRAME_WIDTH = 41
+    # Original frame widths per animation set
+    _EYE_FRAME_WIDTH = 41
+    _CAT_FRAME_WIDTH = 33
 
     def on_mount(self) -> None:
         self.mode = "active"
@@ -354,7 +475,26 @@ class EyeWidget(Static):
             self._show_frame(self._current_frame)
 
     def set_mode(self, mode: str, force: bool = False) -> None:
+        if mode == self.mode and not force:
+            return
+        old_mode = self.mode
         self.mode = mode
+
+        # Determine if the animation set needs to change
+        was_cat = old_mode in ("sleep", "coffee")
+        is_cat = mode in ("sleep", "coffee")
+
+        if was_cat != is_cat or force:
+            if is_cat:
+                self.sequence = list(CAT_SLEEP_SEQ)
+            else:
+                self.sequence = list(IDLE_SEQ)
+            self.seq_idx = 0
+            if self.sequence:
+                self._show_frame(self.sequence[0])
+
+    def _is_cat_frame(self, frame_name: str) -> bool:
+        return frame_name.startswith("cat_")
 
     def _frame_style(self, frame_name: str) -> str:
         theme_info = next((t for t in ORACLE_THEMES if t["name"] == self.app.theme), ORACLE_THEMES[0])
@@ -373,18 +513,65 @@ class EyeWidget(Static):
         left_trim = trim // 2
         return line[left_trim : left_trim + target_w]
 
+    @staticmethod
+    def _cat_shades(hex_color: str) -> dict[str, str]:
+        """Derive opacity shades from a theme hex color.
+
+        Returns a dict mapping color classes to scaled hex colors:
+        c0 = 100% (full brightness), c2 = 85%, c1 = 50%, c3 = 45%.
+        """
+        h = hex_color.lstrip("#")
+        if len(h) == 3:
+            h = h[0]*2 + h[1]*2 + h[2]*2
+        r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+        def scale(factor: float) -> str:
+            return f"#{int(r*factor):02x}{int(g*factor):02x}{int(b*factor):02x}"
+        return {"c0": hex_color, "c2": scale(0.85), "c1": scale(0.50), "c3": scale(0.45)}
+
     def _show_frame(self, frame_name: str) -> None:
         self._current_frame = frame_name
         avail_w = max(self.size.width - 2, 10)  # account for margin
-        raw = EYE_FRAMES[frame_name]
-        lines = raw.split("\n")
-        # Strip trailing empty element from split
-        if lines and lines[-1] == "":
-            lines = lines[:-1]
-        fitted = "\n".join(
-            self._fit_line(l, avail_w, self._FRAME_WIDTH) for l in lines
-        )
-        self.update(Text.from_markup(f"[{self._frame_style(frame_name)}]{fitted}[/]"))
+
+        if self._is_cat_frame(frame_name):
+            raw = CAT_FRAMES[frame_name]
+            frame_w = self._CAT_FRAME_WIDTH
+            lines = raw.split("\n")
+            if lines and lines[-1] == "":
+                lines = lines[:-1]
+            # Build theme-aware shade palette from accent color
+            accent = self._frame_style(frame_name)  # e.g. "#d4a843"
+            shades = self._cat_shades(accent)
+            color_map = CAT_FRAME_COLORS.get(frame_name, {})
+            result = Text()
+            for y, line in enumerate(lines):
+                fitted = self._fit_line(line, avail_w, frame_w)
+                if avail_w >= frame_w:
+                    offset = -(avail_w - frame_w) // 2
+                else:
+                    offset = (frame_w - avail_w) // 2
+                for fitted_x, ch in enumerate(fitted):
+                    orig_x = fitted_x + offset
+                    key = f"{orig_x},{y}"
+                    ck = color_map.get(key)
+                    if ck:
+                        result.append(ch, style=shades.get(ck, accent))
+                    elif ch.strip():
+                        result.append(ch, style=shades.get("c1", accent))
+                    else:
+                        result.append(ch)
+                if y < len(lines) - 1:
+                    result.append("\n")
+            self.update(result)
+        else:
+            raw = EYE_FRAMES[frame_name]
+            frame_w = self._EYE_FRAME_WIDTH
+            lines = raw.split("\n")
+            if lines and lines[-1] == "":
+                lines = lines[:-1]
+            fitted = "\n".join(
+                self._fit_line(l, avail_w, frame_w) for l in lines
+            )
+            self.update(Text.from_markup(f"[{self._frame_style(frame_name)}]{fitted}[/]"))
 
     def _tick_anim(self) -> None:
         if not self.sequence:

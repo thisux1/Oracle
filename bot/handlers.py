@@ -160,8 +160,8 @@ async def interactive_card_hand_loop(message):
             embed_dict = message.embeds[0].to_dict()
             embed_text = str(embed_dict).lower()
             
-            # Check if game is finished
-            if "goldened" in embed_text or "deck" in embed_text or "fold" in embed_text:
+            # Check if game is finished — "goldened" only appears in the final embed
+            if "goldened" in embed_text:
                 clean_txt = clean_embed_text_for_telegram(embed_dict)
                 final_msg = f"🎯 *CARD HAND CONCLUÍDO!*\n\n{clean_txt}"
                 if active_card_hand_msg_id:
@@ -176,6 +176,10 @@ async def interactive_card_hand_loop(message):
                 active_card_hand_msg_id = None
                 break
                 
+            # Re-check game state — responseResolver may have cleared it
+            if not bot_state.cardhand_in_progress:
+                break
+            
             # Wait up to 3 seconds for Neon's recommendation
             rec = None
             for _ in range(6):
@@ -682,6 +686,16 @@ async def responseResolver(message):
                 )
                 return
 
+            # Check game-over FIRST — final embed has both "try to get the best
+            # possible hand" AND "goldened", so goldened must be checked before
+            # the mid-game pattern to avoid an early return.
+            if bot_state.cardhand_in_progress and "goldened" in embed_text:
+                bot_state.cardhand_in_progress = False
+                bot_state.cardhand_first_pass_done = False
+                bot_state.cardhand_turn_count = 1
+                HUD.system("Card Hand concluído! Filas liberadas.")
+                return
+
             if (
                 target_name in embed_text
                 and "card hand" in embed_text
@@ -693,11 +707,6 @@ async def responseResolver(message):
                         bot_state.cardhand_first_pass_done = True
                         asyncio.create_task(interactive_card_hand_loop(message))
                     return
-
-            if bot_state.cardhand_in_progress and "goldened" in embed_text:
-                bot_state.cardhand_in_progress = False
-                bot_state.cardhand_first_pass_done = False
-                HUD.system("Card Hand concluído! Filas liberadas.")
 
             # ─── Pet Adventure Detection ───
             if "— pets" in embed_text:
