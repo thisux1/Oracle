@@ -30,3 +30,7 @@ gatinho.asciimtn
 gatinho.tsx
 final.asciimtn
 final2.asciimtn
+
+# Logs e arquivos dinamicos de execucao
+*.log
+
