@@ -42,6 +42,29 @@ async def send_telegram_notification(text):
         logger.error(f"Error sending Telegram notification: {e}")
 
 
+async def send_telegram_raw(text):
+    """Send a pre-formatted message to Telegram without escaping.
+    Uses plain text mode — emojis and unicode render normally, no Markdown parsing."""
+    if not config.TelegramBotToken or not config.TelegramChatID:
+        return
+
+    url = f"https://api.telegram.org/bot{config.TelegramBotToken}/sendMessage"
+    payload = {
+        "chat_id": config.TelegramChatID,
+        "text": text,
+    }
+    try:
+        session = _get_session()
+        async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=10)) as response:
+            if response.status != 200:
+                resp_text = await response.text()
+                logger.error(f"Failed to send Telegram raw message: {resp_text}")
+            else:
+                logger.info("Telegram raw message sent successfully.")
+    except Exception as e:
+        logger.error(f"Error sending Telegram raw message: {e}")
+
+
 async def send_telegram_photo(photo_path, caption):
     if not config.TelegramBotToken or not config.TelegramChatID:
         return

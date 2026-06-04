@@ -25,18 +25,27 @@ logger.addHandler(hud_handler)
 
 class HUD:
     tui_callback = None
-    _paused = False
+    _pause_depth = 0
     _buffer: list[str] = []
+
+    @staticmethod
+    def _is_paused() -> bool:
+        return HUD._pause_depth > 0
 
     @staticmethod
     def pause():
         """Pause log output — buffer messages instead of writing."""
-        HUD._paused = True
+        HUD._pause_depth += 1
 
     @staticmethod
     def resume():
         """Resume log output and flush buffered messages."""
-        HUD._paused = False
+        if HUD._pause_depth > 0:
+            HUD._pause_depth -= 1
+
+        if HUD._is_paused():
+            return
+
         for msg in HUD._buffer:
             if HUD.tui_callback:
                 HUD.tui_callback(msg)
@@ -46,7 +55,23 @@ class HUD:
 
     @staticmethod
     def _write(msg):
-        if HUD._paused:
+        # Clean ANSI escape codes and log to profile-specific log file
+        try:
+            import options_resolver
+            options_path = getattr(options_resolver, "optionsFilePath", None)
+            if options_path:
+                log_path = options_path.rsplit(".", 1)[0] + ".log"
+                ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+                clean_msg = ansi_escape.sub('', msg).strip()
+                if clean_msg:
+                    import datetime
+                    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    with open(log_path, "a", encoding="utf-8") as f:
+                        f.write(f"[{timestamp}] {clean_msg}\n")
+        except Exception:
+            pass
+
+        if HUD._is_paused():
             HUD._buffer.append(msg)
             return
         if HUD.tui_callback:
@@ -92,11 +117,11 @@ class HUD:
 
     @staticmethod
     def dungeon(msg):
-        HUD._write(f"{Fore.MAGENTA}⚔️ [MASMORRA]{Fore.LIGHTMAGENTA_EX} {msg}{Style.RESET_ALL}")
+        HUD._write(f"{Fore.MAGENTA}⚔️ [DUNGEON]{Fore.LIGHTMAGENTA_EX} {msg}{Style.RESET_ALL}")
 
     @staticmethod
     def tc(msg):
-        HUD._write(f"{Fore.YELLOW}🍪 [COOKIE DE TEMPO]{Fore.LIGHTYELLOW_EX} {msg}{Style.RESET_ALL}")
+        HUD._write(f"{Fore.YELLOW}🍪 [TIME COOKIE]{Fore.LIGHTYELLOW_EX} {msg}{Style.RESET_ALL}")
 
     @staticmethod
     def cardhand(msg):

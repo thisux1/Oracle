@@ -1,136 +1,125 @@
-# Oracle v2 — Epic RPG Automation
+# 🔮 Oracle v3 — Epic RPG Automation
 
-Este repositório contém o **Oracle v2**, um macro avançado para automação do Epic RPG com inteligência artificial para resolução de captchas e sistema de anti-detecção.
-
----
-
-## Segurança e Diretrizes de Uso (MUITO IMPORTANTE)
-
-Para garantir a longevidade da sua conta, siga estas diretrizes baseadas em heurísticas de anti-detecção:
-
-### Não utilize em contas secundárias sem atividade orgânica
-O Discord utiliza Machine Learning para analisar padrões comportamentais. Uma conta que **apenas** envia comandos de RPG e não tem outras atividades é facilmente detectada.
-*   **POR QUÊ**: O endpoint `/science` do Discord rastreia movimentos do mouse, troca de canais e foco da tela. O bot não simula isso.
-*   **MITIGAÇÃO**: Use a conta normalmente de vez em quando (converse com amigos, entre em canais de voz, navegue por servidores) enquanto o bot roda em segundo plano.
-
-### Checklist de Sobrevivência
-*   **IP Residencial**: Evite rodar em VPS ou Cloud (AWS, Google Cloud). Use o Wi-Fi de casa ou 4G do celular. IPs de data centers são marcados pelo Discord.
-*   **Coffee Breaks**: O Oracle v2 já possui pausas para café integradas (5-15min a cada 1-2h). Não as desative.
-*   **Night Sleep (Modo Sono)**: O bot pode se desconectar totalmente em horários específicos (ex: das 23:30 às 07:00) para simular que você foi dormir e está offline, desconectando-se completamente do websocket e fechando a conexão com o discord.
-*   **Notificações Telegram**: Mantenha o Telegram configurado. Se a IA falhar em um captcha, você precisa intervir manualmente rápido para evitar flag pelo EPIC RPG.
+Este repositório contém o **Oracle v3**, um macro para automação do Epic RPG com inteligência artificial para resolução de captchas, sistema de anti-detecção e uma **Terminal User Interface (TUI)** interativa.
 
 ---
 
-## Como Começar
+## Recursos da Versão 3.0 (TUI)
+
+A v3.0 introduz uma interface de terminal construída sobre **Textual** + **Rich**, permitindo o controle e monitoramento do bot em tempo real.
+
+### Inicialização (Splash Screen)
+Arte do Olho do Oracle com barra de progresso de carregamento (pode ser pulada pressionando qualquer tecla).
+
+### Mascote Animado
+Exibe uma animação que alterna entre o Olho do Oracle (ativo) e um gatinho dormindo (pausas/hibernação), adaptando-se ao estado do bot.
+
+### Painel de Telemetria e Estatísticas
+Aba lateral (sidebar) com contadores de comandos executados (Hunts, Adventures, Farms, Lootboxes), saldo de moedas e experiência obtida na sessão.
+
+### Suporte a Temas Visuais
+10 esquemas de cores pré-configurados (Cathedral, Dracula, Nord, Monokai Pro, Gruvbox, Catppuccin, Tokyo Night, Rosé Pine, Solarized e Cyberpunk), selecionáveis na interface com persistência.
+
+### CLI Integrada com Histórico e Autocomplete
+Linha de comandos no rodapé com suporte a histórico (`↑`/`↓`) e sugestões automáticas ao digitar `/`.
+
+### Visualizador de Logs
+Log centralizado com formatação colorida e categorização por tags (`LOOT`, `ORACLE`, `ALERTA`, `SYSTEM`, etc.).
+
+---
+
+## Segurança e Diretrizes de Uso
+
+Para reduzir o risco de detecção e banimento, siga as diretrizes abaixo:
+
+### Uso em contas principais e secundárias
+O Discord monitora padrões de atividade. Uma conta que apenas envia comandos de RPG sem interações orgânicas é facilmente identificada como bot.
+*   **Recomendação**: Interaja na conta manualmente de tempos em tempos (converse em servidores, acesse canais, use outros recursos do Discord).
+
+### Boas Práticas
+*   **IP Residencial**: Evite rodar em servidores em nuvem ou VPS (AWS, GCP, etc.). Use conexão de internet residencial ou dados móveis.
+*   **Coffee Breaks**: O bot possui pausas programadas automatizadas (5 a 15 minutos a cada 1 ou 2 horas). Não as desative.
+*   **Modo Sono (Night Sleep)**: O bot se desconecta totalmente do websocket do Discord em horários específicos (ex: das 23:30 às 07:00) para simular o período de sono.
+*   **Notificações Telegram**: Configure os alertas do Telegram para receber imagens de captchas em caso de falha de resolução pela IA.
+
+---
+
+## Instalação e Execução
 
 ### 1. Requisitos
-*   **Python 3.11** (Recomendado para compatibilidade com os modelos `.h5`)
-*   Um token de conta do Discord (User Token)
-*   Token do Bot do Telegram (opcional, para alertas e controle remoto)
+*   Python 3.11
+*   Token da conta do Discord
+*   Token do Bot do Telegram (opcional, para receber alertas)
 
-### 2. Configuração do Ambiente (venv)
+### 2. Configuração do Ambiente Virtual (venv)
 ```bash
-# No diretório do projeto:
+# Criar o ambiente virtual:
 python3.11 -m venv venv
 
 # Ativar o ambiente virtual:
 source venv/bin/activate  # Linux/macOS
- venv\Scripts\activate   # Windows
+venv\Scripts\activate     # Windows
 
-# Instalar as dependências:
+# Instalar dependências:
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 3. Configurando o `options.ini`
-Edite o arquivo `options.ini` com suas informações:
-
-**Essenciais:**
-*   `user_token`: Seu token do Discord.
-*   `channel_id`: ID do canal de farm.
-*   `guild_id`: ID do servidor.
-*   `admin_ids`: Seu ID (para controle remoto).
-*   `typo_chance`: Chance (ex: 0.05) de simular erros de digitação humanos.
-*   `sleep_at` / `wake_up_at`: Horário (HH:MM) para o bot ficar offline (ex: 23:30 e 07:00).
-
-**Comandos Togglable (opcional, default=true):**
-*   `do_hunt`, `do_adv`, `do_farm`, `do_work`, `do_training`, `do_daily`, `do_weekly`, `do_quest`, `do_lootbox`, `do_dungeon`, `do_card_hand`: Habilita/desabilita comandos individuais sem precisar editar código.
-
-**ULTR Training:**
-*   `do_ultr=false`: Quando `true`, substitui `rpg training` pela sequência: `rpg ultr` → `double` → `attack` → `rpg use tc N`.
-
-**Dungeon Automática:**
-*   `is_eternal=false`: Ativa auto-enter em dungeon (`yes`) e bite loop automático no dragão eternal.
-
-**Card Hand:**
-*   `card_hand_action=auto`: `auto` (joga automaticamente via IA) ou `notify` (apenas notifica no Telegram para você jogar manualmente).
-
-**Time Cookie:**
-*   `tc_quantity=1`: Quantidade padrão de cookies por uso. Sobrescrito via comando `sb tc start Xc`.
-
-**Adventure Optimization:**
-*   `life_boost_before_adv=none`: Nível do life boost (a, b, c) para comprar antes de adventure.
-*   `adventure_area=none`: Área para trocar antes do adventure (menos dano).
-*   `current_area=none`: Área para voltar depois do adventure/eventos.
+### 3. Configuração do `options.ini`
+Crie ou edite o arquivo `options.ini` na raiz do projeto com suas credenciais:
+*   `user_token`: Token da conta do Discord.
+*   `channel_id`: ID do canal de texto para os comandos.
+*   `guild_id`: ID do servidor Discord.
+*   `admin_ids`: Seu ID de usuário (para comandos remotos).
 
 ### 4. Executando o Bot
-
-Você pode rodar o bot diretamente:
 ```bash
 python main.py
 ```
 
-### 5. Atalho de Inicialização Rápida (Comando `oracle`)
-
-Para maior comodidade, incluímos um script portátil (`setup.sh`) que adiciona um comando global `oracle` ao seu terminal (compatível com `bash` e `zsh`). Ele detecta automaticamente o diretório de instalação e o ambiente virtual (`.venv`, `venv` ou diretório do macro principal).
-
-Para configurá-lo, execute:
+### 5. Configuração de Atalho Global (Opcional)
+Você pode configurar o comando `oracle` globalmente executando o instalador de atalhos:
 ```bash
-# Executar o script de setup automático
-./setup.sh
-
-# Recarregar as configurações no terminal atual
-source ~/.zshrc  # ou source ~/.bashrc
-
-# Iniciar o bot de qualquer lugar com:
+chmod +x setup.sh && ./setup.sh
+source ~/.bashrc  # ou ~/.zshrc
+```
+Depois disso, execute o bot de qualquer local apenas digitando:
+```bash
 oracle
 ```
 
 ---
 
-## Comandos de Controle (Discord)
-Envie estes comandos no canal (apenas administradores):
-*   `sb help` ou `sb ajuda`: Mostra a lista completa de comandos disponíveis no console.
-*   `sb start` / `sb pause`: Inicia (descongela) ou pausa (congela) a execução automática do bot.
-*   `sb reset`: Limpa filas de alta e baixa prioridade e reseta o estado de jogo.
-*   `sb stats`: Exibe o relatório acumulado de XP, Coins e Loot da sessão inteira.
-*   `sb stats [tempo]`: Mostra o relatório de estatísticas calculado para um período específico (ex: `sb stats 10h`, `sb stats 7d`, `sb stats 1m`). Os dados sobrevivem a reboots!
-*   `sb tc start [Xc] [tempo]m`: Ativa o modo **Time Cookie**. Ex: `sb tc start 4c 60m` (4 cookies, 60 minutos). Ao ativar, enfileira automaticamente hunt, work, farm e rd.
-*   `sb tc stop`: Desativa o modo Time Cookie.
-*   `sb g start` / `sb g pause`: Inicia ou pausa o ciclo automático do cassino (Fibonacci Coinflip).
-*   `sb say [texto]`: Envia uma mensagem no canal.
-*   `rpg u`: Exibe o tempo de atividade do bot (uptime).
+## Comandos da CLI e Discord
 
----
+Os comandos listados abaixo podem ser enviados pela CLI da TUI ou pelo chat do Discord (apenas por administradores configurados):
 
-## Inteligência Artificial (Oracle)
-O bot utiliza dois modelos (`oracle_v2_color.h5` e `oracle_v2_gray.h5`) para resolver os captchas do Epic Guard. Se a confiança for baixa, ele enviará a foto para o seu Telegram para ajuda manual.
+| Comando | Descrição |
+| :--- | :--- |
+| **`help`** / **`/help`** | Abre o modal de atalhos e lista de comandos. |
+| **`start`** / **`resume`** | Inicia ou retoma o bot. |
+| **`pause`** / **`stop`** | Pausa o bot. |
+| **`reset`** | Reseta as filas de comandos, cooldowns e estados. |
+| **`stats [período]`** | Exibe estatísticas da sessão (ex: `stats 1h`, `stats 30m`). |
+| **`queue`** | Exibe o tamanho e itens das filas de prioridade. |
+| **`say <mensagem>`** | Envia uma mensagem ou comando diretamente para o canal. |
+| **`tc start [Xc] [Xm]`** | Ativa o modo Time Cookie (ex: `tc start 4c 60m`). |
+| **`tc stop`** | Desativa o modo Time Cookie. |
+| **`g start`** | Inicia o modo gambling/coinflip com estratégia Fibonacci. |
+| **`g pause`** / **`g stop`** | Pausa o modo gambling/coinflip. |
+| **`cfg <chave> <valor>`** | Modifica dinamicamente uma configuração em tempo real e a salva no `options.ini` (ex: `cfg do_hunt false`). |
+| **`theme`** | Abre a tela de escolha de temas visuais (TUI). |
+| **`exit`** / **`quit`** | Encerra com segurança o bot e a interface. |
 
----
-
-## Changelog (Oracle v2 — Donut Features Migration)
-
-*   **Comandos Togglable**: 11 flags `do_*` no `options.ini` para desabilitar comandos individualmente.
-*   **ULTR Training**: `do_ultr=true` substitui training pela sequência ultr → double → attack → rpg use tc.
-*   **TC Startup Queue**: Ao ativar TC mode, hunt, work, farm e rd são enfileirados automaticamente.
-*   **TC Quantity**: `sb tc start 4c` usa 4 cookies por vez. Configurável via `tc_quantity` no `.ini`.
-*   **Dungeon State Machine**: Auto-enter em dungeon + bite loop no dragão eternal (gated por `is_eternal`).
-*   **Card Hand Toggle**: `card_hand_action=notify` só avisa no Telegram sem jogar automaticamente.
-*   **Adventure Optimization**: Compra life boost e troca de área antes de adventure.
-*   **HUD Melhorado**: Métodos especializados `dungeon()`, `tc()`, `cardhand()`, `separator()`, `navi()`.
-*   **Eventos Globais**: Handlers de zombie horde, mysterious man, seed event e god drop movidos para antes do filtro `is_for_user` — agora funcionam mesmo sem o nome do usuário no embed.
+### Atalhos Rápidos (Discord Self-bot)
+Se você estiver digitando diretamente da sua conta no canal do Discord, o bot também responderá a comandos que se passam por mensagens de RPG normais:
+* **`rpg s`**: Imprime as estatísticas da sessão nos logs locais.
+* **`rpg s t`**: Envia as estatísticas completas formatadas em texto no canal do Discord.
+* **`rpg s p`**: Imprime as estatísticas do parceiro de casamento nos logs (se aplicável).
+* **`rpg u`**: Imprime o tempo de atividade (uptime) do bot nos logs locais.
+* **`rpg u t`**: Envia o tempo de atividade (uptime) do bot em formato de mensagem no Discord.
 
 ---
 
 ## Aviso Legal
-O uso de self-bots viola os Termos de Serviço do Discord. Este software é fornecido para fins educacionais. O Oracle v2 inclui sistemas de anti-detecção, mas o risco de banimento nunca é zero. Use com inteligência e sem ganância.e é fornecido para fins educacionais. O Oracle v2 inclui sistemas de anti-detecção, mas o risco de banimento nunca é zero. Use com inteligência e sem ganância.
+O uso de self-bots viola os Termos de Serviço do Discord. Este software foi desenvolvido para fins de estudo e aprendizado. O uso do bot acarreta riscos de suspensão ou banimento da conta. Use com moderação.

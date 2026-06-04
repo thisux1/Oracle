@@ -91,6 +91,7 @@ class BotState:
         self.watchdog_paused_until = 0
         self.is_on_coffee_break = False
         self.next_break_time = time.time() + randint(3600, 7200)
+        self.coffee_break_end_time = 0
         self.last_curiosity_time = 0
         self.lootbox_cooldown_until = 0
         self.has_bank_account = True
@@ -107,7 +108,9 @@ class BotState:
         self.cardhand_start_time = 0
         self.cardhand_turn_count = 1
         self.last_sent_command = ""
+        self.last_cardhand_notification_time = 0
         self.last_sent_time = 0
+        self.last_sent_cardhand_image = None
         # Pet Adventure
         self.pet_adventure_return_time = 0
         self.last_save_time = time.time()
@@ -234,12 +237,14 @@ DEFAULT_SESSION_DATA = {
 
 import copy
 import time
-from bot.persistence import load_session_data, save_session_data
+from bot.persistence import load_session_data, save_session_data, save_session_baseline
 sessionData = load_session_data(DEFAULT_SESSION_DATA)
 if not sessionData.get("start_time") or sessionData["start_time"] == 0.0:
     sessionData["start_time"] = time.time()
     save_session_data(sessionData)
 initialSessionData = copy.deepcopy(sessionData)
+# Save baseline snapshot so the dashboard can compute session-only stats
+save_session_baseline(initialSessionData)
 
 runtimeErrors = []
 
@@ -294,12 +299,15 @@ def reset_bot_state():
     bot_state.cardhand_in_progress = False
     bot_state.cardhand_first_pass_done = False
     bot_state.cardhand_turn_count = 1
+    bot_state.last_sent_cardhand_image = None
     bot_state.dungeon_waiting_confirmation = False
     bot_state.dungeon_in_progress = False
     bot_state.dragon_alive = False
     bot_state.last_dungeon_time = 0
     bot_state.tc_quantity = config.tc_quantity
     bot_state.watchdog_paused_until = 0
+    bot_state.no_response_count = 0
+    bot_state.coffee_break_end_time = 0
     logger.info("Bot state reset to initial values.")
 
 

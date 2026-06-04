@@ -6,25 +6,27 @@ __pycache__/
 # Ignorar o ambiente virtual
 venv/
 .venv/
+.venv_build/
 env/
 ENV/
 
-# Ignorar arquivos de dados locais e opções
+# Ignorar arquivos de dados locais e opcoes
 options.ini
 epic_guard.png
 session_data.json
 opencode.json
 stats_history.json
 stats_totals.json
+session_baseline*.json
 TUI_PLAN.md
 
-# (Opcional) Ignorar modelos locais se preferir baixar pelo GitHub Releases
-# *.h5
-# *.tflite
+# Build artifacts
+build_windows/
+Output/
+*.spec
 
-# Ignorar arquivos auxiliares e temporários de animação
+# Ignorar arquivos auxiliares e temporarios de animacao
 gatinho.asciimtn
 gatinho.tsx
 final.asciimtn
 final2.asciimtn
-classes.txt

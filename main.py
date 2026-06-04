@@ -1,5 +1,5 @@
 """
-Oracle v2 - Epic RPG Automation
+Oracle v3 - Epic RPG Automation
 Entry point. Launches the modern Textual TUI.
 """
 
@@ -24,7 +24,7 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         pass
     
-    # Printing session summary and gorgeous banner on exit
+    # Print session summary and banner on exit
     try:
         from bot.state import sessionData, initialSessionData
         from bot.parsers import format_session_data
@@ -42,20 +42,18 @@ if __name__ == "__main__":
         session_delta = subtract_dicts(sessionData, initialSessionData)
         session_delta["start_time"] = SESSION_START_TIME
         
-        # 1. Print the elegant Oracle Title Art
+        # 1. Print the Oracle Title Art
         print(f"\n{CYAN}{ORACLE_TITLE_ART.strip(chr(10))}{RESET}\n")
         
-        # 2. Print beautiful session statistics
+        # 2. Print session statistics
         print(f"{MAGENTA}{'=' * 65}{RESET}")
-        print(f"{GREEN}          🔮 RESUMO COMPLETO DA SESSÃO ORACLE V2 🔮{RESET}")
+        print(f"{GREEN}          🔮 RESUMO COMPLETO DA SESSÃO ORACLE V3 🔮{RESET}")
         print(f"{MAGENTA}{'=' * 65}{RESET}")
         
-        stats_text = format_session_data(session_delta, "Atividades & Progresso da Catedral")
+        stats_text = format_session_data(session_delta, "Atividades & Progresso da Sessão")
         print(stats_text)
         
-        print(f"{MAGENTA}{'=' * 65}{RESET}")
-        print(f"{YELLOW}   Obrigado por usar o Oracle V2. Protegendo seus caminhos... ✨{RESET}")
         print(f"{MAGENTA}{'=' * 65}{RESET}\n")
     except Exception:
-        # Prevent any exceptions on shutdown from crashing or looking ugly
+        # Prevent any exceptions on shutdown from crashing
         pass

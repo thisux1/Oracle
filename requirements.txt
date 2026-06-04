@@ -1,7 +1,16 @@
 discord.py-self
-tensorflow==2.15.0
+tensorflow>=2.16.0
 numpy
 Pillow
 colorama
 aiohttp
 textual
+fastapi
+uvicorn[standard]
+python-multipart
+pywinpty; sys_platform == "win32"
+pywebview; sys_platform == "win32"
+
+# Build dependencies (install separately or use build_windows.py)
+# pyinstaller
+# node (for frontend build)

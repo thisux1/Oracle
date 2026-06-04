@@ -1,0 +1,236 @@
+[2026-06-04 01:11:34] Coinflip strategy initialized: bankroll=100000000, max_losses=20, initial_step=1
+[2026-06-04 01:11:34] PyNaCl is not installed, voice will NOT be supported.
+[2026-06-04 01:11:38] 🔮 [ORACLE] Mecanismo TUI do Oracle v3.0 inicializado.
+[2026-06-04 01:11:38] 🔮 [ORACLE] Núcleo do Oracle online.
+[2026-06-04 01:11:38] ⚙️ [SIS] Conectando ao gateway do Discord...
+[2026-06-04 01:11:40] Command rpg rd queued
+[2026-06-04 01:11:40] Logged in as thix_._ (ID: 846106273913110558)
+[2026-06-04 01:11:40] ----------------------------------------------
+[2026-06-04 01:11:40] Command rpg pet added to LPQ.
+[2026-06-04 01:11:40] Queued 'rpg pet' at session start.
+[2026-06-04 01:11:40] ⚙️ [SIS] Iniciando controle remoto interativo via Telegram...
+[2026-06-04 01:11:41] Using bot name for Epic RPG filtering: thix_._ (no server nickname)
+[2026-06-04 01:11:42] ⚙️ [LPQ] ➔ rpg rd
+[2026-06-04 01:11:42] 👤 [PLAYER] rpg rd
+[2026-06-04 01:11:43] 🎮 [EPIC RPG] thix_._ — ready :gift: rewards :white_check_mark: ~-~ `vote`  experience :white_check_mark: ~-~ `hunt`
+:white_check_mark: ~-~ `training`
+:white_check_mark: ~-~ `duel`
+:white_check_mark: ~-~ `quest | epic quest` :sparkles: progress :white_check_mark: ~-~ `chop | fish | pickup | mine`
+:white_check_mark: ~-~ `horse breeding | horse race`
+:white_check_mark: ~-~ `arena` :lock: locked :no_entry_sign: ~-~ `farm`
+[2026-06-04 01:11:43] Processing ready message for user thix_._
+[2026-06-04 01:11:43] Command 'rpg hunt' added to LPQ from Epic RPG rd.
+[2026-06-04 01:11:43] Training sequence queued from Epic RPG rd: ['rpg tr']
+[2026-06-04 01:11:43] Command rpg quest added to HPQ.
+[2026-06-04 01:11:43] ⚙️ [SIS] Quest pronta! Enfileirada na HPQ.
+[2026-06-04 01:11:43] Command 'rpg fish' added to LPQ from Epic RPG rd.
+[2026-06-04 01:11:45] ⚡ [HPQ] ➔ rpg quest
+[2026-06-04 01:11:45] 👤 [PLAYER] rpg quest
+[2026-06-04 01:11:45] 🎮 [EPIC RPG] if you don't want this quest anymore, you can quit with `quest quit` thix_._ — quest :crossed_swords: hunt quest kill 3 baby demon (0/3)
+[2026-06-04 01:11:47] ⚙️ [LPQ] ➔ rpg pet
+[2026-06-04 01:11:48] 👤 [PLAYER] rpg pet
+[2026-06-04 01:11:48] 🎮 [EPIC RPG] pets can collect items and coins, more information with `pets info`
+total pets: 1/5
+in adventure: 1/1
+page: 1/1 thix_._ — pets `id: a`
+ golden bunny — tier i pet score: 13
+status: learning | 0h 2m 52s
+ fast [a]
+ faster pets commands `pets info` - information about pets
+`pets summary` - a summary of your pets
+`pets adventure` - a pet will start an adventure, it may find some items for you!
+`pets claim` - claim your pet adventure rewards
+`pets fusion` - select 2 or more pets, there is a chance to get a higher tier pet
+`pets tournament` - send a pet to the pet tournament!
+`pets release` - release some pets if you have too many!
+`pets ascend` - the only way to get the ascended skill
+[2026-06-04 01:11:48] ⚙️ [SIS] Pet em aventura - retorna em 0h 2m 52s
+[2026-06-04 01:11:51] ⚙️ [LPQ] ➔ rpg hunt
+[2026-06-04 01:11:52] 👤 [PLAYER] rpg hunt
+[2026-06-04 01:11:52] 🎮 [EPIC RPG] thix_._ found and killed a  zombie
+earned 183 coins and 288 xp
+lost 0 hp, remaining hp is 390/390
+[2026-06-04 01:11:52] thix_._ earned: 183 coins, 288 XP
+[2026-06-04 01:11:54] ⚙️ [LPQ] ➔ rpg tr
+[2026-06-04 01:11:54] 👤 [PLAYER] rpg tr
+[2026-06-04 01:11:55] 🎮 [EPIC RPG] thix_._ is training in the... casino?
+is this a four leaf clover ? :gem:
+answer with `yes` or `no`! you have 15 seconds!
+[2026-06-04 01:11:55] Minigame detected. All queues paused for 16 seconds.
+[2026-06-04 01:11:55] 🧚 [NAVI LITE] `no`
+[2026-06-04 01:11:55] Command no added to HPQ.
+[2026-06-04 01:11:55] ⚙️ [SIS] Escolha da Navi detectada: no
+[2026-06-04 01:11:57] ⚙️ [LPQ] ➔ no
+[2026-06-04 01:11:58] 👤 [PLAYER] no
+[2026-06-04 01:11:58] 🎮 [EPIC RPG] well done, thix_._ !
+earned 869 xp
+[2026-06-04 01:11:58] Minigame finished. Queues resumed.
+[2026-06-04 01:11:58] thix_._ gained 869 XP for 'well done'
+[2026-06-04 01:12:01] ⚙️ [LPQ] ➔ rpg fish
+[2026-06-04 01:12:02] 👤 [PLAYER] rpg fidh
+[2026-06-04 01:12:02] ⚙️ [SIS] 🫢 Typo! Enviado 'rpg fidh' ('s'→'d' na pos 6)
+[2026-06-04 01:12:03] 👤 [PLAYER] rpg fish
+[2026-06-04 01:12:03] ⚙️ [SIS] Corrigido -> 'rpg fish'
+[2026-06-04 01:12:03] 🎮 [EPIC RPG] thix_._ got 3  normie fish
+[2026-06-04 01:12:03] thix_._ collected: normie fish, quantity: 3
+[2026-06-04 01:12:05] ⚙️ [SIS] Curioso... checando 'rpg i'
+[2026-06-04 01:12:07] ⚙️ [LPQ] ➔ rpg i
+[2026-06-04 01:12:07] 👤 [PLAYER] rpg i
+[2026-06-04 01:12:08] 🎮 [EPIC RPG] thix_._ — inventory items  normie fish: 5,620,146
+ golden fish: 2,538
+ epic fish: 120
+ super fish: 2
+ wooden log: 755
+ epic log: 67
+ super log: 7
+ mega log: 7
+ apple: 14
+ banana: 9
+ flask: 47
+ wolf skin: 476
+ zombie eye: 1,120 consumables  life potion: 189
+ arena cookie: 14,439
+ time cookie: 3,551
+ epic berry: 7
+ guild ring: 545
+ common lootbox: 732
+ uncommon lootbox: 311
+ rare lootbox: 163
+ epic lootbox: 43
+ edgy lootbox: 226
+ wishing token: 226
+ omega horse token: 15
+ magic bed: 1
+ sleepet potion: 25
+ time capsule: 1
+ party popper: 32
+ mega boost: 1
+ round card: 13
+ common card: 8
+ uncommon card: 1
+ godly card: 1
+[2026-06-04 01:12:53] 🧚 [NAVI LITE] hey! it's time for </hunt:964351961774325770>!
+[2026-06-04 01:12:53] Command rpg hunt added to HPQ.
+[2026-06-04 01:12:53] ⚙️ [SIS] Comando de Slash da Navi detectado: rpg hunt
+[2026-06-04 01:12:57] ⚡ [HPQ] ➔ rpg hunt
+[2026-06-04 01:12:57] 👤 [PLAYER] rpg hunt
+[2026-06-04 01:12:58] 🎮 [EPIC RPG] thix_._ found and killed a  baby demon
+earned 198 coins and 196 xp
+lost 0 hp, remaining hp is 390/390
+[2026-06-04 01:12:58] thix_._ earned: 198 coins, 196 XP
+[2026-06-04 01:13:40] Command rpg rd queued
+[2026-06-04 01:13:42] ⚙️ [LPQ] ➔ rpg rd
+[2026-06-04 01:13:43] 👤 [PLAYER] rpg rd
+[2026-06-04 01:13:43] 🎮 [EPIC RPG] thix_._ — ready :gift: rewards :white_check_mark: ~-~ `vote`  experience :white_check_mark: ~-~ `duel`
+:white_check_mark: ~-~ `quest | epic quest` :sparkles: progress :white_check_mark: ~-~ `horse breeding | horse race`
+:white_check_mark: ~-~ `arena` :lock: locked :no_entry_sign: ~-~ `farm`
+[2026-06-04 01:13:43] Processing ready message for user thix_._
+[2026-06-04 01:13:43] Command rpg quest added to HPQ.
+[2026-06-04 01:13:43] ⚙️ [SIS] Quest pronta! Enfileirada na HPQ.
+[2026-06-04 01:13:46] ⚡ [HPQ] ➔ rpg quest
+[2026-06-04 01:13:47] 👤 [PLAYER] rpg quest
+[2026-06-04 01:13:47] 🎮 [EPIC RPG] if you don't want this quest anymore, you can quit with `quest quit` thix_._ — quest :crossed_swords: hunt quest kill 3 baby demon (1/3)
+[2026-06-04 01:13:59] 🧚 [NAVI LITE] hey! it's time for </hunt:964351961774325770>!
+[2026-06-04 01:13:59] Command rpg hunt added to HPQ.
+[2026-06-04 01:13:59] ⚙️ [SIS] Comando de Slash da Navi detectado: rpg hunt
+[2026-06-04 01:14:02] ⚡ [HPQ] ➔ rpg hunt
+[2026-06-04 01:14:05] 👤 [PLAYER] rpg hunt
+[2026-06-04 01:14:05] 🎮 [EPIC RPG] thix_._ found and killed a  zombie
+earned 215 coins and 310 xp
+lost 0 hp, remaining hp is 390/390
+[2026-06-04 01:14:05] thix_._ earned: 215 coins, 310 XP
+[2026-06-04 01:14:41] 🧚 [NAVI LITE] hey! your pet `a` is back! 
+➜ </pets claim:961046238613090385> - no more pets found.
+[2026-06-04 01:14:41] Unexpected helper response: hey! your pet a is back! <:goldenbunny:1214999737456140318>
+➜ </pets claim:961046238613090385> - no more pets found.
+[2026-06-04 01:15:06] 🧚 [NAVI LITE] hey! it's time for </hunt:964351961774325770>!
+[2026-06-04 01:15:06] Command rpg hunt added to HPQ.
+[2026-06-04 01:15:06] ⚙️ [SIS] Comando de Slash da Navi detectado: rpg hunt
+[2026-06-04 01:15:09] ⚡ [HPQ] ➔ rpg hunt
+[2026-06-04 01:15:10] 👤 [PLAYER] rpg humt
+[2026-06-04 01:15:10] ⚙️ [SIS] 🫢 Typo! Enviado 'rpg humt' ('n'→'m' na pos 6)
+[2026-06-04 01:15:12] 👤 [PLAYER] rpg hunt
+[2026-06-04 01:15:12] ⚙️ [SIS] Corrigido -> 'rpg hunt'
+[2026-06-04 01:15:12] 🎮 [EPIC RPG] thix_._ found and killed a  ghost
+earned 178 coins and 230 xp
+lost 0 hp, remaining hp is 390/390
+[2026-06-04 01:15:12] thix_._ earned: 178 coins, 230 XP
+[2026-06-04 01:15:12] Command rpg pet claim added to LPQ.
+[2026-06-04 01:15:12] ⚙️ [SIS] Aventura do pet completa! Resgatando recompensas...
+[2026-06-04 01:15:16] ⚙️ [LPQ] ➔ rpg pet claim
+[2026-06-04 01:15:17] 👤 [PLAYER] rpg pet claim
+[2026-06-04 01:15:17] 🎮 [EPIC RPG] thix_._ — pets pet adventure rewards `id: a`
+ golden bunny — tier i 32  wooden log
+[2026-06-04 01:15:40] Command rpg rd queued
+[2026-06-04 01:15:44] ⚙️ [LPQ] ➔ rpg rd
+[2026-06-04 01:15:44] 👤 [PLAYER] rpg rd
+[2026-06-04 01:15:45] 🎮 [EPIC RPG] thix_._ — ready :gift: rewards :white_check_mark: ~-~ `vote`  experience :white_check_mark: ~-~ `duel`
+:white_check_mark: ~-~ `quest | epic quest` :sparkles: progress :white_check_mark: ~-~ `horse breeding | horse race`
+:white_check_mark: ~-~ `arena` :lock: locked :no_entry_sign: ~-~ `farm`
+[2026-06-04 01:15:45] Processing ready message for user thix_._
+[2026-06-04 01:15:45] Command rpg quest added to HPQ.
+[2026-06-04 01:15:45] ⚙️ [SIS] Quest pronta! Enfileirada na HPQ.
+[2026-06-04 01:15:48] ⚡ [HPQ] ➔ rpg quest
+[2026-06-04 01:15:48] 👤 [PLAYER] rpg quest
+[2026-06-04 01:15:48] 🎮 [EPIC RPG] if you don't want this quest anymore, you can quit with `quest quit` thix_._ — quest :crossed_swords: hunt quest kill 3 baby demon (1/3)
+[2026-06-04 01:16:13] 🧚 [NAVI LITE] hey! it's time for </hunt:964351961774325770>!
+[2026-06-04 01:16:13] Command rpg hunt added to HPQ.
+[2026-06-04 01:16:13] ⚙️ [SIS] Comando de Slash da Navi detectado: rpg hunt
+[2026-06-04 01:16:16] ⚡ [HPQ] ➔ rpg hunt
+[2026-06-04 01:16:17] 👤 [PLAYER] rpg hunt
+[2026-06-04 01:16:17] 🎮 [EPIC RPG] thix_._ found and killed a  zombie
+earned 187 coins and 177 xp
+lost 0 hp, remaining hp is 390/390
+[2026-06-04 01:16:17] thix_._ earned: 187 coins, 177 XP
+[2026-06-04 01:17:04] 🧚 [NAVI LITE] hey! it's time for </fish:959163594665242684>!
+[2026-06-04 01:17:04] Command rpg fish added to HPQ.
+[2026-06-04 01:17:04] ⚙️ [SIS] Comando de Slash da Navi detectado: rpg fish
+[2026-06-04 01:17:06] ⚡ [HPQ] ➔ rpg fish
+[2026-06-04 01:17:07] 👤 [PLAYER] rpg fish
+[2026-06-04 01:17:07] 🎮 [EPIC RPG] thix_._ got 3  normie fish
+[2026-06-04 01:17:07] thix_._ collected: normie fish, quantity: 3
+[2026-06-04 01:17:08] ⚙️ [SIS] Curioso... checando 'rpg i'
+[2026-06-04 01:17:11] ⚙️ [LPQ] ➔ rpg i
+[2026-06-04 01:17:12] 👤 [PLAYER] rpg i
+[2026-06-04 01:17:13] 🎮 [EPIC RPG] thix_._ — inventory items  normie fish: 5,620,149
+ golden fish: 2,538
+ epic fish: 120
+ super fish: 2
+ wooden log: 787
+ epic log: 67
+ super log: 7
+ mega log: 7
+ apple: 14
+ banana: 9
+ flask: 47
+ wolf skin: 476
+ zombie eye: 1,120 consumables  life potion: 189
+ arena cookie: 14,439
+ time cookie: 3,551
+ epic berry: 7
+ guild ring: 545
+ common lootbox: 732
+ uncommon lootbox: 311
+ rare lootbox: 163
+ epic lootbox: 43
+ edgy lootbox: 226
+ wishing token: 226
+ omega horse token: 15
+ magic bed: 1
+ sleepet potion: 25
+ time capsule: 1
+ party popper: 32
+ mega boost: 1
+ round card: 13
+ common card: 8
+ uncommon card: 1
+ godly card: 1
+[2026-06-04 01:17:18] 🧚 [NAVI LITE] hey! it's time for </hunt:964351961774325770>!
+[2026-06-04 01:17:18] Command rpg hunt added to HPQ.
+[2026-06-04 01:17:18] ⚙️ [SIS] Comando de Slash da Navi detectado: rpg hunt
+[2026-06-04 01:17:20] ⚡ [HPQ] ➔ rpg hunt
+[2026-06-04 01:17:20] 👤 [PLAYER] rpg hunt
+[2026-06-04 01:17:20] 🎮 [EPIC RPG] thix_._ found and killed a  baby demon
+earned 216 coins and 232 xp
+lost 0 hp, remaining hp is 390/390
+[2026-06-04 01:17:20] thix_._ earned: 216 coins, 232 XP

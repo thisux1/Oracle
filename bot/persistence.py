@@ -3,9 +3,20 @@ import os
 import time
 import copy
 from bot.hud import logger
+import options_resolver
 
-STATS_FILE = "stats_totals.json"
-HISTORY_FILE = "stats_history.json"
+# Determine dynamic stats filenames based on active profile
+profile_name = os.path.basename(options_resolver.optionsFilePath)
+profile_stem, _ = os.path.splitext(profile_name)
+
+if profile_stem and profile_stem != "options":
+    STATS_FILE = f"stats_{profile_stem}.json"
+    HISTORY_FILE = f"stats_history_{profile_stem}.json"
+    BASELINE_FILE = f"session_baseline_{profile_stem}.json"
+else:
+    STATS_FILE = "stats_totals.json"
+    HISTORY_FILE = "stats_history.json"
+    BASELINE_FILE = "session_baseline.json"
 
 def subtract_dicts(d1, d2):
     result = {}
@@ -110,3 +121,12 @@ def get_stats_for_period(current_data, period_str):
         return result
         
     return current_data
+
+def save_session_baseline(baseline_data):
+    """Save the accumulated stats snapshot at session start so the dashboard
+    can compute session-only stats by subtracting this baseline from current totals."""
+    try:
+        with open(BASELINE_FILE, "w") as f:
+            json.dump(baseline_data, f, indent=4)
+    except Exception as e:
+        logger.error(f"Error saving session baseline: {e}")

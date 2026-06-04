@@ -407,12 +407,17 @@ async def rdCheckEpicRPG(message):
                             add_to_high_priority_queue("rpg card hand")
                             HUD.system("Mão de cartas pronta! Auto-play enfileirado.")
                         else:
-                            asyncio.create_task(send_telegram_notification(
-                                f"\U0001f9b4 Card Hand PRONTO!\n"
-                                f"Jogue manualmente:\n"
-                                f"{make_channel_link()}"
-                            ))
-                            HUD.system("Mão de cartas pronta! Notificação de Telegram enviada.")
+                            current_time = time.time()
+                            if current_time - bot_state.last_cardhand_notification_time >= 3600:
+                                bot_state.last_cardhand_notification_time = current_time
+                                asyncio.create_task(send_telegram_notification(
+                                    f"\U0001f9b4 Card Hand PRONTO!\n"
+                                    f"Jogue manualmente:\n"
+                                    f"{make_channel_link()}"
+                                ))
+                                HUD.system("Mão de cartas pronta! Notificação de Telegram enviada.")
+                            else:
+                                HUD.system("Mão de cartas pronta! Notificação omitida (cooldown de 1h ativo).")
 
                     elif cmd_type == "training":
                         if config.training_command_sequence:

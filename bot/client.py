@@ -21,7 +21,7 @@ from bot.state import (
     reset_bot_state,
     queue_tc_commands,
 )
-from bot.telegram import send_telegram_notification
+from bot.telegram import send_telegram_notification, send_telegram_raw
 from bot.captcha import tentar_resolver_captcha, set_client
 from bot.handlers import responseResolver
 from bot.parsers import format_session_data
@@ -118,6 +118,7 @@ class DiscordClient(discord.Client):
                 ):
                     break_duration = randint(300, 900)
                     bot_state.is_on_coffee_break = True
+                    bot_state.coffee_break_end_time = time.time() + break_duration
                     
                     coffee_art = f"""
 {Fore.LIGHTBLACK_EX}    ─────────────────────────────────────────────
@@ -178,7 +179,8 @@ class DiscordClient(discord.Client):
                             if len(parts) > 1:
                                 c_type = parts[1]
                                 if c_type in sessionData["command_data"]:
-                                    sessionData["command_data"][c_type] += 1
+                                    if c_type != "quest":
+                                        sessionData["command_data"][c_type] += 1
                                 elif c_type == "adv":
                                     sessionData["command_data"]["adventure"] += 1
                                 elif c_type in ["chop", "fish", "mine", "pickup", "axe", "net", "pickaxe", "ladder", "boat", "bow", "chainsaw", "bigboat"]:
@@ -322,7 +324,7 @@ class DiscordClient(discord.Client):
         if message.author.id in config.ADMIN_IDS:
             msg_clean = message.content.lower().strip()
             if msg_clean.startswith("sb "):
-                cmd = msg_clean.split("sb ")[1]
+                cmd = msg_clean[3:].strip()
                 if cmd in ["pause", "stop"]:
                     bot_state.paused = True
                     HUD.alert("Bot PAUSADO via comando do Discord.")
@@ -330,6 +332,8 @@ class DiscordClient(discord.Client):
                     return
                 elif cmd in ["start", "resume"]:
                     bot_state.paused = False
+                    bot_state.watchdog_paused_until = 0
+                    bot_state.no_response_count = 0
                     HUD.system("Bot RETOMADO via comando do Discord.")
                     await message.channel.send("▶️ **Bot Retomado.**")
                     return
@@ -373,6 +377,22 @@ class DiscordClient(discord.Client):
                     bot_state.tc_end_time = 0
                     HUD.system("Modo Time Cookie DESATIVADO.")
                     await message.channel.send("🛑 **Modo Time Cookie Desativado.**")
+                    return
+                elif cmd == "g start":
+                    if coinflip_strategy:
+                        bot_state.gambling_paused = False
+                        first_bet = coinflip_strategy.get_bet_command()
+                        add_to_high_priority_queue(first_bet)
+                        bot_state.coinflip_pending = True
+                        HUD.system("Gambling ATIVADO via Discord.")
+                        await message.channel.send("🎰 **Gambling Ativado.**")
+                    else:
+                        await message.channel.send("⚠️ Coinflip strategy não inicializada.")
+                    return
+                elif cmd in ["g stop", "g pause"]:
+                    bot_state.gambling_paused = True
+                    HUD.system("Gambling PAUSADO via Discord.")
+                    await message.channel.send("⏸️ **Gambling Pausado.**")
                     return
                 elif cmd in ["ajuda", "tutorial"]:
                     tutorial_msg = (
@@ -798,38 +818,51 @@ class DiscordClient(discord.Client):
                 logger.error(f"Error processing edited message: {e}\n{traceback.format_exc()}")
             return
 
-        if config.card_hand_action != "legacy_auto":
-            return
+        # Neon Bot Helper edit — handle based on card_hand_action mode
+        if after.author.id in config.NEON_BOT_IDS:
+            embed_dict = after.embeds[0].to_dict()
+            embed_text = str(embed_dict).lower()
 
-        embed_dict = after.embeds[0].to_dict()
-        embed_text = str(embed_dict).lower()
-        
-        if "expected tc per choice" in embed_text:
-            text_to_parse = ""
-            if "description" in embed_dict and embed_dict["description"]:
-                text_to_parse = embed_dict["description"]
-            
-            if not text_to_parse and "fields" in embed_dict:
-                for field in embed_dict["fields"]:
-                    field_name = field.get("name", "").lower()
-                    if "expected tc per choice" in field_name:
-                        text_to_parse = field.get("value", "")
-                        break
-            
-            if text_to_parse:
-                lines = text_to_parse.split('\n')
-                for line in lines:
-                    if "(optimal)" in line.lower():
-                        if "pass" in line.lower():
-                            add_to_high_priority_queue("pass")
-                            HUD.system("NeonUtil: Carta ideal é 'pass'")
-                            return
-                        card_match = re.search(r'[HDCS][2-9AJQK]|[HDCS]10|EN', line, re.IGNORECASE)
-                        if card_match:
-                            card = card_match.group(0).lower()
-                            add_to_high_priority_queue(card)
-                            HUD.system(f"NeonUtil: Carta ideal é '{card}'")
-                            return
+            if "expected tc per choice" in embed_text:
+                from bot.handlers import format_neon_for_telegram
+                formatted = format_neon_for_telegram(embed_dict)
+                HUD.cardhand(f"Neon Bot Helper atualizou análise do Card Hand.")
+                logger.info(f"Neon edit detected: {embed_text[:120]}...")
+
+                if config.card_hand_action in ["auto", "notify", "legacy_auto"]:
+                    try:
+                        await send_telegram_raw(formatted)
+                    except Exception as e:
+                        logger.error(f"Erro ao encaminhar edição do Neon para o Telegram: {e}")
+
+                # In legacy_auto mode, parse and auto-queue the optimal card
+                if config.card_hand_action == "legacy_auto":
+                    text_to_parse = ""
+                    if "description" in embed_dict and embed_dict["description"]:
+                        text_to_parse = embed_dict["description"]
+
+                    if not text_to_parse and "fields" in embed_dict:
+                        for field in embed_dict["fields"]:
+                            field_name = field.get("name", "").lower()
+                            if "expected tc per choice" in field_name:
+                                text_to_parse = field.get("value", "")
+                                break
+
+                    if text_to_parse:
+                        lines = text_to_parse.split('\n')
+                        for line in lines:
+                            if "(optimal)" in line.lower():
+                                if "pass" in line.lower():
+                                    add_to_high_priority_queue("pass")
+                                    HUD.system("NeonUtil: Carta ideal é 'pass'")
+                                    return
+                                card_match = re.search(r'[HDCS][2-9AJQK]|[HDCS]10|EN', line, re.IGNORECASE)
+                                if card_match:
+                                    card = card_match.group(0).lower()
+                                    add_to_high_priority_queue(card)
+                                    HUD.system(f"NeonUtil: Carta ideal é '{card}'")
+                                    return
+            return
 
     async def telegram_listener_loop(self):
         if not config.TelegramBotToken or not config.TelegramChatID:
@@ -957,7 +990,7 @@ class DiscordClient(discord.Client):
                 "• `status` ou `/status` - Envia o estado atual do bot e queues\n"
                 "• `pause` ou `/pause` - Pausa todas as ações do bot\n"
                 "• `resume` ou `/resume` - Retoma as ações do bot\n"
-                "• `toggle [hunt/adv/farm/cf]` - Inverte as configs ligando/desligando em tempo real\n"
+                "• `toggle [hunt/adv/farm/work/cf]` - Alterna configurações em tempo real (cf = coinflip/gambling)\n"
                 "• `help` ou `/help` - Exibe esta ajuda"
             )
             await send_telegram_notification(help_msg)

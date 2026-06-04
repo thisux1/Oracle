@@ -1,7 +1,6 @@
 """
 Oracle v2 - Assistente de Configuração
-GUI independente para editar o arquivo options.ini.
-Modernizado com navegação lateral e um tema escuro elegante.
+GUI para editar o arquivo options.ini.
 """
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
@@ -66,14 +65,14 @@ FIELD_SECTIONS = [
         ("do_weekly",            "Weekly",               "bool",     "true",            "Habilitar resgate semanal automático"),
         ("do_quest",             "Quest",                "bool",     "true",            "Habilitar missões automáticas"),
         ("do_lootbox",           "Lootbox",              "bool",     "true",            "Habilitar compra automática de lootbox"),
-        ("do_dungeon",           "Dungeon",              "bool",     "true",            "Habilitar masmorra automática"),
+        ("do_dungeon",           "Dungeon",              "bool",     "true",            "Habilitar dungeon automática"),
         ("do_card_hand",         "Card Hand",            "bool",     "true",            "Habilitar minijogo de mão de cartas"),
     ]),
     ("🧪 Advanced", [
         ("do_ultr",              "ULTR Mode",            "bool",     "false",           "Sobrescreve treino: rpg ultr → double → attack → rpg use tc"),
         ("card_hand_action",     "Card Hand Action",     "dropdown", "auto",            "Jogar cartas automaticamente ou apenas notificar", ["auto", "notify"]),
         ("tc_quantity",          "TC Quantity",          "text",     "1",               "Quantidade de cápsulas de tempo (TC) por uso"),
-        ("is_eternal",           "Eternal Mode",         "bool",     "false",           "Habilitar entrar em masmorras + loop eterno de dragon bite"),
+        ("is_eternal",           "Eternal Mode",         "bool",     "false",           "Habilitar entrar em dungeons + loop eterno de dragon bite"),
         ("is_married",           "Married",              "bool",     "false",           "Habilitar funcionalidades de parceiro(a) casado"),
         ("partner_name",         "Partner Name",         "text",     "",                "Nome do parceiro(a) no jogo (se casado)"),
         ("is_ascended",          "Ascended",             "bool",     "false",           "Habilitar comportamento específico de jogador ascendido"),

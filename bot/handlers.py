@@ -19,10 +19,12 @@ from bot.parsers import (
 )
 from bot.telegram import (
     send_telegram_notification,
+    send_telegram_raw,
     make_channel_link,
     send_telegram_keyboard,
     edit_telegram_message,
     get_telegram_callback_query,
+    send_telegram_photo,
 )
 from bot.captcha import save_and_crop_attachment
 from colorama import Fore, Style
@@ -109,7 +111,60 @@ def clean_embed_text_for_telegram(embed_dict):
     return full_text
 
 
+def format_neon_for_telegram(emb):
+    """Format a Neon Bot Helper embed into a beautiful Telegram message.
+    Uses plain text with emojis (sent via send_telegram_raw, no Markdown parsing)."""
+    lines = []
+    lines.append("🔮 NEON BOT HELPER — Análise")
+    lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━")
+
+    # Title / author
+    if emb.get("author", {}).get("name"):
+        lines.append(f"📋 {emb['author']['name']}")
+    if emb.get("title"):
+        lines.append(f"🏷️ {emb['title']}")
+
+    # Description body
+    desc = emb.get("description", "")
+    if desc:
+        lines.append("")
+        for raw_line in desc.split("\n"):
+            stripped = raw_line.strip()
+            if not stripped:
+                continue
+            if "(optimal)" in stripped.lower():
+                lines.append(f"  ✅ {stripped}  ◀ OPTIMAL")
+            else:
+                lines.append(f"  • {stripped}")
+
+    # Fields
+    for field in emb.get("fields", []):
+        fname = field.get("name", "")
+        fval = field.get("value", "")
+        lines.append("")
+        lines.append(f"📊 {fname}")
+        lines.append("─────────────────────")
+        for raw_line in fval.split("\n"):
+            stripped = raw_line.strip()
+            if not stripped:
+                continue
+            if "(optimal)" in stripped.lower():
+                lines.append(f"  ✅ {stripped}  ◀ OPTIMAL")
+            else:
+                lines.append(f"  • {stripped}")
+
+    # Footer
+    if emb.get("footer", {}).get("text"):
+        lines.append("")
+        lines.append(f"— {emb['footer']['text']}")
+
+    lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    return "\n".join(lines)
+
+
 async def find_neon_recommendation(channel):
+    """Search channel history for Neon's card hand recommendation.
+    Returns a tuple (optimal_card, formatted_telegram_text) or (None, None)."""
     try:
         # Search the most recent 5 messages in the channel to find Neon's helper recommendation
         async for msg in channel.history(limit=5):
@@ -117,6 +172,7 @@ async def find_neon_recommendation(channel):
                 emb = msg.embeds[0].to_dict()
                 emb_text = str(emb).lower()
                 if "expected tc per choice" in emb_text:
+                    formatted = format_neon_for_telegram(emb)
                     text_to_parse = ""
                     if "description" in emb and emb["description"]:
                         text_to_parse = emb["description"]
@@ -129,13 +185,15 @@ async def find_neon_recommendation(channel):
                         for line in text_to_parse.split('\n'):
                             if "(optimal)" in line.lower():
                                 if "pass" in line.lower():
-                                    return "pass"
+                                    return "pass", formatted
                                 card_match = re.search(r'[HDCS][2-9AJQK]|[HDCS]10|EN', line, re.IGNORECASE)
                                 if card_match:
-                                    return card_match.group(0).lower()
+                                    return card_match.group(0).lower(), formatted
+                    # Found a Neon embed but couldn't parse optimal — still return formatted text
+                    return None, formatted
     except Exception as e:
         logger.error(f"Erro ao buscar recomendação do Neon: {e}")
-    return None
+    return None, None
 
 
 async def interactive_card_hand_loop(message):
@@ -160,6 +218,29 @@ async def interactive_card_hand_loop(message):
             embed_dict = message.embeds[0].to_dict()
             embed_text = str(embed_dict).lower()
             
+            # Try to save and send the card hand image
+            card_image_sent = False
+            if message.attachments:
+                attachment = message.attachments[0]
+                attachment_name = attachment.filename
+                
+                # Always send when attachment name changes (cards2→cards3→cards4→cards5)
+                if getattr(bot_state, 'last_sent_cardhand_image', None) != attachment_name:
+                    bot_state.last_sent_cardhand_image = attachment_name
+                    photo_path = f"cardhand_{attachment_name}"
+                    try:
+                        await save_and_crop_attachment(attachment, out_path=photo_path)
+                        caption = f"🃏 Card Hand — {attachment_name}"
+                        if "goldened" in embed_text:
+                            caption += " (Final)"
+                        else:
+                            caption += f" (Turno {bot_state.cardhand_turn_count})"
+                        await send_telegram_photo(photo_path, caption)
+                        card_image_sent = True
+                        HUD.cardhand(f"Imagem {attachment_name} enviada ao Telegram.")
+                    except Exception as img_err:
+                        logger.error(f"Erro ao enviar imagem do Card Hand: {img_err}")
+            
             # Check if game is finished — "goldened" only appears in the final embed
             if "goldened" in embed_text:
                 clean_txt = clean_embed_text_for_telegram(embed_dict)
@@ -182,13 +263,22 @@ async def interactive_card_hand_loop(message):
             
             # Wait up to 3 seconds for Neon's recommendation
             rec = None
+            neon_formatted = None
             for _ in range(6):
                 if not bot_state.cardhand_in_progress:
                     break
-                rec = await find_neon_recommendation(message.channel)
+                rec, neon_formatted = await find_neon_recommendation(message.channel)
                 if rec:
                     break
                 await asyncio.sleep(0.5)
+            
+            # Send Neon analysis to Telegram if available
+            if neon_formatted:
+                try:
+                    await send_telegram_raw(neon_formatted)
+                    HUD.cardhand(f"Análise do Neon enviada ao Telegram (rec: {rec or 'N/A'}).")
+                except Exception as neon_err:
+                    logger.error(f"Erro ao enviar análise Neon ao Telegram: {neon_err}")
                 
             # Determine timeout
             timeout = 15 if bot_state.cardhand_turn_count == 1 else 5
@@ -269,8 +359,22 @@ async def interactive_card_hand_loop(message):
             await message.channel.send(final_choice)
             bot_state.cardhand_turn_count += 1
             
-            # Sleep to allow Epic RPG to process choice and edit message
-            await asyncio.sleep(4)
+            # Wait for message to be edited to avoid reprocessing the same turn
+            updated = False
+            for _ in range(30):
+                await asyncio.sleep(0.5)
+                if not bot_state.cardhand_in_progress:
+                    break
+                try:
+                    new_msg = await message.channel.fetch_message(message.id)
+                    new_embed_text = str(new_msg.embeds[0].to_dict()).lower() if new_msg.embeds else ""
+                    if new_embed_text != embed_text:
+                        updated = True
+                        break
+                except Exception:
+                    pass
+            if not updated:
+                logger.warning("Mensagem de Card Hand não foi atualizada no tempo limite.")
             
     except Exception as e:
         logger.error(f"Erro no loop interativo de Card Hand: {e}")
@@ -278,6 +382,7 @@ async def interactive_card_hand_loop(message):
         bot_state.cardhand_in_progress = False
         bot_state.cardhand_first_pass_done = False
         bot_state.cardhand_turn_count = 1
+        bot_state.last_sent_cardhand_image = None
         active_card_hand_msg_id = None
 
 
@@ -602,6 +707,30 @@ async def responseResolver(message):
             embed_text_raw = str(embed_dict).lower()
             # Strip Discord markdown so substring checks match cleanly
             embed_text = embed_text_raw.replace('**', '').replace('__', '').replace('`', '')
+
+            # ─── Quest Completion Detection ───
+            author_name = embed_dict.get("author", {}).get("name", "").lower()
+            if "quest" in author_name:
+                user_matches = False
+                if config.user_name_lower and config.user_name_lower in author_name:
+                    user_matches = True
+                elif str(config.userID) in author_name:
+                    user_matches = True
+                
+                if user_matches:
+                    description = embed_dict.get("description", "").lower()
+                    fields_text = ""
+                    for field in embed_dict.get("fields", []):
+                        fields_text += field.get("name", "").lower() + " " + field.get("value", "").lower() + " "
+                    combined_body = description + " " + fields_text
+                    
+                    if "completed!" in combined_body:
+                        sessionData["command_data"]["quest"] += 1
+                        logger.info(f"Quest Completed detected! Count: {sessionData['command_data']['quest']}.")
+                        HUD.system(f"Quest Completada! Total: {sessionData['command_data']['quest']}")
+                        from bot.persistence import save_session_data
+                        save_session_data(sessionData)
+                        return
 
             # ─── Dungeon State Machine ───
             if config.is_eternal and config.do_dungeon:
