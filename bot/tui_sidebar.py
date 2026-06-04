@@ -358,7 +358,9 @@ class SidebarPane(Static):
         hunts = sessionData["command_data"].get("hunt", 0) - initialSessionData["command_data"].get("hunt", 0)
         advs = sessionData["command_data"].get("adventure", 0) - initialSessionData["command_data"].get("adventure", 0)
         farms = sessionData["command_data"].get("farm", 0) - initialSessionData["command_data"].get("farm", 0)
-        lboxes = sessionData["command_data"].get("lootbox", 0) - initialSessionData["command_data"].get("lootbox", 0)
+        lb_drops = sessionData["loot_data"].get("lootbox_drops", {})
+        init_lb_drops = initialSessionData["loot_data"].get("lootbox_drops", {})
+        lboxes = sum(v - init_lb_drops.get(k, 0) for k, v in lb_drops.items())
         coins = sessionData["progress_data"].get("coins", 0) - initialSessionData["progress_data"].get("coins", 0)
         xp = sessionData["progress_data"].get("xp", 0) - initialSessionData["progress_data"].get("xp", 0)
 

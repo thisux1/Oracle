@@ -123,6 +123,7 @@ export default function StatsTab() {
   const misc = stats?.misc || {};
 
   const totalCommands = Object.values(commands).reduce((a, b) => a + (Number(b) || 0), 0);
+  const totalLootboxes = Object.values(loot.lootbox_drops || {}).reduce((a, b) => a + (Number(b) || 0), 0);
 
   return (
     <div className="space-y-4">
@@ -155,11 +156,12 @@ export default function StatsTab() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         <AnimatedCounter value={progress.coins || 0} label="Coins" color="#fbbf24" />
         <AnimatedCounter value={progress.xp || 0} label="XP" color="#a78bfa" />
         <AnimatedCounter value={progress.levels || 0} label="Levels" color="var(--accent-cyan)" />
-        <AnimatedCounter value={totalCommands} label="Total Commands" color="var(--accent-success)" />
+        <AnimatedCounter value={totalLootboxes} label="Lootboxes" color="#f472b6" />
+        <AnimatedCounter value={totalCommands} label="Commands" color="var(--accent-success)" />
       </div>
 
       {/* Command Breakdown */}

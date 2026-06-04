@@ -179,7 +179,7 @@ DEFAULT_SESSION_DATA = {
         },
         "lootbox_drops": {
             "common": 0, "uncommon": 0, "rare": 0, "epic": 0, "edgy": 0,
-            "omega": 0, "godly": 0, "eternal": 0, "void": 0,
+            "omega": 0, "godly": 0, "eternal": 0, "void": 0, "galaxy": 0,
         },
         "work_drops": {
             "banana": 0, "apple": 0, "ruby": 0, "normie fish": 0,
@@ -208,7 +208,7 @@ DEFAULT_SESSION_DATA = {
         },
         "lootbox_drops": {
             "common": 0, "uncommon": 0, "rare": 0, "epic": 0, "edgy": 0,
-            "omega": 0, "godly": 0, "eternal": 0, "void": 0,
+            "omega": 0, "godly": 0, "eternal": 0, "void": 0, "galaxy": 0,
         },
         "work_drops": {
             "banana": 0, "apple": 0, "ruby": 0, "normie fish": 0,

@@ -507,6 +507,7 @@ class DiscordClient(discord.Client):
             ):
                 bot_state.paused = True
                 HUD.alert("CAPTCHA DETECTADO! Bot pausado por segurança.")
+                sessionData["misc"]["guard_events"] += 1
                 highPriorityQueue.clear()
                 highPriorityQueueSet.clear()
                 lowPriorityQueue.clear()

@@ -496,7 +496,7 @@ CONFIG_SCHEMA = [
         ("zombie_horde_event_response", "dropdown", "fight", ["fight", "join", "cry"]),
     ]),
     ("🌾 Economy / Gambling", [
-        ("lootbox_type", "dropdown", "ed lb", ["ed lb", "ep lb", "rare lb", "uncommon lb", "common lb"]),
+        ("lootbox_type", "dropdown", "ed lb", ["galaxy lb", "ed lb", "ep lb", "rare lb", "uncommon lb", "common lb"]),
         ("seed", "dropdown", "carrot", ["carrot", "potato", "bread"]),
         ("work_command", "dropdown", "chainsaw", ["chainsaw", "pickaxe", "bigboat", "greenhouse", "axe", "net", "pickup"]),
         ("bankroll", "text", "1000000000000"),

@@ -57,7 +57,7 @@ def process_drops(lines, player_name, loot_data):
                 continue
 
             lootbox_match = re.match(
-                r"(common|uncommon|rare|epic|edgy|omega|godly|eternal|void) lootbox",
+                r"(common|uncommon|rare|epic|edgy|omega|godly|eternal|void|galaxy) lootbox",
                 item_name,
             )
             if lootbox_match and lootbox_match.group(1) in lootbox_drops:
@@ -105,7 +105,7 @@ def process_drops(lines, player_name, loot_data):
                 continue
 
             lootbox_match = re.match(
-                r"(common|uncommon|rare|epic|edgy|omega|godly|eternal|void) lootbox",
+                r"(common|uncommon|rare|epic|edgy|omega|godly|eternal|void|galaxy) lootbox",
                 item_name,
             )
             if lootbox_match and lootbox_match.group(1) in lootbox_drops:
