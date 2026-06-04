@@ -23,14 +23,13 @@ const RESTART_FIELDS = new Set([
   "is_ascended",
 ]);
 
-function TextField({ label, field, value, onChange, isPassword = false, placeholder = "" }) {
+function TextField({ label, field, value, onChange, isPassword = false, placeholder = "", type = "text" }) {
   const [visible, setVisible] = useState(false);
-  const isSecret = isPassword && !visible;
 
   return (
     <div>
-      <div className="mb-1 flex items-center gap-2">
-        <label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
+      <div className="mb-1 flex items-center justify-between">
+        <label className="block text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
           {label}
         </label>
         {RESTART_FIELDS.has(field) ? (
@@ -51,12 +50,12 @@ function TextField({ label, field, value, onChange, isPassword = false, placehol
       </div>
       <div className="relative">
         <input
-          type={isPassword && !visible ? "password" : "text"}
+          type={isPassword && !visible ? "password" : type}
           value={value || ""}
           onChange={(e) => onChange(field, e.target.value)}
           placeholder={placeholder}
           className="input pr-10"
-          style={{ fontFamily: isPassword ? "var(--font-mono)" : undefined }}
+          style={{ fontFamily: isPassword || type === "time" ? "var(--font-mono)" : undefined }}
         />
         {isPassword ? (
           <button
@@ -161,8 +160,8 @@ export default function ConfigTab() {
       {/* General */}
       <ConfigSection title="General" icon="&#9881;&#65039;">
         <div className="grid gap-4 sm:grid-cols-2">
-          <NumberField label="Random Interval (s)" field="random_interval" value={config.random_interval} onChange={handleChange} min={1} max={300} step={1} />
-          <NumberField label="Typo Chance (%)" field="typo_chance" value={config.typo_chance} onChange={handleChange} min={0} max={100} step={1} />
+          <ToggleSwitch label="Random Interval (humanizer delay)" checked={isTrue("random_interval")} onChange={doToggle("random_interval")} />
+          <NumberField label="Typo Chance (e.g. 0.05 = 5%)" field="typo_chance" value={config.typo_chance} onChange={handleChange} min={0} max={1} step={0.01} />
         </div>
       </ConfigSection>
 
@@ -252,8 +251,8 @@ export default function ConfigTab() {
       {/* Schedule */}
       <ConfigSection title="Schedule" icon="&#128336;">
         <div className="grid gap-4 sm:grid-cols-2">
-          <TextField label="Sleep At" field="sleep_at" value={config.sleep_at} onChange={handleChange} placeholder="23:30" />
-          <TextField label="Wake Up At" field="wake_up_at" value={config.wake_up_at} onChange={handleChange} placeholder="07:00" />
+          <TextField label="Sleep At (24h)" field="sleep_at" type="time" value={config.sleep_at} onChange={handleChange} />
+          <TextField label="Wake Up At (24h)" field="wake_up_at" type="time" value={config.wake_up_at} onChange={handleChange} />
           <TextField label="Theme" field="theme" value={config.theme} onChange={handleChange} />
         </div>
       </ConfigSection>
