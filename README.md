@@ -1,30 +1,29 @@
 # 🔮 Oracle v3 — Epic RPG Automation
 
-Este repositório contém o **Oracle v3**, um macro para automação do Epic RPG com inteligência artificial para resolução de captchas, sistema de anti-detecção e uma **Terminal User Interface (TUI)** interativa.
+Este repositório contém o **Oracle v3**, um macro para automação do Epic RPG com inteligência artificial para resolução de captchas, sistema de anti-detecção, uma **Terminal User Interface (TUI)** interativa e um **Web Dashboard** moderno para controle de desktop.
 
 ---
 
-## Recursos da Versão 3.0 (TUI)
+## Interfaces e Recursos da Versão 3.0
 
-A v3.0 introduz uma interface de terminal construída sobre **Textual** + **Rich**, permitindo o controle e monitoramento do bot em tempo real.
+A v3.0 introduz duas interfaces completas de controle e monitoramento em tempo real:
 
-### Inicialização (Splash Screen)
-Arte do Olho do Oracle com barra de progresso de carregamento (pode ser pulada pressionando qualquer tecla).
+### 1. Terminal User Interface (TUI)
+Uma interface rica construída sobre **Textual** + **Rich**, perfeita para uso local no console em Linux/macOS.
+*   **Inicialização (Splash Screen):** Arte do Olho do Oracle com barra de progresso (pressione qualquer tecla para pular).
+*   **Mascote Animado:** Exibe uma animação que alterna entre o Olho do Oracle (ativo) e um gatinho dormindo (pausas/hibernação), adaptando-se ao estado do bot.
+*   **Painel de Telemetria:** Aba lateral (sidebar) com contadores de comandos executados, moedas e experiência.
+*   **Suporte a Temas Visuais:** 10 esquemas de cores pré-configurados (Cathedral, Dracula, Nord, Monokai Pro, Gruvbox, Catppuccin, Tokyo Night, Rosé Pine, Solarized e Cyberpunk).
+*   **Visualizador de Logs:** Log centralizado com formatação colorida e categorização por tags.
+*   **CLI com Autocomplete:** Linha de comandos no rodapé com histórico (`↑`/`↓`) e sugestões automáticas.
 
-### Mascote Animado
-Exibe uma animação que alterna entre o Olho do Oracle (ativo) e um gatinho dormindo (pausas/hibernação), adaptando-se ao estado do bot.
-
-### Painel de Telemetria e Estatísticas
-Aba lateral (sidebar) com contadores de comandos executados (Hunts, Adventures, Farms, Lootboxes), saldo de moedas e experiência obtida na sessão.
-
-### Suporte a Temas Visuais
-10 esquemas de cores pré-configurados (Cathedral, Dracula, Nord, Monokai Pro, Gruvbox, Catppuccin, Tokyo Night, Rosé Pine, Solarized e Cyberpunk), selecionáveis na interface com persistência.
-
-### CLI Integrada com Histórico e Autocomplete
-Linha de comandos no rodapé com suporte a histórico (`↑`/`↓`) e sugestões automáticas ao digitar `/`.
-
-### Visualizador de Logs
-Log centralizado com formatação colorida e categorização por tags (`LOOT`, `ORACLE`, `ALERTA`, `SYSTEM`, etc.).
+### 2. Web Dashboard & Desktop App
+Uma interface desktop moderna com design premium glassmorphism, construída em **React (Vite) + Tailwind CSS** no frontend e **FastAPI (Uvicorn)** no backend.
+*   **Visão Geral (Overview):** Telemetria em tempo real com contadores animados, gráficos de atividade e status dinâmico do processo do bot.
+*   **Console Integrado:** Mini-terminal web responsivo para monitorar logs em tempo real e interagir com o bot.
+*   **Configuração Simplificada:** Painel interativo para ajustar todos os parâmetros do `options.ini` sem abrir arquivos de texto.
+*   **Gerenciador de Perfis:** Salve, importe, exporte e alterne facilmente entre múltiplos perfis de configuração.
+*   **Modo Desktop Nativo:** Janela dedicada sem barra de navegação no Windows utilizando `pywebview` (com fallback automático para o navegador padrão).
 
 ---
 
@@ -47,37 +46,56 @@ O Discord monitora padrões de atividade. Uma conta que apenas envia comandos de
 ## Instalação e Execução
 
 ### 1. Requisitos
-*   Python 3.11
+*   Python 3.12 (ou 3.11)
+*   Node.js v20+ (apenas se for compilar/modificar o frontend do Dashboard)
 *   Token da conta do Discord
 *   Token do Bot do Telegram (opcional, para receber alertas)
 
 ### 2. Configuração do Ambiente Virtual (venv)
 ```bash
 # Criar o ambiente virtual:
-python3.11 -m venv venv
+python3 -m venv venv
 
 # Ativar o ambiente virtual:
 source venv/bin/activate  # Linux/macOS
 venv\Scripts\activate     # Windows
 
-# Instalar dependências:
+# Instalar dependências do bot:
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 3. Configuração do `options.ini`
-Crie ou edite o arquivo `options.ini` na raiz do projeto com suas credenciais:
-*   `user_token`: Token da conta do Discord.
-*   `channel_id`: ID do canal de texto para os comandos.
-*   `guild_id`: ID do servidor Discord.
-*   `admin_ids`: Seu ID de usuário (para comandos remotos).
-
-### 4. Executando o Bot
+### 3. Executando o Bot (TUI)
+Para rodar a interface clássica no terminal:
 ```bash
 python main.py
 ```
 
-### 5. Configuração de Atalho Global (Opcional)
+### 4. Executando o Web Dashboard (Desktop App)
+Para iniciar o launcher que abre a janela de controle do Dashboard:
+```bash
+python launch_dashboard.py
+```
+*(Nota: Certifique-se de que a build do frontend existe na pasta `dashboard/dist`. Caso contrário, siga as instruções de compilação abaixo).*
+
+### 5. Compilação do Frontend e Geração do Executável (.exe)
+Se você modificou o Dashboard ou deseja gerar o instalador autônomo para Windows:
+
+**Gerar build do React:**
+```bash
+cd dashboard
+npm install
+npm run build
+cd ..
+```
+
+**Gerar executável do Windows (.exe) e instalador Inno Setup:**
+Execute o script de build integrado (irá rodar o PyInstaller e compilar o arquivo `.iss` gerando o instalador na pasta `Output/`):
+```bash
+python build_windows.py
+```
+
+### 6. Configuração de Atalho Global (Linux/macOS - Opcional)
 Você pode configurar o comando `oracle` globalmente executando o instalador de atalhos:
 ```bash
 chmod +x setup.sh && ./setup.sh
