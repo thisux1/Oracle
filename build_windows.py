@@ -63,12 +63,17 @@ def find_build_python() -> str:
     venv_dir = SCRIPT_DIR / ".venv_build"
     python_bin = venv_dir / "bin" / "python"
 
-    # If venv already exists and has shared lib, reuse it
-    if python_bin.exists() and _has_shared_lib(str(python_bin)):
+    # If venv already exists and has shared lib (or is on Windows), reuse it
+    if python_bin.exists() and (IS_WINDOWS or _has_shared_lib(str(python_bin))):
         print(f"[OK] Reusing build venv: {python_bin}")
         return str(python_bin)
 
-    # Prefer Python 3.12 specifically (tensorflow compatible)
+    # On Windows, just use sys.executable (always has shared lib)
+    if IS_WINDOWS:
+        print(f"[OK] Using current Python: {sys.executable}")
+        return sys.executable
+
+    # On Linux, find Python 3.12 with shared lib
     preferred = ["/usr/bin/python3.12", "/usr/local/bin/python3.12"]
     system_py = None
 
