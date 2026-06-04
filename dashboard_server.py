@@ -255,6 +255,9 @@ class BotProcessManager:
                 else:
                     self._spawn_posix()
             except Exception as exc:
+                import traceback as _tb
+                print(f"[oracle] ERROR spawning bot: {exc}")
+                print(_tb.format_exc())
                 self.state = BotState.OFFLINE
                 self._cleanup_runtime()
                 api_error(
@@ -404,26 +407,56 @@ class BotProcessManager:
 
         self._pty_master_fd = master_fd
 
-    def _spawn_windows(self) -> None:
-        if winpty is None:
-            raise RuntimeError("pywinpty is required on Windows")
+    @staticmethod
+    def _is_wine() -> bool:
+        """Detect Wine emulation (winpty/ConPTY don't work under Wine)."""
+        try:
+            import ctypes
+            return hasattr(ctypes.CDLL("ntdll.dll"), "wine_get_version")
+        except Exception:
+            return False
 
+    def _spawn_windows(self) -> None:
         command = self._build_bot_command(self.profile)
+
+        # Under Wine, winpty/ConPTY are not supported — fall back to plain Popen
+        # with pipes. Terminal colours won't work but the bot will run.
+        if self._is_wine() or winpty is None:
+            self.process = subprocess.Popen(
+                command,
+                cwd=str(PROJECT_DIR),
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+            )
+            # Read stdout pipe instead of PTY fd
+            self._pty_master_fd = self.process.stdout.fileno()
+            return
+
         command_line = subprocess.list2cmdline(command)
         self._pty_process = winpty.PtyProcess.spawn(command_line, cwd=str(PROJECT_DIR))
         self.process = self._pty_process
 
     def _read_chunk(self) -> bytes:
         if os.name == "nt":
-            if self._pty_process is None:
-                return b""
-            data = self._pty_process.read(4096)
-            if not data:
-                return b""
-            if isinstance(data, bytes):
-                return data
-            return str(data).encode("utf-8", errors="replace")
+            # winpty path (real Windows with PTY)
+            if self._pty_process is not None:
+                data = self._pty_process.read(4096)
+                if not data:
+                    return b""
+                if isinstance(data, bytes):
+                    return data
+                return str(data).encode("utf-8", errors="replace")
 
+            # Pipe fallback (Wine or no winpty): read from stdout pipe fd
+            if self._pty_master_fd is not None:
+                try:
+                    return os.read(self._pty_master_fd, 4096)
+                except OSError:
+                    return b""
+            return b""
+
+        # POSIX path: read from PTY master fd
         if self._pty_master_fd is None:
             return b""
 

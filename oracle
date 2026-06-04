@@ -62,5 +62,73 @@ fi
 
 echo -e "${GREEN}All dependencies verified. Launching Oracle V2...${NC}\n"
 
-# 4. Start the application
-python3 main.py
+# 4. Parse arguments
+DASHBOARD_MODE=false
+DEV_MODE=false
+PASSTHROUGH_ARGS=()
+
+for arg in "$@"; do
+    case "$arg" in
+        --dashboard|-d)
+            DASHBOARD_MODE=true
+            ;;
+        --dev)
+            DASHBOARD_MODE=true
+            DEV_MODE=true
+            ;;
+        *)
+            PASSTHROUGH_ARGS+=("$arg")
+            ;;
+    esac
+done
+
+# 5. Start the application
+if [ "$DASHBOARD_MODE" = true ]; then
+    if [ "$DEV_MODE" = true ]; then
+        # ── Dev mode: backend + Vite hot-reload in parallel ──────────────────
+        echo -e "${CYAN}Starting Oracle in DEV mode (backend + Vite hot-reload)...${NC}"
+
+        # Check node/npm
+        if ! command -v npm &> /dev/null; then
+            echo -e "${RED}ERROR: npm not found. Install Node.js to use --dev mode.${NC}"
+            exit 1
+        fi
+
+        # Check dashboard/dist exists for the backend to serve as fallback
+        DASHBOARD_DIR="$PROJECT_DIR/dashboard"
+
+        # Start Python backend in background
+        echo -e "  ${GREEN}[1/2]${NC} Starting Python backend on ${CYAN}http://127.0.0.1:8000${NC}..."
+        python3 -m uvicorn dashboard_server:app \
+            --host 127.0.0.1 --port 8000 \
+            --reload --log-level warning &
+        BACKEND_PID=$!
+
+        # Brief pause so backend is up before Vite tries to proxy
+        sleep 1
+
+        # Start Vite dev server in background
+        echo -e "  ${GREEN}[2/2]${NC} Starting Vite dev server on ${CYAN}http://127.0.0.1:5173${NC}..."
+        (cd "$DASHBOARD_DIR" && npm run dev) &
+        VITE_PID=$!
+
+        # Wait for Vite to be ready then open browser
+        sleep 2
+        echo -e "\n${GREEN}Opening dashboard in browser...${NC}"
+        xdg-open "http://127.0.0.1:5173" 2>/dev/null || \
+            python3 -c "import webbrowser; webbrowser.open('http://127.0.0.1:5173')"
+
+        echo -e "${CYAN}Dev servers running. Press Ctrl+C to stop both.${NC}"
+
+        # Wait and forward Ctrl+C to both child processes
+        trap "kill $BACKEND_PID $VITE_PID 2>/dev/null; exit 0" INT TERM
+        wait
+    else
+        # ── Production mode: serve pre-built dist ─────────────────────────────
+        echo -e "${CYAN}Starting Oracle Web Dashboard...${NC}"
+        python3 launch_dashboard.py "${PASSTHROUGH_ARGS[@]}"
+    fi
+else
+    # ── TUI mode (default) ───────────────────────────────────────────────────
+    python3 main.py "${PASSTHROUGH_ARGS[@]}"
+fi
