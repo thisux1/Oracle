@@ -122,7 +122,7 @@ def _open_native_window(url: str) -> bool:
         )
 
         atexit.register(lambda: window.destroy() if window and window._is_loaded else None)
-        webview.start(debug=False)
+        webview.start(gui="edgechromium", debug=False)
         return True
     except ImportError:
         return False
