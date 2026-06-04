@@ -48,11 +48,28 @@ def _setup_logging() -> None:
 _setup_logging()
 
 # ---------------------------------------------------------------------------
+# --run-bot mode: when the frozen bundle is invoked as a bot subprocess by
+# the dashboard server, skip the whole server/UI stack and just run the TUI.
+# This must happen BEFORE any heavy imports so it's fast.
+# ---------------------------------------------------------------------------
+if "--run-bot" in sys.argv:
+    # Remove the flag so the TUI doesn't see it
+    sys.argv.remove("--run-bot")
+    try:
+        from bot.tui import OracleApp  # noqa: E402
+        OracleApp().run()
+    except Exception:
+        import traceback as _tb
+        _tb.print_exc()
+    sys.exit(0)
+
+# ---------------------------------------------------------------------------
 # Resolve paths — works both in development and in a frozen PyInstaller bundle.
 # sys._MEIPASS is set by PyInstaller to the temp extraction directory.
 # ---------------------------------------------------------------------------
 
 import socket
+
 import threading
 import time
 import traceback

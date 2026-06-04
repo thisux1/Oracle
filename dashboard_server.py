@@ -369,10 +369,26 @@ class BotProcessManager:
 
         return True
 
+    @staticmethod
+    def _build_bot_command(profile: str) -> list[str]:
+        """Build the subprocess command to launch the bot.
+
+        When running as a frozen PyInstaller bundle, sys.executable points to
+        the packaged .exe itself — we re-invoke it with --run-bot so the entry
+        point can start the TUI instead of the dashboard server.
+        When running in normal development mode, we call main.py directly.
+        """
+        if getattr(sys, "frozen", False):
+            # Frozen: re-invoke the bundle exe in bot mode
+            return [sys.executable, "--run-bot", profile]
+        # Development: invoke main.py with the current interpreter
+        main_py = Path(__file__).resolve().parent / "main.py"
+        return [sys.executable, str(main_py), profile]
+
     def _spawn_posix(self) -> None:
         master_fd, slave_fd = pty.openpty()
 
-        command = [sys.executable, "main.py", self.profile]
+        command = self._build_bot_command(self.profile)
         try:
             self.process = subprocess.Popen(
                 command,
@@ -392,7 +408,7 @@ class BotProcessManager:
         if winpty is None:
             raise RuntimeError("pywinpty is required on Windows")
 
-        command = [sys.executable, "main.py", self.profile]
+        command = self._build_bot_command(self.profile)
         command_line = subprocess.list2cmdline(command)
         self._pty_process = winpty.PtyProcess.spawn(command_line, cwd=str(PROJECT_DIR))
         self.process = self._pty_process
