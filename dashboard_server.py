@@ -416,26 +416,32 @@ class BotProcessManager:
         except Exception:
             return False
 
+    def _spawn_windows_fallback(self, command: list[str]) -> None:
+        """Fallback for when winpty is unavailable or fails."""
+        self.process = subprocess.Popen(
+            command,
+            cwd=str(PROJECT_DIR),
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        # Read stdout pipe instead of PTY fd
+        self._pty_master_fd = self.process.stdout.fileno()
+
     def _spawn_windows(self) -> None:
         command = self._build_bot_command(self.profile)
 
-        # Under Wine, winpty/ConPTY are not supported — fall back to plain Popen
-        # with pipes. Terminal colours won't work but the bot will run.
         if self._is_wine() or winpty is None:
-            self.process = subprocess.Popen(
-                command,
-                cwd=str(PROJECT_DIR),
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-            )
-            # Read stdout pipe instead of PTY fd
-            self._pty_master_fd = self.process.stdout.fileno()
+            self._spawn_windows_fallback(command)
             return
 
         command_line = subprocess.list2cmdline(command)
-        self._pty_process = winpty.PtyProcess.spawn(command_line, cwd=str(PROJECT_DIR))
-        self.process = self._pty_process
+        try:
+            self._pty_process = winpty.PtyProcess.spawn(command_line, cwd=str(PROJECT_DIR))
+            self.process = self._pty_process
+        except Exception as e:
+            print(f"[oracle] winpty failed to spawn ({e}), falling back to plain Popen...")
+            self._spawn_windows_fallback(command)
 
     def _read_chunk(self) -> bytes:
         if os.name == "nt":
