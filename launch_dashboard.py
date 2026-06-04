@@ -11,17 +11,42 @@ import atexit
 import os
 import sys
 
-# PyInstaller windowed/noconsole mode redirects stdout and stderr to None,
-# which causes Uvicorn's logging configuration (and potentially other tools) to crash.
-if sys.stdout is None:
-    sys.stdout = open(os.devnull, "w")
-if sys.stderr is None:
-    sys.stderr = open(os.devnull, "w")
+# PyInstaller windowed/noconsole mode redirects stdout and stderr to None.
+# Set up a persistent launcher log file in local AppData to capture tracebacks.
+import tempfile
+from pathlib import Path
+
+def _setup_logging() -> None:
+    app_data = os.environ.get("LOCALAPPDATA")
+    if app_data:
+        log_dir = Path(app_data) / "OracleOS"
+    else:
+        log_dir = Path(tempfile.gettempdir()) / "OracleOS"
+    
+    try:
+        log_dir.mkdir(parents=True, exist_ok=True)
+        log_file = log_dir / "launcher.log"
+        # Open in write/append mode
+        log_stream = open(log_file, "w", encoding="utf-8", buffering=1)
+        sys.stdout = log_stream
+        sys.stderr = log_stream
+        print("--- Oracle OS Launcher Start ---")
+        print(f"Python: {sys.version}")
+        print(f"Platform: {sys.platform}")
+        print(f"Executable: {sys.executable}")
+    except Exception:
+        # Fallback to devnull if we can't write to AppData/temp
+        if sys.stdout is None:
+            sys.stdout = open(os.devnull, "w")
+        if sys.stderr is None:
+            sys.stderr = open(os.devnull, "w")
+
+_setup_logging()
 
 import threading
 import time
 import webbrowser
-from pathlib import Path
+
 
 ROOT_DIR = Path(__file__).resolve().parent
 DIST_DIR = ROOT_DIR / "dashboard" / "dist"
@@ -118,4 +143,11 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        import traceback
+        print("\n[CRITICAL ERROR DURING LAUNCHER STARTUP]:")
+        traceback.print_exc()
+        sys.exit(1)
+
