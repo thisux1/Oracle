@@ -10,6 +10,14 @@ from __future__ import annotations
 import atexit
 import os
 import sys
+
+# PyInstaller windowed/noconsole mode redirects stdout and stderr to None,
+# which causes Uvicorn's logging configuration (and potentially other tools) to crash.
+if sys.stdout is None:
+    sys.stdout = open(os.devnull, "w")
+if sys.stderr is None:
+    sys.stderr = open(os.devnull, "w")
+
 import threading
 import time
 import webbrowser
