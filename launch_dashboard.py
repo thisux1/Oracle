@@ -1,13 +1,11 @@
 """Oracle Dashboard - Desktop launcher.
 
 Starts the FastAPI backend (uvicorn) in a daemon thread, mounts the built
-frontend, and opens the dashboard in a native window (pywebview) or the
-default browser as fallback.
+frontend, and opens the dashboard in the default browser.
 """
 
 from __future__ import annotations
 
-import atexit
 import os
 import sys
 import tempfile
