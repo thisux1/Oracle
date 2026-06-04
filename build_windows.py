@@ -267,7 +267,7 @@ def step_pyinstaller() -> None:
     cmd.extend(["--collect-submodules", "bot"])
 
     # collect-all includes native DLLs and data files (pydantic uses Rust .pyd/.dll)
-    for pkg in ["pydantic", "pydantic_core", "webview", "pywinpty"]:
+    for pkg in ["pydantic", "pydantic_core", "pywinpty"]:
         cmd.extend(["--collect-all", pkg])
 
     # Entry point

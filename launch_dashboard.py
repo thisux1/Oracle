@@ -153,58 +153,8 @@ def _start_server() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Wine detection
-# ---------------------------------------------------------------------------
-
-
-def _is_wine() -> bool:
-    """Return True when running inside Wine (not real Windows)."""
-    try:
-        import ctypes
-        ntdll = ctypes.CDLL("ntdll.dll")
-        return hasattr(ntdll, "wine_get_version")
-    except Exception:
-        return False
-
-
-# ---------------------------------------------------------------------------
 # Window / browser helpers
 # ---------------------------------------------------------------------------
-
-
-def _open_native_window(url: str) -> bool:
-    """Try to open a pywebview native window (Edge/Chromium). Returns True on success."""
-    if _is_wine():
-        print("[oracle] Wine detected — skipping native window, using browser fallback.")
-        return False
-
-    try:
-        import webview
-
-        window = webview.create_window(
-            "Oracle OS",
-            url,
-            width=1280,
-            height=800,
-            min_size=(960, 600),
-        )
-
-        def _safe_destroy() -> None:
-            try:
-                window.destroy()
-            except Exception:
-                pass
-
-        atexit.register(_safe_destroy)
-        webview.start(gui="edgechromium", debug=False)
-        return True
-    except ImportError:
-        print("[oracle] pywebview not available, falling back to browser.")
-        return False
-    except Exception as exc:
-        print(f"[oracle] Native window failed ({exc}), falling back to browser.")
-        return False
-
 
 def _open_browser(url: str) -> None:
     """Open the dashboard in the system default browser."""
@@ -228,14 +178,9 @@ def main() -> None:
     _start_server()
     print(f"[oracle] Backend ready at {URL}")
 
-    opened_native = _open_native_window(URL)
-    if opened_native:
-        print("[oracle] Running in native window.")
-        return  # webview.start() is blocking; we're done when it returns
-
     print("[oracle] Opening in default browser...")
     _open_browser(URL)
-    print("[oracle] Dashboard is running. Close this window or press Ctrl+C to stop.")
+    print("[oracle] Dashboard is running. Close this console window or press Ctrl+C to stop.")
 
     try:
         while True:
