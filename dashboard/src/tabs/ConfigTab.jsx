@@ -185,8 +185,11 @@ export default function ConfigTab() {
             value={config.lootbox_type}
             onChange={handleChange}
             options={[
-              { value: "normal", label: "Normal" },
-              { value: "premium", label: "Premium" },
+              { value: "common", label: "Common" },
+              { value: "uncommon", label: "Uncommon" },
+              { value: "rare", label: "Rare" },
+              { value: "epic", label: "Epic" },
+              { value: "edgy", label: "Edgy" },
             ]}
           />
           <TextField label="Seed" field="seed" value={config.seed} onChange={handleChange} />

@@ -25,11 +25,16 @@ function toApiClientError(error) {
 
   if (axios.isAxiosError(error)) {
     const payload = error.response?.data;
-    const serverError = payload?.error;
+    // FastAPI raises HTTPException with a `detail` key, not `error`
+    const serverError = payload?.detail ?? payload?.error;
+
+    const reason = serverError?.details?.reason;
+    const baseMessage = serverError?.message || error.message || "Request failed";
+    const fullMessage = reason ? `${baseMessage}: ${reason}` : baseMessage;
 
     return new ApiClientError({
       code: serverError?.code || "request_failed",
-      message: serverError?.message || error.message || "Request failed",
+      message: fullMessage,
       details: serverError?.details || {},
       status: error.response?.status || null,
     });
