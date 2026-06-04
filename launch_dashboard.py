@@ -47,8 +47,17 @@ import threading
 import time
 import webbrowser
 
+# Import dashboard_server early to catch any import/dependency errors and log the traceback
+try:
+    import dashboard_server
+except Exception:
+    import traceback
+    print("\n[CRITICAL ERROR DURING IMPORT OF DASHBOARD_SERVER]:")
+    traceback.print_exc()
+    sys.exit(1)
 
 ROOT_DIR = Path(__file__).resolve().parent
+
 DIST_DIR = ROOT_DIR / "dashboard" / "dist"
 
 HOST = "127.0.0.1"
