@@ -10,11 +10,14 @@ from __future__ import annotations
 import atexit
 import os
 import sys
-
-# PyInstaller windowed/noconsole mode redirects stdout and stderr to None.
-# Set up a persistent launcher log file in local AppData to capture tracebacks.
 import tempfile
 from pathlib import Path
+
+# ---------------------------------------------------------------------------
+# Logging setup — MUST happen before any other import.
+# PyInstaller --windowed suppresses stdout/stderr; redirect them to a log file
+# in AppData so tracebacks are always recoverable.
+# ---------------------------------------------------------------------------
 
 def _setup_logging() -> None:
     app_data = os.environ.get("LOCALAPPDATA")
@@ -22,11 +25,10 @@ def _setup_logging() -> None:
         log_dir = Path(app_data) / "OracleOS"
     else:
         log_dir = Path(tempfile.gettempdir()) / "OracleOS"
-    
+
     try:
         log_dir.mkdir(parents=True, exist_ok=True)
         log_file = log_dir / "launcher.log"
-        # Open in write/append mode
         log_stream = open(log_file, "w", encoding="utf-8", buffering=1)
         sys.stdout = log_stream
         sys.stderr = log_stream
@@ -35,55 +37,83 @@ def _setup_logging() -> None:
         print(f"Platform: {sys.platform}")
         print(f"Executable: {sys.executable}")
     except Exception:
-        # Fallback to devnull if we can't write to AppData/temp
+        # Last resort: discard output rather than crash
+        devnull = open(os.devnull, "w")
         if sys.stdout is None:
-            sys.stdout = open(os.devnull, "w")
+            sys.stdout = devnull
         if sys.stderr is None:
-            sys.stderr = open(os.devnull, "w")
+            sys.stderr = devnull
+
 
 _setup_logging()
 
+# ---------------------------------------------------------------------------
+# Resolve paths — works both in development and in a frozen PyInstaller bundle.
+# sys._MEIPASS is set by PyInstaller to the temp extraction directory.
+# ---------------------------------------------------------------------------
+
+import socket
 import threading
 import time
+import traceback
 import webbrowser
 
-# Import dashboard_server early to catch any import/dependency errors and log the traceback
+# BUNDLE_DIR: where all packaged files live (in frozen mode, this is _MEIPASS)
+BUNDLE_DIR = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
+
+# ROOT_DIR: the script's own directory (same as BUNDLE_DIR when frozen)
+ROOT_DIR = Path(__file__).resolve().parent if not getattr(sys, "frozen", False) else BUNDLE_DIR
+
+DIST_DIR = BUNDLE_DIR / "dashboard" / "dist"
+
+# ---------------------------------------------------------------------------
+# Import dashboard_server early so any ImportError shows a full traceback.
+# ---------------------------------------------------------------------------
+
 try:
-    import dashboard_server
+    import dashboard_server  # noqa: F401  (imported for side-effects / early validation)
+    from dashboard_server import app as _asgi_app
 except Exception:
-    import traceback
     print("\n[CRITICAL ERROR DURING IMPORT OF DASHBOARD_SERVER]:")
     traceback.print_exc()
     sys.exit(1)
 
-import socket
+# ---------------------------------------------------------------------------
+# Port discovery
+# ---------------------------------------------------------------------------
 
-def _find_free_port(host: str, start_port: int) -> int:
-    """Find a free port starting from start_port."""
-    for port in range(start_port, start_port + 100):
+HOST = "127.0.0.1"
+
+
+def _find_free_port(host: str, start: int = 8000) -> int:
+    """Return the first free TCP port starting from *start*."""
+    for port in range(start, start + 100):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             try:
                 s.bind((host, port))
                 return port
             except OSError:
                 continue
-    return start_port
+    return start  # fallback — unlikely but safe
 
-ROOT_DIR = Path(__file__).resolve().parent
 
-DIST_DIR = ROOT_DIR / "dashboard" / "dist"
-
-HOST = "127.0.0.1"
 PORT = _find_free_port(HOST, 8000)
 URL = f"http://{HOST}:{PORT}"
+
+# ---------------------------------------------------------------------------
+# Backend server
+# ---------------------------------------------------------------------------
 
 
 def _start_server() -> None:
     """Run uvicorn in a background daemon thread."""
     import uvicorn
 
+    # Pass the app *object* directly — avoids the "module not found" error
+    # that happens when uvicorn tries to import "dashboard_server:app" by
+    # string inside a frozen bundle.
     config = uvicorn.Config(
-        "dashboard_server:app",
+        _asgi_app,
         host=HOST,
         port=PORT,
         log_level="warning",
@@ -94,33 +124,43 @@ def _start_server() -> None:
     thread = threading.Thread(target=server.run, daemon=True, name="oracle-uvicorn")
     thread.start()
 
-    # Wait until the server is accepting connections
-    deadline = time.monotonic() + 10
+    deadline = time.monotonic() + 15
     while time.monotonic() < deadline:
         if server.started:
             break
         time.sleep(0.1)
 
     if not server.started:
-        print(f"[oracle] ERROR: server did not start within 10s on {URL}")
+        print(f"[oracle] ERROR: server did not start within 15s on {URL}")
         sys.exit(1)
 
-    return thread
+
+# ---------------------------------------------------------------------------
+# Wine detection
+# ---------------------------------------------------------------------------
 
 
-def _is_running_on_wine() -> bool:
-    """Detect if running under Wine emulation."""
+def _is_wine() -> bool:
+    """Return True when running inside Wine (not real Windows)."""
     try:
         import ctypes
-        return hasattr(ctypes.CDLL("ntdll.dll"), "wine_get_version")
+        ntdll = ctypes.CDLL("ntdll.dll")
+        return hasattr(ntdll, "wine_get_version")
     except Exception:
         return False
 
 
+# ---------------------------------------------------------------------------
+# Window / browser helpers
+# ---------------------------------------------------------------------------
+
+
 def _open_native_window(url: str) -> bool:
-    """Try to open a native webview window. Returns True on success."""
-    if _is_running_on_wine():
+    """Try to open a pywebview native window (Edge/Chromium). Returns True on success."""
+    if _is_wine():
+        print("[oracle] Wine detected — skipping native window, using browser fallback.")
         return False
+
     try:
         import webview
 
@@ -132,18 +172,33 @@ def _open_native_window(url: str) -> bool:
             min_size=(960, 600),
         )
 
-        atexit.register(lambda: window.destroy() if window and window._is_loaded else None)
+        def _safe_destroy() -> None:
+            try:
+                window.destroy()
+            except Exception:
+                pass
+
+        atexit.register(_safe_destroy)
         webview.start(gui="edgechromium", debug=False)
         return True
     except ImportError:
+        print("[oracle] pywebview not available, falling back to browser.")
         return False
-    except Exception:
+    except Exception as exc:
+        print(f"[oracle] Native window failed ({exc}), falling back to browser.")
         return False
 
 
 def _open_browser(url: str) -> None:
-    """Open the dashboard in the default browser."""
+    """Open the dashboard in the system default browser."""
+    # Small delay so the server is fully ready before the browser hits it
+    time.sleep(0.5)
     webbrowser.open(url)
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
 
 
 def main() -> None:
@@ -152,22 +207,19 @@ def main() -> None:
     if not DIST_DIR.exists():
         print(f"[oracle] WARNING: dist directory not found at {DIST_DIR}")
         print("[oracle] Run 'cd dashboard && npm run build' first.")
-        print("[oracle] Starting in dev mode (frontend served by Vite)...")
 
     _start_server()
     print(f"[oracle] Backend ready at {URL}")
 
-    # Try native window first, fallback to browser
     opened_native = _open_native_window(URL)
     if opened_native:
         print("[oracle] Running in native window.")
-    else:
-        print("[oracle] Opening in default browser...")
-        _open_browser(URL)
+        return  # webview.start() is blocking; we're done when it returns
 
-    print("[oracle] Dashboard is running. Close the window or press Ctrl+C to stop.")
+    print("[oracle] Opening in default browser...")
+    _open_browser(URL)
+    print("[oracle] Dashboard is running. Close this window or press Ctrl+C to stop.")
 
-    # Keep main thread alive so daemon thread keeps running
     try:
         while True:
             time.sleep(1)
@@ -178,9 +230,7 @@ def main() -> None:
 if __name__ == "__main__":
     try:
         main()
-    except Exception as e:
-        import traceback
+    except Exception:
         print("\n[CRITICAL ERROR DURING LAUNCHER STARTUP]:")
         traceback.print_exc()
         sys.exit(1)
-

@@ -200,9 +200,13 @@ def step_pyinstaller() -> None:
         if src.exists():
             cmd.extend(["--add-data", f"{src}{os.pathsep}{dst}"])
 
-    # Hidden imports
+    # Hidden imports — every module that PyInstaller cannot auto-detect
     hidden_imports = [
+        # TensorFlow / ML
         "tensorflow",
+        "numpy",
+        "PIL",
+        # Uvicorn / ASGI (auto-detection is unreliable in frozen builds)
         "uvicorn",
         "uvicorn.logging",
         "uvicorn.loops",
@@ -210,27 +214,50 @@ def step_pyinstaller() -> None:
         "uvicorn.protocols",
         "uvicorn.protocols.http",
         "uvicorn.protocols.http.auto",
+        "uvicorn.protocols.http.h11_impl",
         "uvicorn.protocols.websockets",
         "uvicorn.protocols.websockets.auto",
+        "uvicorn.protocols.websockets.websockets_impl",
         "uvicorn.lifespan",
         "uvicorn.lifespan.on",
+        # FastAPI / Starlette
         "fastapi",
+        "fastapi.responses",
+        "fastapi.staticfiles",
         "starlette",
         "starlette.routing",
         "starlette.responses",
         "starlette.middleware",
         "starlette.middleware.cors",
+        "starlette.staticfiles",
+        # Pydantic (v2 uses Rust extensions that PyInstaller may miss)
+        "pydantic",
+        "pydantic.networks",
+        "pydantic_core",
+        # pywebview — native window
         "webview",
+        "webview.platforms.winforms",
+        # Multipart / file uploads
         "multipart",
         "multipart.multipart",
-        "numpy",
-        "PIL",
-        "colorama",
+        # Networking
         "aiohttp",
+        "aiohttp.connector",
+        # Discord
         "discord",
+        # Terminal / TUI
+        "colorama",
         "textual",
         "textual.app",
         "textual.widgets",
+        # Standard lib helpers that PyInstaller sometimes strips
+        "ctypes",
+        "ctypes.wintypes",
+        "email.mime",
+        "email.mime.multipart",
+        "email.mime.text",
+        "logging.handlers",
+        "concurrent.futures",
     ]
 
     for imp in hidden_imports:
@@ -238,6 +265,10 @@ def step_pyinstaller() -> None:
 
     # Collect all subpackages from bot/
     cmd.extend(["--collect-submodules", "bot"])
+
+    # collect-all includes native DLLs and data files (pydantic uses Rust .pyd/.dll)
+    for pkg in ["pydantic", "pydantic_core", "webview"]:
+        cmd.extend(["--collect-all", pkg])
 
     # Entry point
     cmd.append(str(ENTRY_POINT))
