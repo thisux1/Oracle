@@ -25,7 +25,7 @@ DIST_OUTPUT = BUILD_DIR / "dist"
 SPEC_FILE = BUILD_DIR / "OracleOS.spec"
 
 APP_NAME = "OracleOS"
-APP_VERSION = "2.0.0"
+APP_VERSION = "3.0.0"
 ENTRY_POINT = SCRIPT_DIR / "launch_dashboard.py"
 SETUP_ISS = SCRIPT_DIR / "setup.iss"
 
