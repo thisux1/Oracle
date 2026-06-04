@@ -56,12 +56,25 @@ except Exception:
     traceback.print_exc()
     sys.exit(1)
 
+import socket
+
+def _find_free_port(host: str, start_port: int) -> int:
+    """Find a free port starting from start_port."""
+    for port in range(start_port, start_port + 100):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind((host, port))
+                return port
+            except OSError:
+                continue
+    return start_port
+
 ROOT_DIR = Path(__file__).resolve().parent
 
 DIST_DIR = ROOT_DIR / "dashboard" / "dist"
 
 HOST = "127.0.0.1"
-PORT = 8000
+PORT = _find_free_port(HOST, 8000)
 URL = f"http://{HOST}:{PORT}"
 
 

@@ -114,7 +114,11 @@ export const useOracleStore = create((set, get) => ({
     // Clear terminal history on new connection
     set({ terminalLines: [], binaryHistory: [], lastBinaryChunk: null });
 
-    const wsUrl = `${import.meta.env.VITE_WS_URL || "ws://127.0.0.1:8000"}/ws/terminal?profile=${targetProfile}`;
+    const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const defaultWsUrl = import.meta.env.DEV 
+      ? "ws://127.0.0.1:8000" 
+      : `${wsProtocol}//${window.location.host}`;
+    const wsUrl = `${import.meta.env.VITE_WS_URL || defaultWsUrl}/ws/terminal?profile=${targetProfile}`;
     const ws = new WebSocket(wsUrl);
     ws.binaryType = "arraybuffer";
 
