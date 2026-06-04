@@ -108,8 +108,19 @@ def _start_server() -> None:
     return thread
 
 
+def _is_running_on_wine() -> bool:
+    """Detect if running under Wine emulation."""
+    try:
+        import ctypes
+        return hasattr(ctypes.CDLL("ntdll.dll"), "wine_get_version")
+    except Exception:
+        return False
+
+
 def _open_native_window(url: str) -> bool:
     """Try to open a native webview window. Returns True on success."""
+    if _is_running_on_wine():
+        return False
     try:
         import webview
 
