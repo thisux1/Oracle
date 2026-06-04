@@ -1,21 +1,54 @@
 import sys
 import os
+import shutil
 from typing import Any
 
-# Default path
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Detect if running as packaged executable (frozen) or in development mode
+IS_FROZEN = getattr(sys, "frozen", False)
+BUNDLE_DIR = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+
+if IS_FROZEN:
+    app_data = os.environ.get("LOCALAPPDATA")
+    if app_data:
+        USER_DATA_DIR = os.path.join(app_data, "OracleOS")
+    else:
+        USER_DATA_DIR = os.path.join(os.path.expanduser("~"), ".oracle_bot")
+    os.makedirs(USER_DATA_DIR, exist_ok=True)
+else:
+    USER_DATA_DIR = os.path.dirname(os.path.abspath(__file__))
+
 DEFAULT_PROFILE = "options.ini"
-optionsFilePath = os.path.join(BASE_DIR, DEFAULT_PROFILE)
+optionsFilePath = os.path.join(USER_DATA_DIR, DEFAULT_PROFILE)
 
 # Check for custom .ini in command line arguments
 for arg in sys.argv[1:]:
     if arg.endswith(".ini"):
-        if os.path.exists(arg):
-            optionsFilePath = os.path.abspath(arg)
-            # We don't print here yet because the logger isn't always ready
+        # Resolve target path relative to USER_DATA_DIR if not absolute
+        if os.path.isabs(arg):
+            target_path = arg
+        else:
+            target_path = os.path.join(USER_DATA_DIR, os.path.basename(arg))
+            
+        if os.path.exists(target_path):
+            optionsFilePath = target_path
             break
         else:
             print(f"Warning: Configuration file '{arg}' not found. Using default.")
+
+# Auto-initialize default options.ini in USER_DATA_DIR if missing
+if not os.path.exists(os.path.join(USER_DATA_DIR, DEFAULT_PROFILE)):
+    example_src = os.path.join(BUNDLE_DIR, "options_example.ini")
+    if os.path.exists(example_src):
+        try:
+            shutil.copy2(example_src, os.path.join(USER_DATA_DIR, DEFAULT_PROFILE))
+        except Exception:
+            pass
+    else:
+        try:
+            with open(os.path.join(USER_DATA_DIR, DEFAULT_PROFILE), "w", encoding="utf-8") as f:
+                f.write("# Oracle configuration\n")
+        except Exception:
+            pass
 
 
 def normalize_profile_name(profile: str | None) -> str:
@@ -33,7 +66,7 @@ def normalize_profile_name(profile: str | None) -> str:
 
 
 def resolve_profile_path(profile: str | None = None, base_dir: str | None = None, ensure_exists: bool = True) -> str:
-    root = os.path.abspath(base_dir or BASE_DIR)
+    root = os.path.abspath(base_dir or USER_DATA_DIR)
     profile_name = normalize_profile_name(profile)
     target = os.path.abspath(os.path.join(root, profile_name))
 
@@ -41,11 +74,25 @@ def resolve_profile_path(profile: str | None = None, base_dir: str | None = None
         raise ValueError("Invalid profile path")
 
     if ensure_exists and not os.path.exists(target):
-        raise FileNotFoundError(f"Profile not found: {profile_name}")
+        if profile_name == DEFAULT_PROFILE:
+            example_src = os.path.join(BUNDLE_DIR, "options_example.ini")
+            if os.path.exists(example_src):
+                try:
+                    shutil.copy2(example_src, target)
+                except Exception:
+                    pass
+            else:
+                with open(target, "w", encoding="utf-8") as f:
+                    f.write("# Oracle configuration\n")
+        else:
+            raise FileNotFoundError(f"Profile not found: {profile_name}")
 
     return target
 
-def importData(filePath=optionsFilePath):
+
+def importData(filePath=None):
+    if filePath is None:
+        filePath = optionsFilePath
     retList = {}
     with open(filePath, "r", encoding="utf-8") as optionsFile:
         optionsData = optionsFile.read().splitlines()
@@ -56,7 +103,10 @@ def importData(filePath=optionsFilePath):
     
     return retList
 
-def editData(option, value, filePath=optionsFilePath):
+
+def editData(option, value, filePath=None):
+    if filePath is None:
+        filePath = optionsFilePath
     newOptionsData = ""
     with open(filePath, "r", encoding="utf-8") as optionsFile:
         optionsData = optionsFile.read()
@@ -91,7 +141,9 @@ def _to_ini_string(value: Any) -> str:
     return str(value)
 
 
-def edit_many_data(settings: dict[str, Any], filePath=optionsFilePath):
+def edit_many_data(settings: dict[str, Any], filePath=None):
+    if filePath is None:
+        filePath = optionsFilePath
     with open(filePath, "r", encoding="utf-8") as optionsFile:
         existing_lines = optionsFile.read().splitlines()
 

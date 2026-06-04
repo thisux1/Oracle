@@ -79,7 +79,7 @@ def normalize_and_validate_profile(profile: str | None) -> str:
     try:
         options_resolver.resolve_profile_path(
             profile=normalized,
-            base_dir=str(PROJECT_DIR),
+            base_dir=options_resolver.USER_DATA_DIR,
             ensure_exists=True,
         )
     except FileNotFoundError:
@@ -121,9 +121,10 @@ def _load_json_file(path: Path) -> dict[str, Any] | None:
 
 def _load_stats_for_profile(profile: str) -> dict[str, Any] | None:
     profile_stem = Path(profile).stem
+    user_data_path = Path(options_resolver.USER_DATA_DIR)
     candidates = [
-        PROJECT_DIR / f"stats_{profile_stem}.json",
-        PROJECT_DIR / "stats_totals.json",
+        user_data_path / f"stats_{profile_stem}.json",
+        user_data_path / "stats_totals.json",
     ]
 
     for candidate in candidates:
@@ -135,9 +136,10 @@ def _load_stats_for_profile(profile: str) -> dict[str, Any] | None:
 
 def _load_baseline_for_profile(profile: str) -> dict[str, Any] | None:
     profile_stem = Path(profile).stem
+    user_data_path = Path(options_resolver.USER_DATA_DIR)
     candidates = [
-        PROJECT_DIR / f"session_baseline_{profile_stem}.json",
-        PROJECT_DIR / "session_baseline.json",
+        user_data_path / f"session_baseline_{profile_stem}.json",
+        user_data_path / "session_baseline.json",
     ]
 
     for candidate in candidates:
@@ -230,12 +232,12 @@ class BotProcessManager:
 
             options_resolver.resolve_profile_path(
                 profile=self.profile,
-                base_dir=str(PROJECT_DIR),
+                base_dir=options_resolver.USER_DATA_DIR,
                 ensure_exists=True,
             )
 
             # Truncate the clean logs file for this profile
-            log_path = PROJECT_DIR / f"{Path(self.profile).stem}.log"
+            log_path = Path(options_resolver.USER_DATA_DIR) / f"{Path(self.profile).stem}.log"
             if log_path.exists():
                 try:
                     log_path.unlink()
@@ -624,7 +626,7 @@ async def get_manager(profile: str) -> BotProcessManager:
 @app.get("/api/config")
 async def get_config(profile: str = Query(default=DEFAULT_PROFILE)):
     profile_name = normalize_and_validate_profile(profile)
-    config = options_resolver.import_profile_data(profile=profile_name, base_dir=str(PROJECT_DIR))
+    config = options_resolver.import_profile_data(profile=profile_name, base_dir=options_resolver.USER_DATA_DIR)
     return {
         "profile": profile_name,
         "config": mask_config(config),
@@ -644,7 +646,7 @@ async def post_config(payload: ConfigUpdatePayload):
         if incoming_token is not None:
             is_masked = isinstance(incoming_token, str) and incoming_token.startswith("*") and all(c == "*" for c in incoming_token)
             if is_masked:
-                existing_config = options_resolver.import_profile_data(profile=profile_name, base_dir=str(PROJECT_DIR))
+                existing_config = options_resolver.import_profile_data(profile=profile_name, base_dir=options_resolver.USER_DATA_DIR)
                 original_token = existing_config.get(token_key)
                 if original_token:
                     payload.settings[token_key] = original_token
@@ -654,7 +656,7 @@ async def post_config(payload: ConfigUpdatePayload):
     options_resolver.edit_profile_data(
         settings=payload.settings,
         profile=profile_name,
-        base_dir=str(PROJECT_DIR),
+        base_dir=options_resolver.USER_DATA_DIR,
     )
 
     return {
@@ -688,7 +690,7 @@ async def get_stats(profile: str = Query(default=DEFAULT_PROFILE), mode: str = Q
 @app.get("/api/logs")
 async def get_logs(profile: str = Query(default=DEFAULT_PROFILE), limit: int = 50):
     profile_name = normalize_and_validate_profile(profile)
-    log_path = PROJECT_DIR / f"{Path(profile_name).stem}.log"
+    log_path = Path(options_resolver.USER_DATA_DIR) / f"{Path(profile_name).stem}.log"
     
     if not log_path.exists():
         return {"profile": profile_name, "lines": []}
@@ -729,8 +731,9 @@ async def stop_bot(payload: BotControlPayload):
 
 @app.get("/api/profiles")
 async def list_profiles():
+    user_data_path = Path(options_resolver.USER_DATA_DIR)
     ini_files = sorted(
-        p.name for p in PROJECT_DIR.iterdir()
+        p.name for p in user_data_path.iterdir()
         if p.is_file() and p.suffix == ".ini" and not p.name.startswith(".")
     )
     return {"profiles": ini_files}
@@ -739,14 +742,15 @@ async def list_profiles():
 @app.post("/api/profiles")
 async def create_profile(payload: ProfileCreatePayload):
     name = options_resolver.normalize_profile_name(payload.name)
-    target = PROJECT_DIR / name
+    user_data_path = Path(options_resolver.USER_DATA_DIR)
+    target = user_data_path / name
 
     if target.exists():
         api_error(409, "profile_exists", f"Profile '{name}' already exists", {"name": name})
 
     if payload.copyFrom:
         source_name = options_resolver.normalize_profile_name(payload.copyFrom)
-        source = PROJECT_DIR / source_name
+        source = user_data_path / source_name
         if not source.exists():
             api_error(404, "source_not_found", f"Source profile '{source_name}' not found", {"name": source_name})
         shutil.copy2(str(source), str(target))
@@ -763,7 +767,8 @@ async def delete_profile(name: str = Query(...)):
     if profile_name == DEFAULT_PROFILE:
         api_error(403, "cannot_delete_default", "Cannot delete the default profile")
 
-    target = PROJECT_DIR / profile_name
+    user_data_path = Path(options_resolver.USER_DATA_DIR)
+    target = user_data_path / profile_name
     if not target.exists():
         api_error(404, "profile_not_found", f"Profile '{profile_name}' not found", {"name": profile_name})
 
@@ -795,7 +800,8 @@ async def import_profile(file: UploadFile = File(...)):
         api_error(400, "invalid_content", "File does not appear to be a valid .ini file")
 
     name = options_resolver.normalize_profile_name(file.filename)
-    target = PROJECT_DIR / name
+    user_data_path = Path(options_resolver.USER_DATA_DIR)
+    target = user_data_path / name
 
     if target.exists():
         api_error(409, "profile_exists", f"Profile '{name}' already exists. Rename the file or delete the existing profile first.", {"name": name})
@@ -807,7 +813,8 @@ async def import_profile(file: UploadFile = File(...)):
 @app.get("/api/profiles/export")
 async def export_profile(name: str = Query(...)):
     profile_name = options_resolver.normalize_profile_name(name)
-    target = PROJECT_DIR / profile_name
+    user_data_path = Path(options_resolver.USER_DATA_DIR)
+    target = user_data_path / profile_name
 
     if not target.exists():
         api_error(404, "profile_not_found", f"Profile '{profile_name}' not found", {"name": profile_name})

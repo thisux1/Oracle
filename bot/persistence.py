@@ -10,13 +10,14 @@ profile_name = os.path.basename(options_resolver.optionsFilePath)
 profile_stem, _ = os.path.splitext(profile_name)
 
 if profile_stem and profile_stem != "options":
-    STATS_FILE = f"stats_{profile_stem}.json"
-    HISTORY_FILE = f"stats_history_{profile_stem}.json"
-    BASELINE_FILE = f"session_baseline_{profile_stem}.json"
+    STATS_FILE = os.path.join(options_resolver.USER_DATA_DIR, f"stats_{profile_stem}.json")
+    HISTORY_FILE = os.path.join(options_resolver.USER_DATA_DIR, f"stats_history_{profile_stem}.json")
+    BASELINE_FILE = os.path.join(options_resolver.USER_DATA_DIR, f"session_baseline_{profile_stem}.json")
 else:
-    STATS_FILE = "stats_totals.json"
-    HISTORY_FILE = "stats_history.json"
-    BASELINE_FILE = "session_baseline.json"
+    STATS_FILE = os.path.join(options_resolver.USER_DATA_DIR, "stats_totals.json")
+    HISTORY_FILE = os.path.join(options_resolver.USER_DATA_DIR, "stats_history.json")
+    BASELINE_FILE = os.path.join(options_resolver.USER_DATA_DIR, "session_baseline.json")
+
 
 def subtract_dicts(d1, d2):
     result = {}
