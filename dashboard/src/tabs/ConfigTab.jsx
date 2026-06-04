@@ -253,7 +253,24 @@ export default function ConfigTab() {
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField label="Sleep At (24h)" field="sleep_at" type="time" value={config.sleep_at} onChange={handleChange} />
           <TextField label="Wake Up At (24h)" field="wake_up_at" type="time" value={config.wake_up_at} onChange={handleChange} />
-          <TextField label="Theme" field="theme" value={config.theme} onChange={handleChange} />
+          <SelectField
+            label="Theme"
+            field="theme"
+            value={config.theme}
+            onChange={handleChange}
+            options={[
+              { value: "cathedral", label: "Cathedral" },
+              { value: "dracula", label: "Dracula" },
+              { value: "nord", label: "Nord" },
+              { value: "monokai", label: "Monokai Pro" },
+              { value: "gruvbox", label: "Gruvbox" },
+              { value: "catppuccin", label: "Catppuccin" },
+              { value: "tokyonight", label: "Tokyo Night" },
+              { value: "rosepine", label: "Rosé Pine" },
+              { value: "solarized", label: "Solarized" },
+              { value: "cyberpunk", label: "Cyberpunk" },
+            ]}
+          />
         </div>
       </ConfigSection>
 
