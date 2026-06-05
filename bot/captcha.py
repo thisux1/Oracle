@@ -1,9 +1,11 @@
 import asyncio
 import time
 import traceback
+import os
 import numpy as np
 from random import randint
 from PIL import Image
+import options_resolver
 from bot.hud import HUD, logger
 import bot.config as config
 from bot.state import bot_state, human_delay
@@ -25,6 +27,8 @@ def set_client(client):
 async def save_and_crop_attachment(attachment, out_path='epic_guard.png'):
     """Saves attachment. Crop logic removed for Oracle v2 compatibility."""
     try:
+        if not os.path.isabs(out_path):
+            out_path = os.path.join(options_resolver.USER_DATA_DIR, out_path)
         await attachment.save(out_path)
         logger.info(f"Attachment saved to {out_path}")
     except Exception as e:
@@ -67,6 +71,8 @@ def _get_model_for(mode):
 
 def predict_item_from_captcha(img_path):
     try:
+        if not os.path.isabs(img_path):
+            img_path = os.path.join(options_resolver.USER_DATA_DIR, img_path)
         with Image.open(img_path) as img:
             img = img.convert('RGB')
         preferred = 'gray' if is_grayscale(img) else 'color'
@@ -89,7 +95,7 @@ def predict_item_from_captcha(img_path):
 
 async def tentar_resolver_captcha(message):
     """Resolves an Epic Guard captcha using AI predictions or Telegram overrides."""
-    img_path = 'epic_guard.png'
+    img_path = os.path.join(options_resolver.USER_DATA_DIR, 'epic_guard.png')
     captcha_start_time = time.time()
 
     try:

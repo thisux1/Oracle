@@ -362,6 +362,7 @@ export const useOracleStore = create((set, get) => ({
         lastCrashAt: status.lastCrashAt ?? null,
         loadingStatus: false,
       });
+      get().fetchProfiles().catch(() => undefined);
       return status;
     } catch (error) {
       set({ loadingStatus: false, lastError: error });

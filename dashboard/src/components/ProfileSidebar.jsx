@@ -238,11 +238,14 @@ export default function ProfileSidebar({ open, onClose }) {
           const isDefault = profile === "options.ini";
           const isOnline = pState === "online" || pState === "starting";
 
-          let btnClass = "group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-all duration-150";
+          let btnClass = "group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-all duration-150 cursor-pointer select-none";
           let btnStyle = {};
 
           if (isOnline) {
             btnClass += " running-profile-glow";
+            if (isActive) {
+              btnClass += " active-profile";
+            }
             btnStyle = {
               color: "var(--accent-success)",
             };
@@ -263,14 +266,21 @@ export default function ProfileSidebar({ open, onClose }) {
 
           return (
             <div key={profile} className="relative">
-              <button
-                type="button"
+              <div
+                role="button"
+                tabIndex={0}
                 onClick={() => handleSelect(profile)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleSelect(profile);
+                  }
+                }}
                 className={btnClass}
                 style={btnStyle}
               >
                 <span
-                  className={`h-2 w-2 shrink-0 rounded-full ${isOnline ? "animate-oracle-pulse" : ""}`}
+                  className={`h-2 w-2 shrink-0 rounded-full ${isOnline ? "animate-status-ripple" : ""}`}
                   style={{
                     background: isOnline ? "var(--accent-success)" : isActive ? "var(--accent-cyan)" : "var(--text-dim)",
                   }}
@@ -293,7 +303,7 @@ export default function ProfileSidebar({ open, onClose }) {
                 >
                   <MoreVertical size={13} />
                 </button>
-              </button>
+              </div>
               {menuProfile === profile ? (
                 <ProfileMenu
                   profile={profile}

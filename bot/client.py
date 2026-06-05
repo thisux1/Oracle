@@ -907,7 +907,7 @@ class DiscordClient(discord.Client):
         except Exception:
             pass
 
-        while True:
+        while not self.is_closed():
             try:
                 from bot.telegram import _get_session
                 session = _get_session()
@@ -1024,3 +1024,11 @@ class DiscordClient(discord.Client):
 
 
 UserBot = DiscordClient()
+
+
+def recreate_user_bot():
+    global UserBot
+    UserBot = DiscordClient()
+    import bot
+    bot.UserBot = UserBot
+    return UserBot

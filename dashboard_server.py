@@ -786,7 +786,32 @@ async def list_profiles():
         p.name for p in user_data_path.iterdir()
         if p.is_file() and p.suffix == ".ini" and not p.name.startswith(".")
     )
-    return {"profiles": ini_files}
+    
+    profiles_data = []
+    for name in ini_files:
+        manager = MANAGERS.get(name)
+        state = manager.state.value if manager else "offline"
+        
+        is_incomplete = False
+        try:
+            config = options_resolver.import_profile_data(profile=name, base_dir=str(user_data_path))
+            user_token = config.get("user_token", "").strip()
+            guild_id = config.get("guild_id", "").strip()
+            channel_id = config.get("channel_id", "").strip()
+            if not user_token or not guild_id or not channel_id:
+                is_incomplete = True
+            elif user_token.lower() == "none" or guild_id.lower() == "none" or channel_id.lower() == "none":
+                is_incomplete = True
+        except Exception:
+            is_incomplete = True
+            
+        profiles_data.append({
+            "name": name,
+            "state": state,
+            "is_incomplete": is_incomplete
+        })
+        
+    return {"profiles": profiles_data}
 
 
 @app.post("/api/profiles")

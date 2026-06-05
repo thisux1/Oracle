@@ -13,7 +13,7 @@ from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.widgets import RichLog
 
 import bot.config as config
-from bot import UserBot
+from bot.client import recreate_user_bot
 from bot.hud import HUD
 from bot.tui_input import AutocompleteDropdown, CommandInput
 from bot.tui_modals import HelpModal, SplashScreen, ConfigModal
@@ -314,7 +314,8 @@ class OracleApp(App):
 
             HUD.system("Conectando ao gateway do Discord...")
             try:
-                await UserBot.start(config.userToken)
+                client = recreate_user_bot()
+                await client.start(config.userToken)
                 retry_delay = 5
             except asyncio.CancelledError:
                 raise
@@ -362,7 +363,8 @@ async def run_headless() -> None:
 
         HUD.system("Conectando ao gateway do Discord...")
         try:
-            await UserBot.start(config.userToken)
+            client = recreate_user_bot()
+            await client.start(config.userToken)
             retry_delay = 5
         except asyncio.CancelledError:
             raise

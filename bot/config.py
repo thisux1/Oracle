@@ -13,9 +13,9 @@ NAVI_LITE_ID = 1213487623688167494
 NEON_BOT_IDS = [754276211302088704, 787861783143637032, 851436490415931422]
 # ─── Oracle Model ───
 img_height, img_width = 128, 128
-model_path_color = 'oracle_v2_color.h5'
-model_path_gray = 'oracle_v2_gray.h5'
-classes_path = 'classes.txt'
+model_path_color = os.path.join(options_resolver.BUNDLE_DIR, 'oracle_v2_color.h5')
+model_path_gray = os.path.join(options_resolver.BUNDLE_DIR, 'oracle_v2_gray.h5')
+classes_path = os.path.join(options_resolver.BUNDLE_DIR, 'classes.txt')
 
 try:
     captcha_model_color = tf.keras.models.load_model(model_path_color)
@@ -28,13 +28,17 @@ except:
     captcha_model_gray = None
 
 if os.path.exists(classes_path):
-    with open(classes_path, 'r') as f:
+    with open(classes_path, 'r', encoding='utf-8') as f:
         captcha_class_names = [line.strip() for line in f.readlines()]
 else:
-    captcha_class_names = sorted([
-        d for d in os.listdir('dataset_cropped')
-        if os.path.isdir(os.path.join('dataset_cropped', d))
-    ])
+    dataset_cropped_path = os.path.join(options_resolver.BUNDLE_DIR, 'dataset_cropped')
+    if os.path.exists(dataset_cropped_path):
+        captcha_class_names = sorted([
+            d for d in os.listdir(dataset_cropped_path)
+            if os.path.isdir(os.path.join(dataset_cropped_path, d))
+        ])
+    else:
+        captcha_class_names = []
 
 # ─── User Options ───
 userOptions = options_resolver.importData()
