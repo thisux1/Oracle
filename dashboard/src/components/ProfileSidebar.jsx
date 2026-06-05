@@ -238,17 +238,36 @@ export default function ProfileSidebar({ open, onClose }) {
           const isDefault = profile === "options.ini";
           const isOnline = pState === "online" || pState === "starting";
 
+          let btnClass = "group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-all duration-150";
+          let btnStyle = {};
+
+          if (isOnline) {
+            btnClass += " running-profile-glow";
+            btnStyle = {
+              color: "var(--accent-success)",
+            };
+          } else if (isActive) {
+            btnClass += " glow-cyan";
+            btnStyle = {
+              background: "var(--accent-cyan-dim)",
+              color: "var(--accent-cyan)",
+              border: "1px solid var(--border-glow-cyan)",
+            };
+          } else {
+            btnStyle = {
+              background: "transparent",
+              color: "var(--text-secondary)",
+              border: "1px solid transparent",
+            };
+          }
+
           return (
             <div key={profile} className="relative">
               <button
                 type="button"
                 onClick={() => handleSelect(profile)}
-                className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-all duration-150 ${isActive ? "glow-cyan" : ""}`}
-                style={{
-                  background: isActive ? "var(--accent-cyan-dim)" : "transparent",
-                  color: isActive ? "var(--accent-cyan)" : "var(--text-secondary)",
-                  border: `1px solid ${isActive ? "var(--border-glow-cyan)" : "transparent"}`,
-                }}
+                className={btnClass}
+                style={btnStyle}
               >
                 <span
                   className={`h-2 w-2 shrink-0 rounded-full ${isOnline ? "animate-oracle-pulse" : ""}`}

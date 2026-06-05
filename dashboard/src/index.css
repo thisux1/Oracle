@@ -265,3 +265,29 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
+
+/* ---- Gradient animation for running profiles ---- */
+@keyframes running-gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.running-profile-glow {
+  background: linear-gradient(270deg, rgba(52, 211, 153, 0.15), rgba(6, 182, 212, 0.08), rgba(52, 211, 153, 0.15)) !important;
+  background-size: 200% 200% !important;
+  animation: running-gradient 6s ease infinite !important;
+  border-color: rgba(52, 211, 153, 0.45) !important;
+  box-shadow: 0 0 15px rgba(52, 211, 153, 0.18) !important;
+}
+
+.running-profile-glow:hover {
+  border-color: rgba(52, 211, 153, 0.75) !important;
+  box-shadow: 0 0 22px rgba(52, 211, 153, 0.3) !important;
+}
