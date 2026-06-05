@@ -106,8 +106,7 @@ current_area = userOptions.get("current_area", "none").lower()
 # Parse extra authorized admins
 admin_ids_str = userOptions.get("admin_ids", "")
 ADMIN_IDS = [int(x.strip()) for x in admin_ids_str.split(",") if x.strip().isdigit()]
-if userID not in ADMIN_IDS:
-    ADMIN_IDS.append(userID)
+# userID is 0 at module load; on_ready dynamically appends the real ID
 
 ALLOWED_IDS = [EPIC_RPG_ID, NAVI_LITE_ID] + ADMIN_IDS
 

@@ -235,9 +235,6 @@ def step_pyinstaller() -> None:
         "pydantic",
         "pydantic.networks",
         "pydantic_core",
-        # pywebview — native window
-        "webview",
-        "webview.platforms.winforms",
         # Multipart / file uploads
         "multipart",
         "multipart.multipart",

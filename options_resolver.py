@@ -102,13 +102,15 @@ def importData(filePath=None):
             continue
         if "=" in line:
             option, value = line.split("=", 1)
-            # Remove inline comments (e.g., '1234 # id here')
+            # Remove inline comments (e.g., '1234 #id here' or '#comment')
             if " #" in value:
                 value = value.split(" #", 1)[0]
-            elif value.strip().endswith("#"): 
-                value = value.rsplit("#", 1)[0]
+            # Also handle values that are purely comments (e.g., telegram_bot_token=#optional...)
+            value = value.strip()
+            if value.startswith("#"):
+                value = ""
                 
-            retList[option.strip()] = value.strip()
+            retList[option.strip()] = value
     
     return retList
 
