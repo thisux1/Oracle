@@ -97,8 +97,17 @@ def importData(filePath=None):
     with open(filePath, "r", encoding="utf-8") as optionsFile:
         optionsData = optionsFile.read().splitlines()
     for line in optionsData:
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
         if "=" in line:
             option, value = line.split("=", 1)
+            # Remove inline comments (e.g., '1234 # id here')
+            if " #" in value:
+                value = value.split(" #", 1)[0]
+            elif value.strip().endswith("#"): 
+                value = value.rsplit("#", 1)[0]
+                
             retList[option.strip()] = value.strip()
     
     return retList
