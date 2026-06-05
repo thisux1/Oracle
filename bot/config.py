@@ -41,14 +41,9 @@ userOptions = options_resolver.importData()
 
 userToken = userOptions.get("user_token", "")
 
-# Supports cleaner `user_id` but falls back to `user_mention_text` for backwards compatibility
-raw_id = userOptions.get("user_id", "")
-if not raw_id:
-    mention = userOptions.get("user_mention_text", "")
-    raw_id = mention.replace("<", "").replace(">", "").replace("@", "").replace("!", "")
-
-userID = int(raw_id) if raw_id.isdigit() else 0
-userMentionText = f"<@{userID}>"
+# Removed user_mention_text parsing as it is now determined dynamically in on_ready
+userID = 0
+userMentionText = ""
 
 channelID = int(userOptions.get("channel_id", "0"))
 randomIntervals = userOptions.get("random_interval", "false").lower() == "true"

@@ -23,14 +23,14 @@ const RESTART_FIELDS = new Set([
   "is_ascended",
 ]);
 
-function TextField({ label, field, value, onChange, isPassword = false, placeholder = "", type = "text" }) {
+function TextField({ label, field, value, onChange, isPassword = false, placeholder = "", type = "text", isRequired = false }) {
   const [visible, setVisible] = useState(false);
 
   return (
     <div>
       <div className="mb-1 flex items-center justify-between">
         <label className="block text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
-          {label}
+          {label} {isRequired && <span style={{ color: "var(--accent-danger)" }}>*</span>}
         </label>
         {RESTART_FIELDS.has(field) ? (
           <span
@@ -51,11 +51,18 @@ function TextField({ label, field, value, onChange, isPassword = false, placehol
       <div className="relative">
         <input
           type={isPassword && !visible ? "password" : type}
-          value={value || ""}
-          onChange={(e) => onChange(field, e.target.value)}
+          value={value === "none" && type === "time" ? "" : (value || "")}
+          onChange={(e) => {
+            let val = e.target.value;
+            if (type === "time" && !val) val = "none";
+            onChange(field, val);
+          }}
           placeholder={placeholder}
           className="input pr-10"
-          style={{ fontFamily: isPassword || type === "time" ? "var(--font-mono)" : undefined }}
+          style={{ 
+            fontFamily: isPassword || type === "time" ? "var(--font-mono)" : undefined,
+            border: isRequired && (!value || value === "none") ? "1px solid var(--accent-danger)" : undefined
+          }}
         />
         {isPassword ? (
           <button
@@ -150,10 +157,9 @@ export default function ConfigTab() {
       {/* Credentials */}
       <ConfigSection title="Credentials" icon="&#128273;" requiresRestart defaultOpen>
         <div className="grid gap-4 sm:grid-cols-2">
-          <TextField label="User Token" field="user_token" value={config.user_token} onChange={handleChange} isPassword placeholder="Discord token" />
-          <TextField label="User Mention Text" field="user_mention_text" value={config.user_mention_text} onChange={handleChange} placeholder="@user" />
-          <TextField label="Channel ID" field="channel_id" value={config.channel_id} onChange={handleChange} placeholder="123456789" />
-          <TextField label="Guild ID" field="guild_id" value={config.guild_id} onChange={handleChange} placeholder="987654321" />
+          <TextField label="User Token" field="user_token" value={config.user_token} onChange={handleChange} isPassword placeholder="Discord token" isRequired />
+          <TextField label="Channel ID" field="channel_id" value={config.channel_id} onChange={handleChange} placeholder="123456789" isRequired />
+          <TextField label="Guild ID" field="guild_id" value={config.guild_id} onChange={handleChange} placeholder="987654321" isRequired />
         </div>
       </ConfigSection>
 

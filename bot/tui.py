@@ -296,6 +296,22 @@ class OracleApp(App):
                 continue
 
             in_sleep_mode = False
+
+            missing_configs = []
+            if not config.userToken:
+                missing_configs.append("User Token")
+            if not config.GUILD_ID:
+                missing_configs.append("Guild ID")
+            if not config.channelID:
+                missing_configs.append("Channel ID")
+                
+            if missing_configs:
+                HUD.alert(f"ERRO CRÍTICO: Configurações obrigatórias ausentes ({', '.join(missing_configs)})!")
+                HUD.system("Por favor, preencha essas informações na guia Config do painel ou no terminal (F2).")
+                HUD.system("O bot não pode iniciar sem essas informações. Aguardando alterações...")
+                await asyncio.sleep(10)
+                continue
+
             HUD.system("Conectando ao gateway do Discord...")
             try:
                 await UserBot.start(config.userToken)

@@ -46,7 +46,10 @@ class DiscordClient(discord.Client):
         self.tg_task = self.loop.create_task(self.telegram_listener_loop())
         
         config.userID = self.user.id
-        
+        config.userMentionText = f"<@{self.user.id}>"
+        if self.user.id not in config.ADMIN_IDS:
+            config.ADMIN_IDS.append(self.user.id)
+            config.ALLOWED_IDS.append(self.user.id)
         # Resolve server nickname
         await asyncio.sleep(1)
         guild = self.get_guild(config.GUILD_ID)
