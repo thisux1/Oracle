@@ -51,11 +51,12 @@ _setup_logging()
 # This must happen BEFORE any heavy imports so it's fast.
 # ---------------------------------------------------------------------------
 if "--run-bot" in sys.argv:
-    # Remove the flag so the TUI doesn't see it
+    # Remove the flag so the bot doesn't see it
     sys.argv.remove("--run-bot")
     try:
-        from bot.tui import OracleApp  # noqa: E402
-        OracleApp().run()
+        import asyncio
+        from bot.tui import run_headless  # noqa: E402
+        asyncio.run(run_headless())
     except Exception:
         import traceback as _tb
         _tb.print_exc()
