@@ -188,6 +188,7 @@ def step_pyinstaller() -> None:
         (DASHBOARD_DIR / "dist", "dashboard/dist"),
         (SCRIPT_DIR / "options_example.ini", "."),
         (SCRIPT_DIR / "classes.txt", "."),
+        (SCRIPT_DIR / "bot" / "tui_theme.tcss", "bot"),
     ]
 
     # Add .h5 models if they exist
