@@ -76,10 +76,28 @@ class DiscordClient(discord.Client):
 
     async def my_background_task(self):
         await self.wait_until_ready()
+        
+        # Resilient channel resolution
         channel = self.get_channel(config.channelID)
+        if not channel:
+            try:
+                channel = await self.fetch_channel(config.channelID)
+                logger.info(f"Channel resolved via fetch_channel: {channel.name if channel else 'None'}")
+            except Exception as e:
+                logger.warning(f"Could not fetch channel {config.channelID} on startup: {e}")
+                channel = None
+
         last_check = time.time() - 120
 
         while not self.is_closed():
+            # Dynamic recovery of channel if it was not resolved yet
+            if not channel:
+                channel = self.get_channel(config.channelID)
+                if not channel:
+                    try:
+                        channel = await self.fetch_channel(config.channelID)
+                    except Exception:
+                        pass
             from bot.utils import is_sleep_time
             if is_sleep_time():
                 moon_art = f"""

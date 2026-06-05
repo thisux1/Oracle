@@ -89,6 +89,11 @@ async def send_with_typo_chance(channel, command, priority_label=""):
     Returns:
         True if a typo was sent, False if the command was sent cleanly.
     """
+    if not channel:
+        logger.error(f"Cannot send command '{command}' because channel is None.")
+        HUD.system(f"⚠️ Erro: Canal do Discord indisponível. '{command}' não enviado.")
+        return False
+
     if random.random() < config.typo_chance:
         typo_text, orig, repl, pos = generate_typo(command)
 
