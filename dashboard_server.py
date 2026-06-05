@@ -842,7 +842,7 @@ async def import_profile(file: UploadFile = File(...)):
 
     content = await file.read()
     try:
-        text = content.decode("utf-8")
+        text = content.decode("utf-8-sig")
     except UnicodeDecodeError:
         api_error(400, "invalid_encoding", "File must be UTF-8 encoded")
 
@@ -876,7 +876,7 @@ async def export_profile(name: str = Query(...)):
     if not target.exists():
         api_error(404, "profile_not_found", f"Profile '{profile_name}' not found", {"name": profile_name})
 
-    content = target.read_text(encoding="utf-8")
+    content = target.read_text(encoding="utf-8-sig")
     return Response(
         content=content,
         media_type="text/plain; charset=utf-8",

@@ -94,7 +94,7 @@ def importData(filePath=None):
     if filePath is None:
         filePath = optionsFilePath
     retList = {}
-    with open(filePath, "r", encoding="utf-8") as optionsFile:
+    with open(filePath, "r", encoding="utf-8-sig") as optionsFile:
         optionsData = optionsFile.read().splitlines()
     for line in optionsData:
         line = line.strip()
@@ -119,7 +119,7 @@ def editData(option, value, filePath=None):
     if filePath is None:
         filePath = optionsFilePath
     newOptionsData = ""
-    with open(filePath, "r", encoding="utf-8") as optionsFile:
+    with open(filePath, "r", encoding="utf-8-sig") as optionsFile:
         optionsData = optionsFile.read()
     
     found = False
@@ -155,7 +155,7 @@ def _to_ini_string(value: Any) -> str:
 def edit_many_data(settings: dict[str, Any], filePath=None):
     if filePath is None:
         filePath = optionsFilePath
-    with open(filePath, "r", encoding="utf-8") as optionsFile:
+    with open(filePath, "r", encoding="utf-8-sig") as optionsFile:
         existing_lines = optionsFile.read().splitlines()
 
     pending = {str(key).strip(): _to_ini_string(value) for key, value in settings.items() if str(key).strip()}
