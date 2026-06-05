@@ -525,16 +525,14 @@ class BotProcessManager:
 
     def _is_process_alive(self) -> bool:
         try:
-            if os.name == "nt":
-                return bool(self._pty_process is not None and self._pty_process.isalive())
+            if os.name == "nt" and self._pty_process is not None:
+                return bool(self._pty_process.isalive())
             return bool(self.process is not None and self.process.poll() is None)
         except Exception:
             return False
 
     def _read_exit_code(self) -> int | None:
-        if os.name == "nt":
-            if self._pty_process is None:
-                return None
+        if os.name == "nt" and self._pty_process is not None:
             return _coerce_int(getattr(self._pty_process, "exitstatus", None))
 
         if self.process is None:
@@ -542,10 +540,7 @@ class BotProcessManager:
         return _coerce_int(self.process.poll())
 
     def _terminate_process(self) -> int | None:
-        if os.name == "nt":
-            if self._pty_process is None:
-                return None
-
+        if os.name == "nt" and self._pty_process is not None:
             if hasattr(self._pty_process, "isalive") and self._pty_process.isalive():
                 if hasattr(self._pty_process, "terminate"):
                     self._pty_process.terminate(force=True)
