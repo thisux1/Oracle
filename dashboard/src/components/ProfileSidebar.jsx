@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useOracleStore } from "../stores/useOracleStore";
 import StatusBadge from "./StatusBadge";
 import { apiCreateProfile, apiDeleteProfile, apiExportProfile, apiImportProfile } from "../lib/api";
-import { Plus, Copy, Trash2, Download, Upload, MoreVertical } from "lucide-react";
+import { Plus, Copy, Trash2, Download, Upload, MoreVertical, AlertTriangle } from "lucide-react";
 
 function ProfileMenu({ profile, isDefault, onAction, onClose }) {
   const ref = useRef(null);
@@ -228,10 +228,16 @@ export default function ProfileSidebar({ open, onClose }) {
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 pb-4">
-        {profiles.map((profile) => {
+        {profiles.map((pObj) => {
+          const profile = typeof pObj === "string" ? pObj : pObj.name;
+          const pState = typeof pObj === "string" ? "offline" : (pObj.state || "offline");
+          const pIncomplete = typeof pObj === "string" ? false : !!pObj.is_incomplete;
+
           const isActive = profile === activeProfile;
           const profileName = profile.replace(/\.ini$/i, "");
           const isDefault = profile === "options.ini";
+          const isOnline = pState === "online" || pState === "starting";
+
           return (
             <div key={profile} className="relative">
               <button
@@ -245,12 +251,18 @@ export default function ProfileSidebar({ open, onClose }) {
                 }}
               >
                 <span
-                  className={`h-2 w-2 shrink-0 rounded-full ${isActive && botState === "online" ? "animate-oracle-pulse" : ""}`}
+                  className={`h-2 w-2 shrink-0 rounded-full ${isOnline ? "animate-oracle-pulse" : ""}`}
                   style={{
-                    background: isActive && botState === "online" ? "var(--accent-success)" : isActive ? "var(--accent-cyan)" : "var(--text-dim)",
+                    background: isOnline ? "var(--accent-success)" : isActive ? "var(--accent-cyan)" : "var(--text-dim)",
                   }}
+                  title={pState}
                 />
                 <span className="flex-1 truncate font-medium">{profileName}</span>
+                {pIncomplete && (
+                  <span title="Configurações obrigatórias ausentes (Token, Guild ID ou Channel ID)" className="shrink-0 text-amber-500 mr-1 animate-pulse">
+                    <AlertTriangle size={13} />
+                  </span>
+                )}
                 <button
                   type="button"
                   onClick={(e) => {

@@ -46,19 +46,27 @@ function createEmptySessionStats() {
 }
 
 function normalizeProfilesPayload(payload) {
+  let raw = [];
   if (Array.isArray(payload)) {
-    return payload.filter((item) => typeof item === "string" && item.endsWith(".ini"));
+    raw = payload;
+  } else if (Array.isArray(payload?.profiles)) {
+    raw = payload.profiles;
   }
 
-  if (Array.isArray(payload?.profiles)) {
-    return payload.profiles.filter((item) => typeof item === "string" && item.endsWith(".ini"));
-  }
-
-  return [];
+  return raw.map((item) => {
+    if (typeof item === "string") {
+      return { name: item, state: "offline", is_incomplete: false };
+    }
+    return {
+      name: item.name || "",
+      state: item.state || "offline",
+      is_incomplete: !!item.is_incomplete,
+    };
+  }).filter(p => p.name.endsWith(".ini"));
 }
 
 export const useOracleStore = create((set, get) => ({
-  profiles: [DEFAULT_PROFILE],
+  profiles: [{ name: DEFAULT_PROFILE, state: "offline", is_incomplete: false }],
   activeProfile: DEFAULT_PROFILE,
 
   botState: "offline",
@@ -166,6 +174,7 @@ export const useOracleStore = create((set, get) => ({
               hpqSize: typeof payload.hpq === "number" ? payload.hpq : get().hpqSize,
               lpqSize: typeof payload.lpq === "number" ? payload.lpq : get().lpqSize,
             });
+            get().fetchProfiles();
           }
         } catch (e) {
           console.error("Error parsing websocket JSON message", e);
@@ -271,28 +280,30 @@ export const useOracleStore = create((set, get) => ({
     try {
       const payload = await apiListProfiles();
       const loadedProfiles = normalizeProfilesPayload(payload);
-      const profiles = loadedProfiles.length > 0 ? loadedProfiles : [DEFAULT_PROFILE];
-      const nextActive = profiles.includes(currentProfile) ? currentProfile : profiles[0];
+      const profiles = loadedProfiles.length > 0 ? loadedProfiles : [{ name: DEFAULT_PROFILE, state: "offline", is_incomplete: false }];
+      const profileNames = profiles.map(p => p.name);
+      const nextActive = profileNames.includes(currentProfile) ? currentProfile : profileNames[0];
       set({ profiles, activeProfile: nextActive, loadingProfiles: false });
       return profiles;
     } catch (error) {
+      const fallbackObj = { name: currentProfile, state: "offline", is_incomplete: false };
       if (error instanceof ApiClientError && error.status === 404) {
         set({
-          profiles: [currentProfile],
+          profiles: [fallbackObj],
           activeProfile: currentProfile,
           loadingProfiles: false,
           lastError: null,
         });
-        return [currentProfile];
+        return [fallbackObj];
       }
 
       set({
-        profiles: [currentProfile],
+        profiles: [fallbackObj],
         activeProfile: currentProfile,
         loadingProfiles: false,
         lastError: error,
       });
-      return [currentProfile];
+      return [fallbackObj];
     }
   },
 
@@ -328,6 +339,7 @@ export const useOracleStore = create((set, get) => ({
     try {
       const payload = await apiSaveConfig(targetProfile, settings);
       set({ config: settings, configDirty: false, savingConfig: false });
+      get().fetchProfiles();
       return payload;
     } catch (error) {
       set({ savingConfig: false, lastError: error });
@@ -376,6 +388,7 @@ export const useOracleStore = create((set, get) => ({
       const payload = await apiStartBot(targetProfile);
       await get().fetchStatus(targetProfile);
       await get().fetchLogs(targetProfile);
+      await get().fetchProfiles();
       set({ botActionPending: false });
       return payload;
     } catch (error) {
@@ -391,6 +404,7 @@ export const useOracleStore = create((set, get) => ({
     try {
       const payload = await apiStopBot(targetProfile);
       await get().fetchStatus(targetProfile);
+      await get().fetchProfiles();
       set({ botActionPending: false });
       return payload;
     } catch (error) {

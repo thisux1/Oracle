@@ -854,7 +854,14 @@ async def import_profile(file: UploadFile = File(...)):
     target = user_data_path / name
 
     if target.exists():
-        api_error(409, "profile_exists", f"Profile '{name}' already exists. Rename the file or delete the existing profile first.", {"name": name})
+        manager = MANAGERS.get(name)
+        if manager and manager.state in (BotState.ONLINE, BotState.STARTING):
+            api_error(
+                409,
+                "bot_running",
+                "Pare o bot associado antes de sobrescrever o arquivo de configuração.",
+                {"name": name, "state": manager.state.value},
+            )
 
     target.write_text(text, encoding="utf-8")
     return {"status": "ok", "name": name}
