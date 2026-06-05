@@ -11,7 +11,8 @@ env/
 ENV/
 
 # Ignorar arquivos de dados locais e opcoes
-options.ini
+*.ini
+!options_example.ini
 epic_guard.png
 session_data.json
 opencode.json
