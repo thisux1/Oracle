@@ -138,6 +138,8 @@ userToken = userOptions.get("user_token", "")
 userID = 0
 userMentionText = ""
 
+active_profile_path = options_resolver.optionsFilePath
+
 try:
     channelID = int(userOptions.get("channel_id", "0"))
 except ValueError:
@@ -148,6 +150,7 @@ is_married = userOptions.get("is_married", "false").lower() == "true"
 partner_name = userOptions.get("partner_name", "").lower() if is_married else None
 is_ascended = userOptions.get("is_ascended", "false").lower() == "true"
 farm_seed = userOptions.get("seed", "carrot").lower()
+max_area = userOptions.get("max_area", "1")
 user_name_lower = userOptions.get("username", "").lower() # Fallback only, on_ready overwrites this
 TelegramBotToken = userOptions.get("telegram_bot_token", "")
 TelegramChatID = userOptions.get("telegram_chat_id", "")
@@ -258,8 +261,12 @@ def reload_config(profile_path=None):
     global do_lootbox, do_dungeon, do_card_hand, do_ultr, card_hand_action, tc_quantity
     global training_command_sequence, is_eternal, life_boost_before_adv, adventure_area
     global current_area, ADMIN_IDS, ALLOWED_IDS, eternal_tier, pet_adventure_command
+    global max_area, active_profile_path
 
-    userOptions = options_resolver.importData(filePath=profile_path)
+    if profile_path is not None:
+        active_profile_path = profile_path
+
+    userOptions = options_resolver.importData(filePath=active_profile_path)
 
     userToken = userOptions.get("user_token", "")
     try:
@@ -332,4 +339,15 @@ def reload_config(profile_path=None):
     admin_ids_str = userOptions.get("admin_ids", "")
     ADMIN_IDS = [int(x.strip()) for x in admin_ids_str.split(",") if x.strip().isdigit()]
     ALLOWED_IDS = [EPIC_RPG_ID, NAVI_LITE_ID] + ADMIN_IDS
+    max_area = userOptions.get("max_area", "1")
+
+
+def update_max_area(new_val):
+    global max_area
+    max_area = str(new_val)
+    userOptions["max_area"] = str(new_val)
+    try:
+        options_resolver.editData("max_area", str(new_val), filePath=active_profile_path)
+    except Exception as e:
+        logger.error(f"Erro ao salvar max_area no options.ini: {e}")
 

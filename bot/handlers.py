@@ -646,6 +646,9 @@ async def responseResolver(message):
                     final_cmd += " h"
                 if config.is_married:
                     final_cmd += " t"
+            elif cmd_name == "adventure":
+                if config.is_ascended:
+                    final_cmd += " h"
             add_to_high_priority_queue(final_cmd)
             HUD.system(f"Comando de Slash da Navi detectado: {final_cmd}")
             return
@@ -654,13 +657,28 @@ async def responseResolver(message):
         # Navi Lite sends answers in two formats:
         #   1) Exact match: just "3" or "yes"
         #   2) Parentheses format: "normie fish (`1`)." → extract "1"
-        paren_match = re.search(r'\(\s*([^)]+?)\s*\)', _temp)
-        if paren_match:
-            extracted_answer = paren_match.group(1).strip().rstrip('.')
-            if extracted_answer:
-                add_to_high_priority_queue(extracted_answer)
-                HUD.system(f"Resposta da Navi (formato parênteses): {extracted_answer}")
-                return
+        #
+        # NOTE: If the message starts with "yes" or "no" followed by parentheses (e.g., "no (you have 222 ruby)"),
+        # the answer is "yes" or "no", not the info inside the parentheses.
+        extracted_answer = None
+        starts_with_yes_no = re.match(r'^(yes|no)\b', _temp)
+        if starts_with_yes_no:
+            extracted_answer = starts_with_yes_no.group(1)
+        else:
+            paren_match = re.search(r'\(\s*([^)]+?)\s*\)', _temp)
+            if paren_match:
+                candidate = paren_match.group(1).strip().rstrip('.')
+                if any(x in candidate.lower() for x in ["you have", "you got", "ruby", "coin", "gold", "level", ":", "<", ">"]):
+                    before_paren = _temp.split('(')[0].strip()
+                    if before_paren in ["yes", "no"]:
+                        extracted_answer = before_paren
+                else:
+                    extracted_answer = candidate
+
+        if extracted_answer:
+            add_to_high_priority_queue(extracted_answer)
+            HUD.system(f"Resposta da Navi extraída: {extracted_answer}")
+            return
 
         responses = {
             "yes": "yes", "no": "no", "a": "a", "b": "b",
@@ -686,8 +704,11 @@ async def responseResolver(message):
                 runtimeErrors.pop(0)
             logger.error(f"Unexpected helper response: {_temp}")
         
+        # Remove common formatting characters like slash, backticks and stars for robust command detection
+        msg_clean_for_check = msg.replace("/", "").replace("`", "").replace("*", "").strip()
         if any(
-            cmd in msg.strip().splitlines()
+            cmd in line
+            for line in msg_clean_for_check.splitlines()
             for cmd in [
                 "hunt", "adventure", "farm", "training", "work",
                 "daily", "weekly", "lootbox", "pickup", "chop", "fish", "mine",
@@ -695,7 +716,7 @@ async def responseResolver(message):
         ):
             await rdCheckNavi(msg)
             logger.info(
-                "Processing rdCheck for Navi Lite cooldown message (no mention)."
+                "Processing rdCheck for Navi Lite cooldown message."
             )
             return
 
@@ -980,6 +1001,46 @@ async def responseResolver(message):
                 logger.debug(
                     f"Embed message ignored (not for user): {embed_text[:100]}..."
                 )
+                return
+
+            # ─── Profile Area Parsing ───
+            author_name = embed_dict.get("author", {}).get("name", "").lower()
+            if "profile" in author_name:
+                max_area_match = re.search(r'area:\s*\d+\s*\(max:\s*(\d+)\)', embed_text)
+                if max_area_match:
+                    extracted_max_area = max_area_match.group(1)
+                    if config.max_area != extracted_max_area:
+                        logger.info(f"Nova max_area detectada: {extracted_max_area} (antiga: {config.max_area})")
+                        config.update_max_area(extracted_max_area)
+                        HUD.system(f"Área Máxima atualizada para: {extracted_max_area}")
+
+            # ─── Ruby Dragon Event ───
+            if "ruby dragon just spawned in front of you" in embed_text:
+                sessionData["misc"]["personal_events"] += 1
+                current_time = time.time()
+                
+                # Check if previous turn has expired (>60s) to avoid desync
+                if bot_state.ruby_dragon_state == "first_turn":
+                    if current_time - bot_state.ruby_dragon_time > 60.0:
+                        bot_state.ruby_dragon_state = None
+
+                if bot_state.ruby_dragon_state is None:
+                    bot_state.ruby_dragon_state = "first_turn"
+                    bot_state.ruby_dragon_time = current_time
+                    add_to_high_priority_queue("move")
+                    HUD.system("Ruby Dragon detectado (Turno 1): Enviando 'move'")
+                elif bot_state.ruby_dragon_state == "first_turn":
+                    bot_state.ruby_dragon_state = None
+                    bot_state.ruby_dragon_time = 0
+                    add_to_high_priority_queue("fight")
+                    HUD.system("Ruby Dragon detectado (Turno 2): Enviando 'fight'")
+                    
+                    area_to_return = config.current_area
+                    if not area_to_return or area_to_return.lower() == "none":
+                        area_to_return = config.max_area
+                    
+                    add_to_high_priority_queue(f"rpg area {area_to_return}")
+                    HUD.system(f"Enfileirando retorno para a área {area_to_return} após derrotar Ruby Dragon")
                 return
 
             # Check game-over FIRST — final embed has both "try to get the best

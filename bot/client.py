@@ -56,6 +56,27 @@ def parse_neon_recommendation(embed_dict):
 
 
 class DiscordClient(discord.Client):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Deduplication cache: tracks recently processed message IDs
+        # to prevent on_message_edit from re-processing messages
+        # already handled by on_message
+        self._processed_msg_ids = set()
+        self._processed_msg_ids_order = []  # FIFO for eviction
+        self._PROCESSED_MSG_CACHE_SIZE = 200
+        self._ready_initialized = False  # Guard for one-time on_ready actions
+
+    def _track_processed_message(self, message_id):
+        """Add a message ID to the deduplication cache."""
+        if message_id in self._processed_msg_ids:
+            return
+        self._processed_msg_ids.add(message_id)
+        self._processed_msg_ids_order.append(message_id)
+        # Evict oldest entries if cache is full
+        while len(self._processed_msg_ids_order) > self._PROCESSED_MSG_CACHE_SIZE:
+            old_id = self._processed_msg_ids_order.pop(0)
+            self._processed_msg_ids.discard(old_id)
+
     async def setup_hook(self):
         self.bg_task = self.loop.create_task(self.my_background_task())
 
@@ -80,10 +101,21 @@ class DiscordClient(discord.Client):
         # Register client reference so captcha module can use wait_for()
         set_client(self)
         
-        # Add rpg pet to queue at startup to sync pet timers
-        add_to_low_priority_queue("rpg pet")
-        logger.info("Queued 'rpg pet' at session start.")
+        # One-time initialization (guard against multiple on_ready calls during reconnects)
+        if not self._ready_initialized:
+            self._ready_initialized = True
+            # Add rpg pet to queue at startup to sync pet timers
+            add_to_low_priority_queue("rpg pet")
+            logger.info("Queued 'rpg pet' at session start.")
         
+        # Cancel existing telegram listener task before creating a new one
+        # (on_ready fires on every reconnect, which would otherwise spawn duplicate loops)
+        if hasattr(self, 'tg_task') and self.tg_task and not self.tg_task.done():
+            self.tg_task.cancel()
+            try:
+                await self.tg_task
+            except asyncio.CancelledError:
+                pass
         self.tg_task = self.loop.create_task(self.telegram_listener_loop())
         
         config.userID = self.user.id
@@ -443,9 +475,11 @@ class DiscordClient(discord.Client):
                             bot_state.tc_quantity = int(part[:-1])
                             break
 
-                    if len(parts) > 2 and parts[2].endswith('m') and parts[2][:-1].isdigit():
-                        mins = int(parts[2][:-1])
-                        bot_state.tc_end_time = time.time() + (mins * 60)
+                    for part in parts[2:]:
+                        if part.endswith('m') and part[:-1].isdigit():
+                            mins = int(part[:-1])
+                            bot_state.tc_end_time = time.time() + (mins * 60)
+                            break
                     else:
                         bot_state.tc_end_time = 0
 
@@ -859,6 +893,10 @@ class DiscordClient(discord.Client):
                         HUD.system(f"NeonUtil (legacy): Carta ideal é '{rec}'")
         try:
             await responseResolver(message)
+            # Track this message as processed to prevent on_message_edit
+            # from re-processing it (Epic RPG often edits embeds after sending)
+            if message.author.id == config.EPIC_RPG_ID and message.embeds:
+                self._track_processed_message(message.id)
         except Exception as e:
             logger.error(
                 f"Error processing message: {e}\n{traceback.format_exc()}"
@@ -879,8 +917,16 @@ class DiscordClient(discord.Client):
             return
 
         if after.author.id == config.EPIC_RPG_ID:
+            # Skip if this message was already fully processed by on_message
+            # (Epic RPG frequently edits embeds after sending, causing duplicate processing)
+            if after.id in self._processed_msg_ids:
+                logger.debug(f"Skipping already-processed Epic RPG edit: {after.id}")
+                return
             try:
                 await responseResolver(after)
+                # Track it now so further edits are also skipped
+                if after.embeds:
+                    self._track_processed_message(after.id)
             except Exception as e:
                 logger.error(f"Error processing edited message: {e}\n{traceback.format_exc()}")
             return
@@ -1041,11 +1087,39 @@ class DiscordClient(discord.Client):
             HUD.system("📲 COMANDO TELEGRAM: Sleepet Mode ATIVADO.")
             await send_telegram_notification("😴 *Sleepet Mode Ativado.* LPQ limpa e loop de pets iniciado!")
 
-        elif cmd == "/sleepet stop" or cmd == "sleepet stop":
+        elif cmd.startswith("/sleepet stop") or cmd == "sleepet stop":
             bot_state.sleepet_mode = False
             bot_state.sleepet_state = None
             HUD.system("📲 COMANDO TELEGRAM: Sleepet Mode DESATIVADO.")
             await send_telegram_notification("🛑 *Sleepet Mode Desativado. Filas normais liberadas.*")
+
+        elif cmd.startswith("/tc start") or cmd.startswith("tc start"):
+            parts = cmd.split()
+            bot_state.time_cookie_mode = True
+            bot_state.tc_quantity = config.tc_quantity
+
+            for part in parts[2:]:
+                if part.endswith('c') and part[:-1].isdigit():
+                    bot_state.tc_quantity = int(part[:-1])
+                    break
+
+            for part in parts[2:]:
+                if part.endswith('m') and part[:-1].isdigit():
+                    mins = int(part[:-1])
+                    bot_state.tc_end_time = time.time() + (mins * 60)
+                    break
+            else:
+                bot_state.tc_end_time = 0
+
+            HUD.tc(f"📲 COMANDO TELEGRAM: Modo Time Cookie ATIVADO ({bot_state.tc_quantity} cookies/uso).")
+            await send_telegram_notification(f"🍪 *Modo Time Cookie Ativado ({bot_state.tc_quantity}c/uso).*")
+            await queue_tc_commands()
+
+        elif cmd.startswith("/tc stop") or cmd == "/tc pause" or cmd == "tc stop" or cmd == "tc pause":
+            bot_state.time_cookie_mode = False
+            bot_state.tc_end_time = 0
+            HUD.system("📲 COMANDO TELEGRAM: Modo Time Cookie DESATIVADO.")
+            await send_telegram_notification("🛑 *Modo Time Cookie Desativado.*")
 
         elif cmd == "/help" or cmd == "help":
             help_msg = (
@@ -1056,6 +1130,8 @@ class DiscordClient(discord.Client):
                 "• `resume` ou `/resume` - Retoma as ações do bot\n"
                 "• `sleepet start` ou `/sleepet start` - Inicia Sleepet Mode\n"
                 "• `sleepet stop` ou `/sleepet stop` - Para Sleepet Mode\n"
+                "• `tc start [Xc] [Xm]` ou `/tc start [Xc] [Xm]` - Inicia Time Cookie Mode (ex: `/tc start 1c 5m`)\n"
+                "• `tc stop` ou `/tc stop` - Desativa Time Cookie Mode\n"
                 "• `toggle [hunt/adv/farm/work/cf]` - Alterna configurações em tempo real (cf = coinflip/gambling)\n"
                 "• `help` ou `/help` - Exibe esta ajuda"
             )

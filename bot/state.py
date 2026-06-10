@@ -126,6 +126,8 @@ class BotState:
         self.sleepet_state = None  # None, "init", "waiting_summary", "waiting_claim", "waiting_adventure", "waiting_potion"
         self.last_sleepet_cmd_time = 0
         self.latest_neon_recommendation = None  # Tuple of (rec, formatted, timestamp)
+        self.ruby_dragon_state = None
+        self.ruby_dragon_time = 0
 
     @property
     def neon_updated_event(self):
@@ -417,6 +419,8 @@ def reset_bot_state():
     bot_state.sleepet_mode = False
     bot_state.sleepet_state = None
     bot_state.last_sleepet_cmd_time = 0
+    bot_state.ruby_dragon_state = None
+    bot_state.ruby_dragon_time = 0
     logger.info("Bot state reset to initial values.")
 
 
