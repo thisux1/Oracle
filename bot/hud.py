@@ -2,7 +2,7 @@ import re
 import logging
 from colorama import init, Fore, Back, Style
 
-init()
+init(strip=False)
 
 class HUDHandler(logging.Handler):
     def emit(self, record):
@@ -25,7 +25,7 @@ logger.addHandler(hud_handler)
 
 class HUD:
     tui_callback = None
-    _pause_depth = 0
+    _pause_depth = 1
     _buffer: list[str] = []
 
     @staticmethod

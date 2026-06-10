@@ -57,7 +57,7 @@ def process_drops(lines, player_name, loot_data):
                 continue
 
             lootbox_match = re.match(
-                r"(common|uncommon|rare|epic|edgy|omega|godly|eternal|void|galaxy) lootbox",
+                r"(common|uncommon|rare|epic|edgy|void|eternal|galaxy) lootbox",
                 item_name,
             )
             if lootbox_match and lootbox_match.group(1) in lootbox_drops:
@@ -105,7 +105,7 @@ def process_drops(lines, player_name, loot_data):
                 continue
 
             lootbox_match = re.match(
-                r"(common|uncommon|rare|epic|edgy|omega|godly|eternal|void|galaxy) lootbox",
+                r"(common|uncommon|rare|epic|edgy|void|eternal|galaxy) lootbox",
                 item_name,
             )
             if lootbox_match and lootbox_match.group(1) in lootbox_drops:
@@ -483,7 +483,7 @@ def format_session_data(data, title="Dados da Sessão"):
     if command_data:
         output.append(f"{Fore.GREEN}Comandos Executados:{Style.RESET_ALL}")
         for cmd, count in command_data.items():
-            output.append(f"  {cmd.capitalize()}: {count}")
+            output.append(f"  {Fore.LIGHTCYAN_EX}{cmd.capitalize()}{Style.RESET_ALL}: {Fore.YELLOW}{count}{Style.RESET_ALL}")
 
     progress_data = filter_non_zero(data.get("progress_data", {}))
     if progress_data:
@@ -494,7 +494,7 @@ def format_session_data(data, title="Dados da Sessão"):
                 "xp": "XP",
                 "levels": "Níveis"
             }.get(stat.lower(), stat.capitalize())
-            output.append(f"  {stat_name}: {value:,}")
+            output.append(f"  {Fore.LIGHTCYAN_EX}{stat_name}{Style.RESET_ALL}: {Fore.YELLOW}{value:,}{Style.RESET_ALL}")
 
     loot_data = data.get("loot_data", {})
     if loot_data:
@@ -508,9 +508,9 @@ def format_session_data(data, title="Dados da Sessão"):
                     "work_drops": "Drops de Trabalho",
                     "farm_drops": "Drops de Plantação",
                 }.get(category.lower(), category.replace('_', ' ').title())
-                output.append(f"  {cat_name}:")
+                output.append(f"  {Fore.LIGHTMAGENTA_EX}{cat_name}:{Style.RESET_ALL}")
                 for item, qty in non_zero_items.items():
-                    output.append(f"    {item}: {qty:,}")
+                    output.append(f"    {Fore.WHITE}{item}{Style.RESET_ALL}: {Fore.YELLOW}{qty:,}{Style.RESET_ALL}")
 
     misc_data = filter_non_zero(data.get("misc", {}))
     if misc_data:
@@ -522,9 +522,9 @@ def format_session_data(data, title="Dados da Sessão"):
                     key_name = {
                         "cards": "Cartas",
                     }.get(key.lower(), key.capitalize())
-                    output.append(f"  {key_name}:")
+                    output.append(f"  {Fore.LIGHTMAGENTA_EX}{key_name}:{Style.RESET_ALL}")
                     for item, qty in non_zero_items.items():
-                        output.append(f"    {item}: {qty:,}")
+                        output.append(f"    {Fore.WHITE}{item}{Style.RESET_ALL}: {Fore.YELLOW}{qty:,}{Style.RESET_ALL}")
             else:
                 key_name = {
                     "coolness": "Estilo",
@@ -533,7 +533,7 @@ def format_session_data(data, title="Dados da Sessão"):
                     "personal_events": "Eventos Pessoais",
                     "pets": "Pets",
                 }.get(key.lower(), key.capitalize())
-                output.append(f"  {key_name}: {value:,}")
+                output.append(f"  {Fore.LIGHTCYAN_EX}{key_name}{Style.RESET_ALL}: {Fore.YELLOW}{value:,}{Style.RESET_ALL}")
 
     partner_loot_data = data.get("partner_loot_data", {})
     if partner_loot_data:
@@ -547,8 +547,8 @@ def format_session_data(data, title="Dados da Sessão"):
                     "work_drops": "Drops de Trabalho",
                     "farm_drops": "Drops de Plantação",
                 }.get(category.lower(), category.replace('_', ' ').title())
-                output.append(f"  {cat_name}:")
+                output.append(f"  {Fore.LIGHTMAGENTA_EX}{cat_name}:{Style.RESET_ALL}")
                 for item, qty in non_zero_items.items():
-                    output.append(f"    {item}: {qty:,}")
+                    output.append(f"    {Fore.WHITE}{item}{Style.RESET_ALL}: {Fore.YELLOW}{qty:,}{Style.RESET_ALL}")
 
     return "\n".join(output)

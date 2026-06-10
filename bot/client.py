@@ -1,8 +1,11 @@
+import warnings
+warnings.simplefilter("ignore", category=RuntimeWarning)
 import discord
 import asyncio
 import time
 import re
 import traceback
+from colorama import Fore, Style
 from random import randint
 from bot.typo import send_with_typo_chance
 from bot.hud import HUD, logger
@@ -20,18 +23,56 @@ from bot.state import (
     human_delay,
     reset_bot_state,
     queue_tc_commands,
+    is_sleepet_command,
 )
 from bot.telegram import send_telegram_notification, send_telegram_raw
 from bot.captcha import tentar_resolver_captcha, set_client
 from bot.handlers import responseResolver
 from bot.parsers import format_session_data
 from bot.persistence import save_session_data, get_stats_for_period
-from colorama import Fore, Back, Style
+def parse_neon_recommendation(embed_dict):
+    embed_text = str(embed_dict).lower()
+    if "expected tc per choice" not in embed_text:
+        return None
+    text_to_parse = ""
+    if "description" in embed_dict and embed_dict["description"]:
+        text_to_parse = embed_dict["description"]
+    if not text_to_parse and "fields" in embed_dict:
+        for field in embed_dict["fields"]:
+            field_name = field.get("name", "").lower()
+            if "expected tc per choice" in field_name:
+                text_to_parse = field.get("value", "")
+                break
+    if text_to_parse:
+        lines = text_to_parse.split('\n')
+        for line in lines:
+            if "(optimal)" in line.lower():
+                if "pass" in line.lower():
+                    return "pass"
+                card_match = re.search(r'[HDCS][2-9AJQK]|[HDCS]10|EN', line, re.IGNORECASE)
+                if card_match:
+                    return card_match.group(0).lower()
+    return None
 
 
 class DiscordClient(discord.Client):
     async def setup_hook(self):
         self.bg_task = self.loop.create_task(self.my_background_task())
+
+    async def close(self):
+        if hasattr(self, 'bg_task') and self.bg_task and not self.bg_task.done():
+            self.bg_task.cancel()
+            try:
+                await self.bg_task
+            except asyncio.CancelledError:
+                pass
+        if hasattr(self, 'tg_task') and self.tg_task and not self.tg_task.done():
+            self.tg_task.cancel()
+            try:
+                await self.tg_task
+            except asyncio.CancelledError:
+                pass
+        await super().close()
 
     async def on_ready(self):
         logger.info(f'Logged in as {self.user} (ID: {self.user.id})')
@@ -133,7 +174,10 @@ class DiscordClient(discord.Client):
                 )
 
                 # Stealth: Coffee Breaks
-                if (
+                if bot_state.paused or bot_state.jailed:
+                    if current_time > bot_state.next_break_time:
+                        bot_state.next_break_time = current_time + randint(3600, 7200)
+                elif (
                     current_time > bot_state.next_break_time
                     and not bot_state.is_on_coffee_break
                 ):
@@ -253,6 +297,8 @@ class DiscordClient(discord.Client):
                             bot_state.no_response_count += 1
                             bot_state.last_sent_command = cmd
                             bot_state.last_sent_time = current_time
+                            if is_sleepet_command(cmd):
+                                bot_state.last_sleepet_cmd_time = current_time
                             HUD.command(cmd, "HPQ")
                             await send_with_typo_chance(channel, cmd, "HPQ")
                     elif lowPriorityQueue and bot_state.gambling_paused:
@@ -273,36 +319,34 @@ class DiscordClient(discord.Client):
                             bot_state.no_response_count += 1
                             bot_state.last_sent_command = cmd
                             bot_state.last_sent_time = current_time
+                            if is_sleepet_command(cmd):
+                                bot_state.last_sleepet_cmd_time = current_time
                             HUD.command(cmd, "LPQ")
                             await send_with_typo_chance(channel, cmd, "LPQ")
                     else:
-                        if bot_state.time_cookie_mode:
+                        if bot_state.sleepet_mode:
+                            current_time = time.time()
+                            if bot_state.sleepet_state in ["init", None]:
+                                bot_state.sleepet_state = "waiting_summary"
+                                bot_state.last_sleepet_cmd_time = current_time
+                                add_to_high_priority_queue("rpg pet summary")
+                                HUD.system("[Sleepet] State machine started with summary command.")
+                            elif current_time - bot_state.last_sleepet_cmd_time > 20:
+                                HUD.warning(f"[Sleepet] State '{bot_state.sleepet_state}' timed out! Re-syncing with pet summary...")
+                                bot_state.sleepet_state = "waiting_summary"
+                                bot_state.last_sleepet_cmd_time = current_time
+                                add_to_high_priority_queue("rpg pet summary")
+                        elif bot_state.time_cookie_mode:
                             if 0 < bot_state.tc_end_time < current_time:
                                 bot_state.time_cookie_mode = False
                                 bot_state.tc_end_time = 0
                                 HUD.system("Modo Time Cookie expirado.")
                                 await send_telegram_notification("⏳ Modo Time Cookie desativado automaticamente (tempo esgotado).")
-                            elif current_time - bot_state.last_tc_use_time > 10:
+                            elif not highPriorityQueue and not lowPriorityQueue and current_time - bot_state.last_tc_use_time > 2:
                                 bot_state.last_tc_use_time = current_time
                                 add_to_high_priority_queue(f"rpg use tc {bot_state.tc_quantity}")
-
-                                if config.do_hunt:
-                                    hunt_cmd = "rpg hunt"
-                                    if config.is_ascended:
-                                        hunt_cmd += " h"
-                                    if config.is_married:
-                                        hunt_cmd += " t"
-                                    add_to_low_priority_queue(hunt_cmd, suppress_log=True)
-
-                                if config.do_work:
-                                    add_to_low_priority_queue(f"rpg {config.userOptions['work_command']}", suppress_log=True)
-
-                                if config.do_farm:
-                                    farm_cmd = f"rpg farm {config.farm_seed}" if config.farm_seed and config.farm_seed.lower() != "none" else "rpg farm"
-                                    add_to_low_priority_queue(farm_cmd, suppress_log=True)
-
                                 add_to_low_priority_queue("rpg rd", suppress_log=True)
-                                HUD.tc(f"Ciclo: use tc {bot_state.tc_quantity} -> hunt -> work -> rd")
+                                HUD.tc(f"Ciclo: use tc {bot_state.tc_quantity} -> rd")
 
                     # Dungeon State: timeout safety
                     if bot_state.dungeon_in_progress and current_time - bot_state.last_dungeon_time > 60:
@@ -312,7 +356,8 @@ class DiscordClient(discord.Client):
 
                     # Pet Adventure: auto-claim when timer expires
                     if (
-                        bot_state.pet_adventure_return_time > 0
+                        not bot_state.sleepet_mode
+                        and bot_state.pet_adventure_return_time > 0
                         and current_time >= bot_state.pet_adventure_return_time
                     ):
                         bot_state.pet_adventure_return_time = 0
@@ -357,6 +402,21 @@ class DiscordClient(discord.Client):
                     bot_state.no_response_count = 0
                     HUD.system("Bot RETOMADO via comando do Discord.")
                     await message.channel.send("▶️ **Bot Retomado.**")
+                    return
+                elif cmd == "sleepet start":
+                    lowPriorityQueue.clear()
+                    lowPriorityQueueSet.clear()
+                    bot_state.sleepet_mode = True
+                    bot_state.sleepet_state = "init"
+                    bot_state.last_sleepet_cmd_time = time.time()
+                    HUD.system("Sleepet Mode ATIVADO via Discord.")
+                    await message.channel.send("😴 **Sleepet Mode Ativado. LPQ limpa e loop de pets iniciado!**")
+                    return
+                elif cmd == "sleepet stop":
+                    bot_state.sleepet_mode = False
+                    bot_state.sleepet_state = None
+                    HUD.system("Sleepet Mode DESATIVADO via Discord.")
+                    await message.channel.send("🛑 **Sleepet Mode Desavtivado. Filas normais liberadas.**")
                     return
                 elif cmd == "force":
                     await responseResolver(message)
@@ -786,32 +846,17 @@ class DiscordClient(discord.Client):
             logger.debug("Full embed dict: %s", embed_dict)
 
             # NeonUtil parsing for new messages
-            if message.author.id in config.NEON_BOT_IDS and not bot_state.paused and config.card_hand_action == "auto":
-                embed_text = str(embed_dict).lower()
-                if "expected tc per choice" in embed_text:
-                    text_to_parse = ""
-                    if "description" in embed_dict and embed_dict["description"]:
-                        text_to_parse = embed_dict["description"]
-                    if not text_to_parse and "fields" in embed_dict:
-                        for field in embed_dict["fields"]:
-                            field_name = field.get("name", "").lower()
-                            if "expected tc per choice" in field_name:
-                                text_to_parse = field.get("value", "")
-                                break
-                    if text_to_parse:
-                        lines = text_to_parse.split('\n')
-                        for line in lines:
-                            if "(optimal)" in line.lower():
-                                if "pass" in line.lower():
-                                    add_to_high_priority_queue("pass")
-                                    HUD.system("NeonUtil: Carta ideal é 'pass'")
-                                    return
-                                card_match = re.search(r'[HDCS][2-9AJQK]|[HDCS]10|EN', line, re.IGNORECASE)
-                                if card_match:
-                                    card = card_match.group(0).lower()
-                                    add_to_high_priority_queue(card)
-                                    HUD.system(f"NeonUtil: Carta ideal é '{card}'")
-                                    return
+            if message.author.id in config.NEON_BOT_IDS and not bot_state.paused:
+                rec = parse_neon_recommendation(embed_dict)
+                if rec:
+                    from bot.handlers import format_neon_for_telegram
+                    formatted = format_neon_for_telegram(embed_dict)
+                    bot_state.latest_neon_recommendation = (rec, formatted, time.time())
+                    bot_state.neon_updated_event.set()
+
+                    if config.card_hand_action == "legacy_auto":
+                        add_to_high_priority_queue(rec)
+                        HUD.system(f"NeonUtil (legacy): Carta ideal é '{rec}'")
         try:
             await responseResolver(message)
         except Exception as e:
@@ -843,13 +888,15 @@ class DiscordClient(discord.Client):
         # Neon Bot Helper edit — handle based on card_hand_action mode
         if after.author.id in config.NEON_BOT_IDS:
             embed_dict = after.embeds[0].to_dict()
-            embed_text = str(embed_dict).lower()
-
-            if "expected tc per choice" in embed_text:
+            rec = parse_neon_recommendation(embed_dict)
+            if rec:
                 from bot.handlers import format_neon_for_telegram
                 formatted = format_neon_for_telegram(embed_dict)
+                bot_state.latest_neon_recommendation = (rec, formatted, time.time())
+                bot_state.neon_updated_event.set()
+
                 HUD.cardhand(f"Neon Bot Helper atualizou análise do Card Hand.")
-                logger.info(f"Neon edit detected: {embed_text[:120]}...")
+                logger.info(f"Neon edit detected (rec: {rec})...")
 
                 if config.card_hand_action in ["auto", "notify", "legacy_auto"]:
                     try:
@@ -859,31 +906,8 @@ class DiscordClient(discord.Client):
 
                 # In legacy_auto mode, parse and auto-queue the optimal card
                 if config.card_hand_action == "legacy_auto":
-                    text_to_parse = ""
-                    if "description" in embed_dict and embed_dict["description"]:
-                        text_to_parse = embed_dict["description"]
-
-                    if not text_to_parse and "fields" in embed_dict:
-                        for field in embed_dict["fields"]:
-                            field_name = field.get("name", "").lower()
-                            if "expected tc per choice" in field_name:
-                                text_to_parse = field.get("value", "")
-                                break
-
-                    if text_to_parse:
-                        lines = text_to_parse.split('\n')
-                        for line in lines:
-                            if "(optimal)" in line.lower():
-                                if "pass" in line.lower():
-                                    add_to_high_priority_queue("pass")
-                                    HUD.system("NeonUtil: Carta ideal é 'pass'")
-                                    return
-                                card_match = re.search(r'[HDCS][2-9AJQK]|[HDCS]10|EN', line, re.IGNORECASE)
-                                if card_match:
-                                    card = card_match.group(0).lower()
-                                    add_to_high_priority_queue(card)
-                                    HUD.system(f"NeonUtil: Carta ideal é '{card}'")
-                                    return
+                    add_to_high_priority_queue(rec)
+                    HUD.system(f"NeonUtil (legacy): Carta ideal é '{rec}'")
             return
 
     async def telegram_listener_loop(self):
@@ -956,10 +980,13 @@ class DiscordClient(discord.Client):
                 status_emoji = "☕ COFFEE BREAK"
             elif bot_state.jailed:
                 status_emoji = "💀 JAILED (PRESO)"
+            elif bot_state.sleepet_mode:
+                status_emoji = "😴 SLEEPET MODE"
                 
             msg = (
                 f"ℹ️ *STATUS DO ORACLE*\n\n"
                 f"• Estado: {status_emoji}\n"
+                f"• Sleepet Mode: {'Ativo (' + str(bot_state.sleepet_state) + ')' if bot_state.sleepet_mode else 'Inativo'}\n"
                 f"• Time Cookie Mode: {'Ativo' if bot_state.time_cookie_mode else 'Inativo'}\n"
                 f"• Cooldowns pendentes: {len(lowPriorityQueue)} no LPQ, {len(highPriorityQueue)} no HPQ\n"
                 f"• Telegram Notifier: Ativo\n"
@@ -1005,6 +1032,21 @@ class DiscordClient(discord.Client):
             else:
                 await send_telegram_notification("⚠️ Use: `/toggle [hunt/adv/farm/work/cf]`")
                 
+        elif cmd == "/sleepet start" or cmd == "sleepet start":
+            lowPriorityQueue.clear()
+            lowPriorityQueueSet.clear()
+            bot_state.sleepet_mode = True
+            bot_state.sleepet_state = "init"
+            bot_state.last_sleepet_cmd_time = time.time()
+            HUD.system("📲 COMANDO TELEGRAM: Sleepet Mode ATIVADO.")
+            await send_telegram_notification("😴 *Sleepet Mode Ativado.* LPQ limpa e loop de pets iniciado!")
+
+        elif cmd == "/sleepet stop" or cmd == "sleepet stop":
+            bot_state.sleepet_mode = False
+            bot_state.sleepet_state = None
+            HUD.system("📲 COMANDO TELEGRAM: Sleepet Mode DESATIVADO.")
+            await send_telegram_notification("🛑 *Sleepet Mode Desativado. Filas normais liberadas.*")
+
         elif cmd == "/help" or cmd == "help":
             help_msg = (
                 "🎯 *COMANDOS DISPONÍVEIS NO TELEGRAM* 🎯\n\n"
@@ -1012,6 +1054,8 @@ class DiscordClient(discord.Client):
                 "• `status` ou `/status` - Envia o estado atual do bot e queues\n"
                 "• `pause` ou `/pause` - Pausa todas as ações do bot\n"
                 "• `resume` ou `/resume` - Retoma as ações do bot\n"
+                "• `sleepet start` ou `/sleepet start` - Inicia Sleepet Mode\n"
+                "• `sleepet stop` ou `/sleepet stop` - Para Sleepet Mode\n"
                 "• `toggle [hunt/adv/farm/work/cf]` - Alterna configurações em tempo real (cf = coinflip/gambling)\n"
                 "• `help` ou `/help` - Exibe esta ajuda"
             )

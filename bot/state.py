@@ -121,6 +121,17 @@ class BotState:
         self.last_dungeon_time = 0
         # TC Quantity (runtime override via sb tc start Xc)
         self.tc_quantity = config.tc_quantity
+        # Sleepet Mode
+        self.sleepet_mode = False
+        self.sleepet_state = None  # None, "init", "waiting_summary", "waiting_claim", "waiting_adventure", "waiting_potion"
+        self.last_sleepet_cmd_time = 0
+        self.latest_neon_recommendation = None  # Tuple of (rec, formatted, timestamp)
+
+    @property
+    def neon_updated_event(self):
+        if not hasattr(self, '_neon_updated_event') or self._neon_updated_event is None:
+            self._neon_updated_event = asyncio.Event()
+        return self._neon_updated_event
 
     @property
     def paused(self):
@@ -179,7 +190,7 @@ DEFAULT_SESSION_DATA = {
         },
         "lootbox_drops": {
             "common": 0, "uncommon": 0, "rare": 0, "epic": 0, "edgy": 0,
-            "omega": 0, "godly": 0, "eternal": 0, "void": 0, "galaxy": 0,
+            "void": 0, "eternal": 0, "galaxy": 0,
         },
         "work_drops": {
             "banana": 0, "apple": 0, "ruby": 0, "normie fish": 0,
@@ -208,7 +219,7 @@ DEFAULT_SESSION_DATA = {
         },
         "lootbox_drops": {
             "common": 0, "uncommon": 0, "rare": 0, "epic": 0, "edgy": 0,
-            "omega": 0, "godly": 0, "eternal": 0, "void": 0, "galaxy": 0,
+            "void": 0, "eternal": 0, "galaxy": 0,
         },
         "work_drops": {
             "banana": 0, "apple": 0, "ruby": 0, "normie fish": 0,
@@ -249,7 +260,79 @@ save_session_baseline(initialSessionData)
 runtimeErrors = []
 
 
+def is_sleepet_command(command: str) -> bool:
+    if bot_state.captcha_pending or bot_state.jailed:
+        return True
+    cmd_clean = command.strip().lower()
+    # Emergency and jail/protest commands
+    if cmd_clean in ["protest", "rpg jail", "fight", "move", "cry"] or any(x in cmd_clean for x in ["jail", "protest"]):
+        return True
+    # Captcha answers (usually short non-rpg text)
+    if len(cmd_clean) <= 8 and not cmd_clean.startswith("rpg"):
+        return True
+    return cmd_clean.startswith("rpg pet") or "sleepet" in cmd_clean or "rpg use sleepet" in cmd_clean
+
+
+def is_action_queued(command):
+    cmd = command.lower().strip()
+    if cmd.startswith("rpg "):
+        cmd = cmd[4:].strip()
+    parts = cmd.split()
+    if not parts:
+        return False
+    base_action = parts[0]
+    
+    # Check HPQ
+    for q_cmd in highPriorityQueue:
+        q_cmd_clean = q_cmd.lower().strip()
+        if q_cmd_clean.startswith("rpg "):
+            q_cmd_clean = q_cmd_clean[4:].strip()
+        q_parts = q_cmd_clean.split()
+        if q_parts and q_parts[0] == base_action:
+            return True
+            
+    # Check LPQ
+    for q_cmd in lowPriorityQueue:
+        q_cmd_clean = q_cmd.lower().strip()
+        if q_cmd_clean.startswith("rpg "):
+            q_cmd_clean = q_cmd_clean[4:].strip()
+        q_parts = q_cmd_clean.split()
+        if q_parts and q_parts[0] == base_action:
+            return True
+            
+    return False
+
+
+def remove_base_action_from_queue(base_action, queue, queue_set):
+    to_remove = []
+    for cmd in queue:
+        cmd_clean = cmd.lower().strip()
+        if cmd_clean.startswith("rpg "):
+            cmd_clean = cmd_clean[4:].strip()
+        parts = cmd_clean.split()
+        if parts and parts[0] == base_action:
+            to_remove.append(cmd)
+    for cmd in to_remove:
+        if cmd in queue:
+            queue.remove(cmd)
+        queue_set.discard(cmd)
+
+
 def add_to_low_priority_queue(command, suppress_log=False):
+    if bot_state.sleepet_mode and not is_sleepet_command(command):
+        return
+    # Check if this action is already queued in either queue
+    cmd_clean = command.lower().strip()
+    if cmd_clean.startswith("rpg "):
+        cmd_clean = cmd_clean[4:].strip()
+    parts = cmd_clean.split()
+    if parts:
+        base_action = parts[0]
+        match_actions = {"hunt", "adv", "adventure", "fish", "chop", "mine", "pickup", "farm", "daily", "weekly", "lootbox", "quest", "training", "tr"}
+        if base_action in match_actions:
+            if is_action_queued(command):
+                return
+
     if command not in lowPriorityQueueSet:
         lowPriorityQueue.append(command)
         lowPriorityQueueSet.add(command)
@@ -258,6 +341,29 @@ def add_to_low_priority_queue(command, suppress_log=False):
 
 
 def add_to_high_priority_queue(command):
+    if bot_state.sleepet_mode and not is_sleepet_command(command):
+        return
+    # Check if this action is already in HPQ
+    cmd_clean = command.lower().strip()
+    if cmd_clean.startswith("rpg "):
+        cmd_clean = cmd_clean[4:].strip()
+    parts = cmd_clean.split()
+    if parts:
+        base_action = parts[0]
+        match_actions = {"hunt", "adv", "adventure", "fish", "chop", "mine", "pickup", "farm", "daily", "weekly", "lootbox", "quest", "training", "tr"}
+        if base_action in match_actions:
+            # Check if it's already in HPQ
+            for q_cmd in highPriorityQueue:
+                q_cmd_clean = q_cmd.lower().strip()
+                if q_cmd_clean.startswith("rpg "):
+                    q_cmd_clean = q_cmd_clean[4:].strip()
+                q_parts = q_cmd_clean.split()
+                if q_parts and q_parts[0] == base_action:
+                    return # already in HPQ, skip
+            
+            # If it's in LPQ, remove it from LPQ to promote it to HPQ
+            remove_base_action_from_queue(base_action, lowPriorityQueue, lowPriorityQueueSet)
+
     if command not in highPriorityQueueSet:
         highPriorityQueue.append(command)
         highPriorityQueueSet.add(command)
@@ -308,29 +414,17 @@ def reset_bot_state():
     bot_state.watchdog_paused_until = 0
     bot_state.no_response_count = 0
     bot_state.coffee_break_end_time = 0
+    bot_state.sleepet_mode = False
+    bot_state.sleepet_state = None
+    bot_state.last_sleepet_cmd_time = 0
     logger.info("Bot state reset to initial values.")
 
 
 async def queue_tc_commands():
     """Enfileira comandos iniciais ao ativar TC mode para nao desperdicar cooldowns."""
+    bot_state.last_tc_use_time = time.time()
     tc_qty = bot_state.tc_quantity
     add_to_high_priority_queue(f"rpg use tc {tc_qty}")
-
-    if config.do_hunt:
-        hunt_cmd = "rpg hunt"
-        if config.is_ascended:
-            hunt_cmd += " h"
-        if config.is_married:
-            hunt_cmd += " t"
-        add_to_low_priority_queue(hunt_cmd, suppress_log=True)
-
-    if config.do_work:
-        add_to_low_priority_queue(f"rpg {config.userOptions['work_command']}", suppress_log=True)
-
-    if config.do_farm:
-        farm_cmd = f"rpg farm {config.farm_seed}" if config.farm_seed and config.farm_seed != "none" else "rpg farm"
-        add_to_low_priority_queue(farm_cmd, suppress_log=True)
-
     add_to_low_priority_queue("rpg rd", suppress_log=True)
 
 
