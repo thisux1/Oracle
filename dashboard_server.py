@@ -418,8 +418,11 @@ class BotProcessManager:
 
     def _spawn_windows_fallback(self, command: list[str]) -> None:
         """Fallback for when winpty is unavailable or fails."""
+        cmd_args = list(command)
+        if "--headless" not in cmd_args:
+            cmd_args.append("--headless")
         self.process = subprocess.Popen(
-            command,
+            cmd_args,
             cwd=str(PROJECT_DIR),
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,

@@ -396,7 +396,9 @@ class SidebarPane(Static):
             )
 
         state_str = "ATIVO"
-        if bot_state.cardhand_in_progress:
+        if bot_state.sleepet_mode:
+            state_str = f"SLEEPET ({bot_state.sleepet_state or 'init'})"
+        elif bot_state.cardhand_in_progress:
             state_str = "CARD HAND"
         elif bot_state.dungeon_in_progress:
             state_str = "DUNGEON"

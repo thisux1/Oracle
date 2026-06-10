@@ -75,19 +75,19 @@ export default function OverviewTab({ onNavigateTerminal }) {
         {/* Left column */}
         <div className="space-y-4">
           {/* Bot State Card */}
-          <GlassCard title="Bot State" subtitle={activeProfile}>
+          <GlassCard title="Estado do Bot" subtitle={activeProfile}>
             <div className="flex items-start justify-between">
               <div>
                 <StatusBadge state={botState} size="md" />
                 <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
                   <div>
-                    <dt style={{ color: "var(--text-dim)" }}>Uptime</dt>
+                    <dt style={{ color: "var(--text-dim)" }}>Tempo Online (Uptime)</dt>
                     <dd className="mt-0.5 font-medium tabular-nums" style={{ color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}>
                       {formatUptime(uptime)}
                     </dd>
                   </div>
                   <div>
-                    <dt style={{ color: "var(--text-dim)" }}>Profile</dt>
+                    <dt style={{ color: "var(--text-dim)" }}>Perfil</dt>
                     <dd className="mt-0.5 font-medium" style={{ color: "var(--text-primary)" }}>
                       {(activeProfile || "").replace(/\.ini$/i, "")}
                     </dd>
@@ -98,11 +98,11 @@ export default function OverviewTab({ onNavigateTerminal }) {
           </GlassCard>
 
           {/* Quick Actions */}
-          <GlassCard title="Quick Actions">
+          <GlassCard title="Ações Rápidas">
             <div className="space-y-4">
               {/* Process control */}
               <div>
-                <span className="text-[10px] uppercase tracking-wider font-semibold opacity-60 block mb-2">Process Daemon</span>
+                <span className="text-[10px] uppercase tracking-wider font-semibold opacity-60 block mb-2">Daemon do Processo</span>
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -110,7 +110,7 @@ export default function OverviewTab({ onNavigateTerminal }) {
                     disabled={botActionPending || botState === "online" || botState === "starting"}
                     className="btn btn-success flex items-center gap-1.5 py-1.5 px-3 text-xs"
                   >
-                    <Play size={12} /> Start
+                    <Play size={12} /> Iniciar
                   </button>
                   <button
                     type="button"
@@ -118,7 +118,7 @@ export default function OverviewTab({ onNavigateTerminal }) {
                     disabled={botActionPending || botState === "offline" || botState === "stopping"}
                     className="btn btn-danger flex items-center gap-1.5 py-1.5 px-3 text-xs"
                   >
-                    <Square size={12} fill="currentColor" /> Stop
+                    <Square size={12} fill="currentColor" /> Parar
                   </button>
                 </div>
               </div>
@@ -127,7 +127,7 @@ export default function OverviewTab({ onNavigateTerminal }) {
               {botState === "online" && (
                 <div className="space-y-3 border-t pt-3" style={{ borderColor: "var(--border-subtle)" }}>
                   <div>
-                    <span className="text-[10px] uppercase tracking-wider font-semibold opacity-60 block mb-2">Bot Control</span>
+                    <span className="text-[10px] uppercase tracking-wider font-semibold opacity-60 block mb-2">Controle do Bot</span>
                     <div className="flex flex-wrap gap-2">
                       <button
                         type="button"
@@ -135,7 +135,7 @@ export default function OverviewTab({ onNavigateTerminal }) {
                         disabled={!connected}
                         className="btn btn-ghost border border-[var(--border-subtle)] flex items-center gap-1.5 py-1.5 px-3 text-xs hover:bg-[rgba(52,211,153,0.1)] hover:text-[var(--accent-success)]"
                       >
-                        <Play size={12} /> Resume
+                        <Play size={12} /> Retomar (Resume)
                       </button>
                       <button
                         type="button"
@@ -143,7 +143,7 @@ export default function OverviewTab({ onNavigateTerminal }) {
                         disabled={!connected}
                         className="btn btn-ghost border border-[var(--border-subtle)] flex items-center gap-1.5 py-1.5 px-3 text-xs hover:bg-[rgba(239,68,68,0.1)] hover:text-[var(--accent-danger)]"
                       >
-                        <Pause size={12} /> Pause
+                        <Pause size={12} /> Pausar (Pause)
                       </button>
                       <button
                         type="button"
@@ -151,7 +151,7 @@ export default function OverviewTab({ onNavigateTerminal }) {
                         disabled={!connected}
                         className="btn btn-ghost border border-[var(--border-subtle)] flex items-center gap-1.5 py-1.5 px-3 text-xs hover:bg-[rgba(96,165,250,0.1)] hover:text-[var(--accent-cyan)]"
                       >
-                        <RefreshCw size={12} /> Reset
+                        <RefreshCw size={12} /> Resetar
                       </button>
                     </div>
                   </div>
@@ -165,7 +165,7 @@ export default function OverviewTab({ onNavigateTerminal }) {
                         disabled={!connected}
                         className="btn btn-ghost border border-[var(--border-subtle)] flex items-center gap-1.5 py-1.5 px-3 text-xs hover:bg-[rgba(251,191,36,0.1)] hover:text-[var(--accent-warning)]"
                       >
-                        <Cookie size={12} /> TC Start
+                        <Cookie size={12} /> Iniciar TC
                       </button>
                       <button
                         type="button"
@@ -173,13 +173,13 @@ export default function OverviewTab({ onNavigateTerminal }) {
                         disabled={!connected}
                         className="btn btn-ghost border border-[var(--border-subtle)] flex items-center gap-1.5 py-1.5 px-3 text-xs hover:bg-[rgba(239,68,68,0.1)] hover:text-[var(--accent-danger)]"
                       >
-                        <ShieldAlert size={12} /> TC Stop
+                        <ShieldAlert size={12} /> Parar TC
                       </button>
                     </div>
                   </div>
 
                   <div>
-                    <span className="text-[10px] uppercase tracking-wider font-semibold opacity-60 block mb-2">Gambling</span>
+                    <span className="text-[10px] uppercase tracking-wider font-semibold opacity-60 block mb-2">Cassino (Gambling)</span>
                     <div className="flex flex-wrap gap-2">
                       <button
                         type="button"
@@ -187,7 +187,7 @@ export default function OverviewTab({ onNavigateTerminal }) {
                         disabled={!connected}
                         className="btn btn-ghost border border-[var(--border-subtle)] flex items-center gap-1.5 py-1.5 px-3 text-xs hover:bg-[rgba(167,139,250,0.1)] hover:text-[var(--accent-primary)]"
                       >
-                        <Sparkles size={12} /> Bet Start
+                        <Sparkles size={12} fill="currentColor" /> Iniciar Apostas
                       </button>
                       <button
                         type="button"
@@ -195,7 +195,7 @@ export default function OverviewTab({ onNavigateTerminal }) {
                         disabled={!connected}
                         className="btn btn-ghost border border-[var(--border-subtle)] flex items-center gap-1.5 py-1.5 px-3 text-xs hover:bg-[rgba(239,68,68,0.1)] hover:text-[var(--accent-danger)]"
                       >
-                        <Pause size={12} /> Bet Pause
+                        <Pause size={12} /> Pausar Apostas
                       </button>
                     </div>
                   </div>
@@ -208,7 +208,7 @@ export default function OverviewTab({ onNavigateTerminal }) {
         {/* Right column */}
         <div className="space-y-4">
           {/* Counters Grid */}
-          <GlassCard title="Session Counters">
+          <GlassCard title="Contadores da Sessão">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {counters.map((c) => (
                 <AnimatedCounter key={c.label} value={c.value} label={c.label} color={c.color} />
@@ -217,7 +217,7 @@ export default function OverviewTab({ onNavigateTerminal }) {
           </GlassCard>
 
           {/* Queue Card */}
-          <GlassCard title="Queue">
+          <GlassCard title="Fila (Queue)">
             <div className="space-y-3">
               <QueueBar label="HPQ" value={hpqSize} color="var(--accent-cyan)" />
               <QueueBar label="LPQ" value={lpqSize} color="var(--accent-primary)" />
@@ -225,7 +225,7 @@ export default function OverviewTab({ onNavigateTerminal }) {
           </GlassCard>
 
           {/* Recent Drops */}
-          <GlassCard title="Recent Drops" subtitle="Top 10 drops this session">
+          <GlassCard title="Drops Recentes" subtitle="Top 10 drops desta sessão">
             <DropsList loot={sessionStats?.loot} />
           </GlassCard>
         </div>
@@ -245,7 +245,7 @@ function DropsList({ loot }) {
         style={{ background: "var(--bg-elevated)", border: "1px solid var(--border-subtle)" }}
       >
         <p className="text-xs" style={{ color: "var(--text-dim)" }}>
-          No drops registered yet. Start the bot to collect drops.
+          Nenhum drop registrado ainda. Inicie o bot para coletar drops.
         </p>
       </div>
     );
@@ -274,7 +274,7 @@ function DropsList({ loot }) {
         style={{ background: "var(--bg-elevated)", border: "1px solid var(--border-subtle)" }}
       >
         <p className="text-xs" style={{ color: "var(--text-dim)" }}>
-          No drops registered yet. Start the bot to collect drops.
+          Nenhum drop registrado ainda. Inicie o bot para coletar drops.
         </p>
       </div>
     );

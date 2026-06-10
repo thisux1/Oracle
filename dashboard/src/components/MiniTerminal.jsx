@@ -21,7 +21,7 @@ export default function MiniTerminal({ lines = [], onNavigateTerminal }) {
           </p>
         </div>
         <span className="text-[10px]" style={{ color: "var(--text-dim)" }}>
-          click to open
+          clique para abrir
         </span>
       </div>
       <div
@@ -29,7 +29,7 @@ export default function MiniTerminal({ lines = [], onNavigateTerminal }) {
         style={{ background: "var(--bg-void)", fontFamily: "var(--font-mono)" }}
       >
         {display.length === 0 ? (
-          <p className="text-xs" style={{ color: "var(--text-dim)" }}>No log output yet.</p>
+          <p className="text-xs" style={{ color: "var(--text-dim)" }}>Nenhuma saída de log ainda.</p>
         ) : (
           display.map((line, i) => {
             const match = line.match(/^\[\d{4}-\d{2}-\d{2} (\d{2}:\d{2}:\d{2})\] (.*)$/);

@@ -5,14 +5,14 @@ import AnimatedCounter from "../components/AnimatedCounter";
 
 const RARITY_COLORS = {
   common: { bg: "#475569", text: "#e2e8f0" },
-  uncommon: { bg: "#34d399", text: "#064e3b" },
-  rare: { bg: "#60a5fa", text: "#1e3a5f" },
-  epic: { bg: "#a78bfa", text: "#3b0764" },
-  legendary: { bg: "#fbbf24", text: "#78350f" },
-  eternal: { bg: "#f87171", text: "#7f1d1d" },
+  uncommon: { bg: "#10b981", text: "#e6fffa" },
+  epic: { bg: "#8b5cf6", text: "#f5f3ff" },
+  omega: { bg: "#f59e0b", text: "#fffbeb" },
+  godly: { bg: "#06b6d4", text: "#ecfeff" },
+  eternal: { bg: "#ef4444", text: "#fef2f2" },
 };
 
-const RARITY_ORDER = ["common", "uncommon", "rare", "epic", "legendary", "eternal"];
+const RARITY_ORDER = ["common", "uncommon", "epic", "omega", "godly", "eternal"];
 
 function LootTable({ drops, title }) {
   const entries = Object.entries(drops || {}).sort((a, b) => b[1] - a[1]);
@@ -21,7 +21,7 @@ function LootTable({ drops, title }) {
   if (entries.length === 0) {
     return (
       <div className="rounded-xl p-3 text-xs" style={{ background: "var(--bg-elevated)", color: "var(--text-dim)" }}>
-        No data
+        Sem dados
       </div>
     );
   }
@@ -51,6 +51,15 @@ function LootTable({ drops, title }) {
   );
 }
 
+const RARITY_TRANSLATION = {
+  common: "Common",
+  uncommon: "Uncommon",
+  epic: "Epic",
+  omega: "Omega",
+  godly: "Godly",
+  eternal: "Eternal"
+};
+
 function CardGrid({ cards }) {
   const entries = Object.entries(cards || {}).sort((a, b) => {
     const ai = RARITY_ORDER.indexOf(a[0].toLowerCase());
@@ -61,7 +70,7 @@ function CardGrid({ cards }) {
   if (entries.length === 0) {
     return (
       <div className="rounded-xl p-3 text-xs" style={{ background: "var(--bg-elevated)", color: "var(--text-dim)" }}>
-        No cards collected
+        Nenhum card coletado
       </div>
     );
   }
@@ -70,6 +79,7 @@ function CardGrid({ cards }) {
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
       {entries.map(([rarity, count]) => {
         const style = RARITY_COLORS[rarity.toLowerCase()] || RARITY_COLORS.common;
+        const rarityLabel = RARITY_TRANSLATION[rarity.toLowerCase()] || rarity;
         return (
           <div
             key={rarity}
@@ -79,7 +89,7 @@ function CardGrid({ cards }) {
             <p className="text-lg font-bold tabular-nums" style={{ fontFamily: "var(--font-mono)" }}>
               {count}
             </p>
-            <p className="text-[10px] font-semibold uppercase tracking-wide opacity-80">{rarity}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wide opacity-80">{rarityLabel}</p>
           </div>
         );
       })}
@@ -139,7 +149,7 @@ export default function StatsTab() {
             border: `1px solid ${viewMode === "session" ? "var(--accent-primary)" : "var(--border-subtle)"}`,
           }}
         >
-          Session
+          Sessão
         </button>
         <button
           type="button"
@@ -151,7 +161,7 @@ export default function StatsTab() {
             border: `1px solid ${viewMode === "total" ? "var(--accent-primary)" : "var(--border-subtle)"}`,
           }}
         >
-          All-Time
+          Total Acumulado
         </button>
       </div>
 
@@ -159,13 +169,13 @@ export default function StatsTab() {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         <AnimatedCounter value={progress.coins || 0} label="Coins" color="#fbbf24" />
         <AnimatedCounter value={progress.xp || 0} label="XP" color="#a78bfa" />
-        <AnimatedCounter value={progress.levels || 0} label="Levels" color="var(--accent-cyan)" />
+        <AnimatedCounter value={progress.levels || 0} label="Níveis" color="var(--accent-cyan)" />
         <AnimatedCounter value={totalLootboxes} label="Lootboxes" color="#f472b6" />
-        <AnimatedCounter value={totalCommands} label="Commands" color="var(--accent-success)" />
+        <AnimatedCounter value={totalCommands} label="Comandos" color="var(--accent-success)" />
       </div>
 
       {/* Command Breakdown */}
-      <GlassCard title="Commands" subtitle="Execution count by type">
+      <GlassCard title="Comandos" subtitle="Contagem de execução por tipo">
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
           {Object.entries(commands).map(([key, val]) => (
             <div
@@ -186,27 +196,27 @@ export default function StatsTab() {
 
       {/* Loot Breakdown */}
       <div className="grid gap-4 lg:grid-cols-2">
-        <GlassCard title="Mob Drops">
+        <GlassCard title="Drops de Mobs (Mob Drops)">
           <LootTable drops={loot.mob_drops} />
         </GlassCard>
-        <GlassCard title="Lootbox Drops">
+        <GlassCard title="Drops de Lootbox (Lootbox Drops)">
           <LootTable drops={loot.lootbox_drops} />
         </GlassCard>
-        <GlassCard title="Work Drops">
+        <GlassCard title="Drops de Work (Work Drops)">
           <LootTable drops={loot.work_drops} />
         </GlassCard>
-        <GlassCard title="Farm Drops">
+        <GlassCard title="Drops de Farm (Farm Drops)">
           <LootTable drops={loot.farm_drops} />
         </GlassCard>
       </div>
 
       {/* Cards by Rarity */}
-      <GlassCard title="Cards" subtitle="Collection by rarity">
+      <GlassCard title="Cards" subtitle="Coleção por raridade">
         <CardGrid cards={misc.cards} />
       </GlassCard>
 
       {/* Misc Stats */}
-      <GlassCard title="Misc Stats">
+      <GlassCard title="Estatísticas Diversas">
         <div className="grid grid-cols-3 gap-3">
           <MiscStat label="Coolness" value={misc.coolness} color="var(--accent-primary)" />
           <MiscStat label="Arena Cookies" value={misc.arena_cookies} color="var(--accent-warning)" />

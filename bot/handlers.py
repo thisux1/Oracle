@@ -166,9 +166,17 @@ async def find_neon_recommendation(channel):
     """Search channel history for Neon's card hand recommendation.
     Returns a tuple (optimal_card, formatted_telegram_text) or (None, None)."""
     try:
+        import datetime
         # Search the most recent 5 messages in the channel to find Neon's helper recommendation
         async for msg in channel.history(limit=5):
             if msg.author.id in config.NEON_BOT_IDS and msg.embeds:
+                # Security check: ignore messages older than 20 seconds to prevent reading stale cards from previous games
+                msg_time = msg.edited_at or msg.created_at
+                if msg_time:
+                    age = (datetime.datetime.now(datetime.timezone.utc) - msg_time).total_seconds()
+                    if age > 20.0:
+                        continue
+
                 emb = msg.embeds[0].to_dict()
                 emb_text = str(emb).lower()
                 if "expected tc per choice" in emb_text:
@@ -261,16 +269,27 @@ async def interactive_card_hand_loop(message):
             if not bot_state.cardhand_in_progress:
                 break
             
-            # Wait up to 3 seconds for Neon's recommendation
+            # Wait up to 8 seconds for Neon's recommendation using the event sync model
             rec = None
             neon_formatted = None
-            for _ in range(6):
-                if not bot_state.cardhand_in_progress:
-                    break
-                rec, neon_formatted = await find_neon_recommendation(message.channel)
-                if rec:
-                    break
-                await asyncio.sleep(0.5)
+            bot_state.neon_updated_event.clear()
+
+            # Check if there is already a very fresh recommendation (within last 3 seconds)
+            if bot_state.latest_neon_recommendation:
+                rec_val, form_val, ts = bot_state.latest_neon_recommendation
+                if time.time() - ts < 3.0:
+                    rec = rec_val
+                    neon_formatted = form_val
+
+            if not rec and bot_state.cardhand_in_progress:
+                try:
+                    await asyncio.wait_for(bot_state.neon_updated_event.wait(), timeout=8.0)
+                    if bot_state.latest_neon_recommendation:
+                        rec, neon_formatted = bot_state.latest_neon_recommendation[0], bot_state.latest_neon_recommendation[1]
+                except asyncio.TimeoutError:
+                    # Fallback to history lookup if event didn't fire (e.g. startup or missed update)
+                    if bot_state.cardhand_in_progress:
+                        rec, neon_formatted = await find_neon_recommendation(message.channel)
             
             # Send Neon analysis to Telegram if available
             if neon_formatted:
@@ -384,6 +403,100 @@ async def interactive_card_hand_loop(message):
         bot_state.cardhand_turn_count = 1
         bot_state.last_sent_cardhand_image = None
         active_card_hand_msg_id = None
+
+
+async def handle_sleepet_summary(embed_dict, embed_text):
+    # Username verification:
+    author_name = (embed_dict.get("title", "") or embed_dict.get("author", {}).get("name", "")).lower()
+    user_matches = False
+    if config.user_name_lower and config.user_name_lower in author_name:
+        user_matches = True
+    elif str(config.userID) in author_name:
+        user_matches = True
+
+    if not user_matches:
+        logger.debug("Sleepet summary ignored: Username mismatch.")
+        return
+
+    # Parse ready to claim and pet count
+    ready_claim_match = re.search(r'ready to claim:\s*(\d+)/(\d+)', embed_text)
+    pet_count_match = re.search(r'pet count:\s*(\d+)/(\d+)', embed_text)
+
+    if not ready_claim_match or not pet_count_match:
+        logger.warning(f"Could not parse sleepet summary from embed: {embed_text}")
+        return
+
+    ready_to_claim = int(ready_claim_match.group(1))
+    total_on_adventure = int(ready_claim_match.group(2))
+    total_pets = int(pet_count_match.group(1))
+    idle_pets = total_pets - total_on_adventure
+
+    HUD.system(f"[Sleepet] Summary parsed: Ready={ready_to_claim}, OnAdv={total_on_adventure}, Total={total_pets}, Idle={idle_pets}")
+
+    if ready_to_claim > 0:
+        bot_state.sleepet_state = "waiting_claim"
+        bot_state.last_sleepet_cmd_time = time.time()
+        add_to_high_priority_queue("rpg pet claim")
+        HUD.system("[Sleepet] Queued claim.")
+    elif idle_pets > 0:
+        bot_state.sleepet_state = "waiting_adventure"
+        bot_state.last_sleepet_cmd_time = time.time()
+        add_to_high_priority_queue(config.pet_adventure_command)
+        HUD.system(f"[Sleepet] Queued adventure: {config.pet_adventure_command}")
+    else:
+        # All on adventure
+        bot_state.sleepet_state = "waiting_potion"
+        bot_state.last_sleepet_cmd_time = time.time()
+        add_to_high_priority_queue("rpg use sleepet potion")
+        HUD.system("[Sleepet] Queued use sleepet potion.")
+
+
+async def handle_sleepet_claim(embed_dict, embed_text):
+    # Username verification:
+    author_name = (embed_dict.get("title", "") or embed_dict.get("author", {}).get("name", "")).lower()
+    user_matches = False
+    if config.user_name_lower and config.user_name_lower in author_name:
+        user_matches = True
+    elif str(config.userID) in author_name:
+        user_matches = True
+
+    if not user_matches:
+        return
+
+    HUD.system("[Sleepet] Recompensas coletadas! Enviando pet para aventura...")
+    bot_state.sleepet_state = "waiting_adventure"
+    bot_state.last_sleepet_cmd_time = time.time()
+    add_to_high_priority_queue(config.pet_adventure_command)
+
+
+async def handle_sleepet_adv(message, msg):
+    # Verify that it is for the user
+    is_for_us = False
+    if message.reference and message.reference.resolved:
+        ref = message.reference.resolved
+        if hasattr(ref, "author") and ref.author.id == config.userID:
+            is_for_us = True
+    elif bot_state.sleepet_mode and bot_state.sleepet_state == "waiting_adventure":
+        is_for_us = True
+
+    if config.user_name_lower and config.user_name_lower not in msg:
+        is_for_us = False
+
+    if not is_for_us:
+        return
+
+    # Check for instant returns
+    if any(term in msg for term in ["travel in time", "back instantly", "are back instantly"]):
+        HUD.system("[Sleepet] Retorno instantâneo detectado na aventura! Re-claimando...")
+        bot_state.sleepet_state = "waiting_claim"
+        bot_state.last_sleepet_cmd_time = time.time()
+        add_to_high_priority_queue("rpg pet claim")
+        return
+
+    HUD.system("[Sleepet] Aventura iniciada com sucesso! Usando poção sleepet...")
+    bot_state.sleepet_state = "waiting_potion"
+    bot_state.last_sleepet_cmd_time = time.time()
+    add_to_high_priority_queue("rpg use sleepet potion")
 
 
 async def responseResolver(message):
@@ -588,6 +701,60 @@ async def responseResolver(message):
 
     # ─── Epic RPG Responses ───
     elif message.author.id == config.EPIC_RPG_ID:
+        # Check for instant pet returns (perks / VOIDog time travel)
+        full_msg = msg
+        if message.embeds:
+            full_msg += " " + " ".join(str(e.to_dict()).lower() for e in message.embeds)
+
+        is_instant_return = False
+        if "back instantly" in full_msg or "pets are back" in full_msg:
+            is_instant_return = True
+        elif "voidog" in full_msg and "now they are all back" in full_msg:
+            is_instant_return = True
+
+        if is_instant_return:
+            current_time = time.time()
+            is_our_pet_command = (
+                bot_state.last_sent_command
+                and "pet" in bot_state.last_sent_command.lower()
+                and (current_time - bot_state.last_sent_time) < 5.0
+            ) or bot_state.sleepet_mode
+            if is_our_pet_command:
+                if bot_state.sleepet_mode:
+                    HUD.system("Retorno instantâneo do pet detectado no Sleepet Mode! Resgatando recompensas...")
+                    bot_state.sleepet_state = "waiting_claim"
+                    bot_state.last_sleepet_cmd_time = time.time()
+                    add_to_high_priority_queue("rpg pet claim")
+                    return
+                HUD.system("Retorno instantâneo do pet detectado! Resgatando recompensas...")
+                bot_state.pet_adventure_return_time = 0
+                add_to_low_priority_queue("rpg pet claim")
+                return
+            else:
+                logger.debug("Instant pet return message ignored (not triggered by our command)")
+
+        # ─── Sleepet Potion Detection ───
+        if bot_state.sleepet_mode:
+            if "sleepet potion" in msg or "sleepet_potion" in msg:
+                if config.user_name_lower in msg:
+                    if any(err in msg for err in ["don't have", "do not have", "not have"]):
+                        bot_state.sleepet_mode = False
+                        bot_state.sleepet_state = None
+                        HUD.error("Sleepet Mode desativado: Sem poções de sleepet!")
+                        await send_telegram_notification("⚠️ *Sleepet Mode desativado:* Poções esgotadas!")
+                    else:
+                        HUD.system("Sleepet potion usada com sucesso! Resgatando recompensas...")
+                        bot_state.sleepet_state = "waiting_claim"
+                        bot_state.last_sleepet_cmd_time = time.time()
+                        add_to_high_priority_queue("rpg pet claim")
+                    return
+            elif bot_state.sleepet_state == "waiting_potion" and any(err in msg for err in ["don't have", "do not have", "not have"]):
+                bot_state.sleepet_mode = False
+                bot_state.sleepet_state = None
+                HUD.error("Sleepet Mode desativado: Sem poções de sleepet!")
+                await send_telegram_notification("⚠️ *Sleepet Mode desativado:* Poções esgotadas ou item indisponível!")
+                return
+
         is_pet_message = False
         if "is approaching" in msg and config.user_name_lower in msg:
             is_pet_message = True
@@ -839,6 +1006,9 @@ async def responseResolver(message):
 
             # ─── Pet Adventure Detection ───
             if "— pets" in embed_text:
+                if bot_state.sleepet_mode:
+                    await handle_sleepet_summary(embed_dict, embed_text)
+                    return
                 # rpg pets embed: check if pet is on adventure or idle
                 timer_match = re.search(
                     r'status:\s*[a-z]+\s*\|\s*'
@@ -859,14 +1029,17 @@ async def responseResolver(message):
                     add_to_low_priority_queue("rpg pet claim")
                     HUD.system("Pet aguardando resgate! Resgatando...")
                 elif "status: idle" in embed_text or "in adventure: 0" in embed_text:
-                    add_to_low_priority_queue("rpg pet adv learn a")
+                    add_to_low_priority_queue(config.pet_adventure_command)
                     HUD.system("Pet ocioso - enviando para aventura!")
                 return
 
             if "pet adventure rewards" in embed_text:
+                if bot_state.sleepet_mode:
+                    await handle_sleepet_claim(embed_dict, embed_text)
+                    return
                 # rpg pet claim response: rewards collected, re-send
                 bot_state.pet_adventure_return_time = 0
-                add_to_low_priority_queue("rpg pet adv learn a")
+                add_to_low_priority_queue(config.pet_adventure_command)
                 HUD.system("Recompensas do pet resgatadas! Reenviando para aventura...")
                 return
 
@@ -942,21 +1115,25 @@ async def responseResolver(message):
         # ─── Plain-text Responses ───
         else:
             # Pet Adventure started confirmation
-            if "started an adventure and will be back in" in msg:
-                clean_msg = msg.replace('*', '')
-                timer_match = re.search(
-                    r'back in\s*(?:(\d+)h\s*)?(?:(\d+)m\s*)?(?:(\d+)s)?', clean_msg
-                )
-                if timer_match:
-                    h = int(timer_match.group(1) or 0)
-                    m = int(timer_match.group(2) or 0)
-                    s = int(timer_match.group(3) or 0)
-                    total_seconds = h * 3600 + m * 60 + s + 30  # +30s buffer
-                    bot_state.pet_adventure_return_time = time.time() + total_seconds
-                    HUD.system(
-                        f"Aventura do pet iniciada - {h}h {m}m {s}s para retornar"
+            if "started an adventure" in msg:
+                if bot_state.sleepet_mode:
+                    await handle_sleepet_adv(message, msg)
+                    return
+                elif "started an adventure and will be back in" in msg:
+                    clean_msg = msg.replace('*', '')
+                    timer_match = re.search(
+                        r'back in\s*(?:(\d+)h\s*)?(?:(\d+)m\s*)?(?:(\d+)s)?', clean_msg
                     )
-                return
+                    if timer_match:
+                        h = int(timer_match.group(1) or 0)
+                        m = int(timer_match.group(2) or 0)
+                        s = int(timer_match.group(3) or 0)
+                        total_seconds = h * 3600 + m * 60 + s + 30  # +30s buffer
+                        bot_state.pet_adventure_return_time = time.time() + total_seconds
+                        HUD.system(
+                            f"Aventura do pet iniciada - {h}h {m}m {s}s para retornar"
+                        )
+                    return
 
             if "found and killed a" in msg or any(
                 "got" in l for l in msg.splitlines()

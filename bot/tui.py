@@ -271,6 +271,7 @@ class OracleApp(App):
             log_pane.write(Text.from_ansi(msg))
 
         HUD.tui_callback = tui_writer
+        HUD.resume()
 
         # Start Discord bot worker
         self.start_discord_bot()
@@ -296,6 +297,9 @@ class OracleApp(App):
                 continue
 
             in_sleep_mode = False
+
+            # Reload configuration dynamically
+            config.reload_config()
 
             missing_configs = []
             if not config.userToken:
@@ -328,6 +332,7 @@ class OracleApp(App):
 
 async def run_headless() -> None:
     """Main loop that drives connection to Discord and sleep scheduling without TUI (headless)."""
+    HUD.resume()
     HUD.oracle("Mecanismo Headless do Oracle v3.0 inicializado.")
     HUD.oracle("Núcleo do Oracle online (Modo Headless).")
 
@@ -345,6 +350,9 @@ async def run_headless() -> None:
             continue
 
         in_sleep_mode = False
+
+        # Reload configuration dynamically
+        config.reload_config()
 
         missing_configs = []
         if not config.userToken:

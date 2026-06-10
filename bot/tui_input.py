@@ -34,6 +34,8 @@ COMMANDS = {
     "/say": "Envia mensagem ao canal",
     "/tc start": "Ativa modo Time Cookie",
     "/tc stop": "Desativa modo Time Cookie",
+    "/sleepet start": "Ativa o Sleepet Mode (loop automatizado de pets)",
+    "/sleepet stop": "Desativa o Sleepet Mode",
     "/g start": "Inicia o gambling (rpg cf)",
     "/g pause": "Pausa o gambling",
     "/theme": "Abre seletor de temas",
@@ -74,6 +76,7 @@ CONFIG_METADATA = {
     "card_hand_action": "Jogar cartas automaticamente ou apenas notificar",
     "tc_quantity": "Quantidade de cápsulas de tempo (TC) por uso",
     "is_eternal": "Habilitar entrar em dungeons + loop eterno de dragon bite",
+    "eternal_tier": "Tier de eternal (t1 a t10). Se >= 7, desabilita subcomandos do ultr",
     "is_married": "Habilitar funcionalidades de parceiro(a) casado",
     "partner_name": "Nome do parceiro(a) no jogo (se casado)",
     "is_ascended": "Habilitar comportamento específico de jogador ascendido",
@@ -82,6 +85,7 @@ CONFIG_METADATA = {
     "sleep_at": "Horário para dormir (formato 24h, ex: 23:00)",
     "wake_up_at": "Horário para acordar (formato 24h, ex: 09:00)",
     "theme": "Tema visual a ser utilizado na interface TUI",
+    "pet_adventure_command": "Comando de aventura do pet (ex: 'find epic', 'learn a', 'rpg pet adv find epic')",
 }
 
 
@@ -264,6 +268,8 @@ class CommandInput(Input):
             return len(parts) > 1
         if base == "tc":
             return len(parts) > 1 and parts[1].lower() in ["start", "stop", "pause"]
+        if base == "sleepet":
+            return len(parts) > 1 and parts[1].lower() in ["start", "stop"]
         if base == "g":
             return len(parts) > 1 and parts[1].lower() in ["start", "stop", "pause"]
         if base.startswith("rpg"):
@@ -492,6 +498,24 @@ class CommandInput(Input):
             else:
                 HUD.alert("Uso: sb g start  ou  sb g pause")
                 self._notify_system("Uso inválido para g.", severity="error")
+
+        elif base == "sleepet":
+            if len(parts) > 1 and parts[1].lower() == "start":
+                lowPriorityQueue.clear()
+                lowPriorityQueueSet.clear()
+                bot_state.sleepet_mode = True
+                bot_state.sleepet_state = "init"
+                bot_state.last_sleepet_cmd_time = time.time()
+                HUD.oracle("Sleepet Mode ATIVADO manualmente via TUI.")
+                self._notify_system("Sleepet Mode ativado.", severity="information")
+            elif len(parts) > 1 and parts[1].lower() == "stop":
+                bot_state.sleepet_mode = False
+                bot_state.sleepet_state = None
+                HUD.oracle("Sleepet Mode DESATIVADO manualmente via TUI.")
+                self._notify_system("Sleepet Mode desativado.", severity="warning")
+            else:
+                HUD.alert("Uso: /sleepet start  ou  /sleepet stop")
+                self._notify_system("Uso inválido para sleepet.", severity="error")
 
         elif base.startswith("rpg"):
             highPriorityQueue.append(cmd)

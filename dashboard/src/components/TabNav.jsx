@@ -7,10 +7,10 @@ import {
 } from "lucide-react";
 
 const TABS = [
-  { key: "overview", label: "Overview", Icon: LayoutDashboard },
+  { key: "overview", label: "Visão Geral", Icon: LayoutDashboard },
   { key: "terminal", label: "Terminal", Icon: Terminal },
-  { key: "config", label: "Config", Icon: Settings },
-  { key: "stats", label: "Stats", Icon: BarChart3 },
+  { key: "config", label: "Configurações", Icon: Settings },
+  { key: "stats", label: "Estatísticas", Icon: BarChart3 },
 ];
 
 export default function TabNav({ activeTab, onTabChange }) {

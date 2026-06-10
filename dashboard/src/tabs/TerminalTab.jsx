@@ -152,7 +152,7 @@ export default function TerminalTab({ isActive }) {
             }}
           />
           <span className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
-            {connected ? "Connected" : "Disconnected"}
+            {connected ? "Conectado" : "Desconectado"}
           </span>
           <span className="text-[10px]" style={{ color: "var(--text-dim)" }}>
             {activeProfile}
@@ -165,59 +165,59 @@ export default function TerminalTab({ isActive }) {
               type="button"
               onClick={() => handleQuickCommand("/resume")}
               className="btn btn-ghost px-2 py-0.5 text-[10px] h-auto flex items-center gap-1 text-[var(--text-secondary)] hover:text-[var(--accent-success)]"
-              title="Resume Bot"
+              title="Retomar Bot"
             >
-              <Play size={10} /> Resume
+              <Play size={10} /> Retomar
             </button>
             <button
               type="button"
               onClick={() => handleQuickCommand("/pause")}
               className="btn btn-ghost px-2 py-0.5 text-[10px] h-auto flex items-center gap-1 text-[var(--text-secondary)] hover:text-[var(--accent-danger)]"
-              title="Pause Bot"
+              title="Pausar Bot"
             >
-              <Pause size={10} /> Pause
+              <Pause size={10} /> Pausar
             </button>
             <button
               type="button"
               onClick={() => handleQuickCommand("/reset")}
               className="btn btn-ghost px-2 py-0.5 text-[10px] h-auto flex items-center gap-1 text-[var(--text-secondary)] hover:text-[var(--accent-cyan)]"
-              title="Reset state & queues"
+              title="Resetar estado e filas"
             >
-              <RefreshCw size={10} /> Reset
+              <RefreshCw size={10} /> Resetar
             </button>
             <span className="h-3.5 w-px bg-[var(--border-subtle)] mx-1" />
             <button
               type="button"
               onClick={() => handleQuickCommand("/tc start")}
               className="btn btn-ghost px-2 py-0.5 text-[10px] h-auto flex items-center gap-1 text-[var(--text-secondary)] hover:text-[var(--accent-warning)]"
-              title="Time Cookie Start"
+              title="Iniciar Time Cookie"
             >
-              <Cookie size={10} /> TC Start
+              <Cookie size={10} /> Iniciar TC
             </button>
             <button
               type="button"
               onClick={() => handleQuickCommand("/tc stop")}
               className="btn btn-ghost px-2 py-0.5 text-[10px] h-auto flex items-center gap-1 text-[var(--text-secondary)] hover:text-[var(--accent-danger)]"
-              title="Time Cookie Stop"
+              title="Parar Time Cookie"
             >
-              <ShieldAlert size={10} /> TC Stop
+              <ShieldAlert size={10} /> Parar TC
             </button>
             <span className="h-3.5 w-px bg-[var(--border-subtle)] mx-1" />
             <button
               type="button"
               onClick={() => handleQuickCommand("/g start")}
               className="btn btn-ghost px-2 py-0.5 text-[10px] h-auto flex items-center gap-1 text-[var(--text-secondary)] hover:text-[var(--accent-primary)]"
-              title="Gambling Start"
+              title="Iniciar Apostas"
             >
-              <Sparkles size={10} /> Bet Start
+              <Sparkles size={10} /> Iniciar Apostas
             </button>
             <button
               type="button"
               onClick={() => handleQuickCommand("/g pause")}
               className="btn btn-ghost px-2 py-0.5 text-[10px] h-auto flex items-center gap-1 text-[var(--text-secondary)] hover:text-[var(--accent-danger)]"
-              title="Gambling Pause"
+              title="Pausar Apostas"
             >
-              <Pause size={10} /> Bet Pause
+              <Pause size={10} /> Pausar Apostas
             </button>
           </div>
         )}
@@ -227,7 +227,7 @@ export default function TerminalTab({ isActive }) {
             type="button"
             onClick={handleClear}
             className="btn btn-ghost p-2"
-            title="Clear terminal"
+            title="Limpar terminal"
           >
             <Trash2 size={14} />
           </button>
@@ -235,7 +235,7 @@ export default function TerminalTab({ isActive }) {
             type="button"
             onClick={toggleFullscreen}
             className="btn btn-ghost p-2"
-            title={fullscreen ? "Exit fullscreen" : "Fullscreen"}
+            title={fullscreen ? "Sair da tela cheia" : "Tela cheia"}
           >
             {fullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
           </button>

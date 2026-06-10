@@ -115,7 +115,7 @@ async def tentar_resolver_captcha(message):
                 "🚨 CAPTCHA DETECTADO! Nenhum modelo de IA disponível. Digite a resposta aqui para resolver.",
             )
             # Wait extra long for manual input
-            for _ in range(30):
+            for _ in range(90):
                 override = await get_telegram_override(captcha_start_time)
                 if override and override not in ["/start", "rpg", "sb"]:
                     HUD.alert(f"📲 OVERRIDE DO TELEGRAM: '{override}'")

@@ -27,7 +27,7 @@ function ProfileMenu({ profile, isDefault, onAction, onClose }) {
         className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-[rgba(148,163,184,0.08)]"
         style={{ color: "var(--text-secondary)" }}
       >
-        <Copy size={13} /> Duplicate
+        <Copy size={13} /> Duplicar
       </button>
       <button
         type="button"
@@ -35,7 +35,7 @@ function ProfileMenu({ profile, isDefault, onAction, onClose }) {
         className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-[rgba(148,163,184,0.08)]"
         style={{ color: "var(--text-secondary)" }}
       >
-        <Download size={13} /> Export
+        <Download size={13} /> Exportar
       </button>
       {!isDefault ? (
         <button
@@ -44,7 +44,7 @@ function ProfileMenu({ profile, isDefault, onAction, onClose }) {
           className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-[rgba(248,113,113,0.1)]"
           style={{ color: "var(--accent-danger)" }}
         >
-          <Trash2 size={13} /> Delete
+          <Trash2 size={13} /> Excluir
         </button>
       ) : null}
     </div>
@@ -59,11 +59,11 @@ function CreateProfileDialog({ onConfirm, onClose }) {
     e.preventDefault();
     const trimmed = name.trim();
     if (!trimmed) {
-      setError("Name is required");
+      setError("O nome é obrigatório");
       return;
     }
     if (/[\\/]/.test(trimmed)) {
-      setError("Invalid characters in name");
+      setError("Caracteres inválidos no nome");
       return;
     }
     onConfirm(trimmed);
@@ -73,20 +73,20 @@ function CreateProfileDialog({ onConfirm, onClose }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-sm rounded-2xl p-5" style={{ background: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
-        <h3 className="mb-4 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>New Profile</h3>
+        <h3 className="mb-4 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Novo Perfil</h3>
         <form onSubmit={handleSubmit}>
           <input
             autoFocus
             type="text"
             value={name}
             onChange={(e) => { setName(e.target.value); setError(""); }}
-            placeholder="my_profile"
+            placeholder="meu_perfil"
             className="input mb-2"
           />
           {error ? <p className="mb-2 text-xs" style={{ color: "var(--accent-danger)" }}>{error}</p> : null}
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={onClose} className="btn btn-ghost text-xs">Cancel</button>
-            <button type="submit" className="btn btn-primary text-xs">Create</button>
+            <button type="button" onClick={onClose} className="btn btn-ghost text-xs">Cancelar</button>
+            <button type="submit" className="btn btn-primary text-xs">Criar</button>
           </div>
         </form>
       </div>
@@ -128,7 +128,7 @@ export default function ProfileSidebar({ open, onClose }) {
           await apiCreateProfile(newName, profile);
           await fetchProfiles();
         } catch (err) {
-          alert(err?.message || "Failed to duplicate profile");
+          alert(err?.message || "Falha ao duplicar o perfil");
         }
         break;
       }
@@ -136,12 +136,12 @@ export default function ProfileSidebar({ open, onClose }) {
         try {
           await apiExportProfile(profile);
         } catch (err) {
-          alert(err?.message || "Failed to export profile");
+          alert(err?.message || "Falha ao exportar o perfil");
         }
         break;
       }
       case "delete": {
-        if (!confirm(`Delete "${profile}"? This cannot be undone.`)) break;
+        if (!confirm(`Deseja excluir "${profile}"? Esta ação não pode ser desfeita.`)) break;
         try {
           await apiDeleteProfile(profile);
           if (profile === activeProfile) {
@@ -149,7 +149,7 @@ export default function ProfileSidebar({ open, onClose }) {
           }
           await fetchProfiles();
         } catch (err) {
-          alert(err?.message || "Failed to delete profile");
+          alert(err?.message || "Falha ao excluir o perfil");
         }
         break;
       }
@@ -162,7 +162,7 @@ export default function ProfileSidebar({ open, onClose }) {
       await fetchProfiles();
       setShowCreate(false);
     } catch (err) {
-      alert(err?.message || "Failed to create profile");
+      alert(err?.message || "Falha ao criar o perfil");
     }
   }, [fetchProfiles]);
 
@@ -173,7 +173,7 @@ export default function ProfileSidebar({ open, onClose }) {
       await apiImportProfile(file);
       await fetchProfiles();
     } catch (err) {
-      alert(err?.message || "Failed to import profile");
+      alert(err?.message || "Falha ao importar o perfil");
     }
     e.target.value = "";
   }, [fetchProfiles]);
@@ -190,7 +190,7 @@ export default function ProfileSidebar({ open, onClose }) {
           </p>
           <p className="mt-0.5 text-[10px]" style={{ color: "var(--text-dim)" }}>v3.0</p>
         </div>
-        <button type="button" onClick={() => fetchProfiles()} className="btn btn-ghost px-2 py-1 text-[11px]" title="Reload">
+        <button type="button" onClick={() => fetchProfiles()} className="btn btn-ghost px-2 py-1 text-[11px]" title="Recarregar">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
             <path d="M3 3v5h5" />
@@ -203,7 +203,7 @@ export default function ProfileSidebar({ open, onClose }) {
       <div className="px-3 pb-2">
         <div className="mb-2 flex items-center justify-between">
           <p className="px-1 text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-dim)" }}>
-            Profiles
+            Perfis
           </p>
           <div className="flex gap-1">
             <button
@@ -211,14 +211,14 @@ export default function ProfileSidebar({ open, onClose }) {
               onClick={() => setShowCreate(true)}
               className="rounded-lg p-1 transition-colors hover:bg-[rgba(148,163,184,0.1)]"
               style={{ color: "var(--text-dim)" }}
-              title="New profile"
+              title="Novo perfil"
             >
               <Plus size={13} />
             </button>
             <label
               className="cursor-pointer rounded-lg p-1 transition-colors hover:bg-[rgba(148,163,184,0.1)]"
               style={{ color: "var(--text-dim)" }}
-              title="Import .ini"
+              title="Importar .ini"
             >
               <Upload size={13} />
               <input type="file" accept=".ini" className="hidden" onChange={handleImport} />

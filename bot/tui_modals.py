@@ -494,9 +494,10 @@ CONFIG_SCHEMA = [
         ("adventure_area", "dropdown", "none", ["none"] + [str(i) for i in range(1, 22)]),
         ("current_area", "dropdown", "none", ["none"] + [str(i) for i in range(1, 22)]),
         ("zombie_horde_event_response", "dropdown", "fight", ["fight", "join", "cry"]),
+        ("pet_adventure_command", "text", "rpg pet adv learn a"),
     ]),
     ("🌾 Economy / Gambling", [
-        ("lootbox_type", "dropdown", "ed lb", ["galaxy lb", "ed lb", "ep lb", "rare lb", "uncommon lb", "common lb"]),
+        ("lootbox_type", "dropdown", "ed lb", ["ed lb", "ep lb", "rare lb", "uncommon lb", "common lb"]),
         ("seed", "dropdown", "carrot", ["carrot", "potato", "bread"]),
         ("work_command", "dropdown", "chainsaw", ["chainsaw", "pickaxe", "bigboat", "greenhouse", "axe", "net", "pickup"]),
         ("bankroll", "text", "1000000000000"),
@@ -525,6 +526,7 @@ CONFIG_SCHEMA = [
         ("card_hand_action", "dropdown", "auto", ["auto", "notify"]),
         ("tc_quantity", "text", "1"),
         ("is_eternal", "bool", "false"),
+        ("eternal_tier", "dropdown", "t1", ["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9", "t10"]),
         ("is_married", "bool", "false"),
         ("partner_name", "text", ""),
         ("is_ascended", "bool", "false"),
@@ -554,6 +556,8 @@ def load_example_comments() -> dict[str, str]:
         "is_ascended": "Habilitar se o jogador já tiver ascendido no Epic RPG",
         "admin_ids": "IDs extras de Discord autorizados a comandar o bot remotamente",
         "tc_stop_on": "Parar o uso de time cookie caso ocorram estes eventos",
+        "eternal_tier": "Tier do eternal (de t1 até t10)",
+        "pet_adventure_command": "Comando personalizado de aventura do pet. Ex: 'find epic', 'learn a' ou 'rpg pet adv find epic'",
     }
     
     try:

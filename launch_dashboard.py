@@ -24,13 +24,16 @@ def _setup_logging() -> None:
     else:
         log_dir = Path(tempfile.gettempdir()) / "OracleOS"
 
+    is_bot = "--run-bot" in sys.argv
+    log_name = "bot_launcher.log" if is_bot else "launcher.log"
+
     try:
         log_dir.mkdir(parents=True, exist_ok=True)
-        log_file = log_dir / "launcher.log"
+        log_file = log_dir / log_name
         log_stream = open(log_file, "w", encoding="utf-8", buffering=1)
         sys.stdout = log_stream
         sys.stderr = log_stream
-        print("--- Oracle OS Launcher Start ---")
+        print(f"--- Oracle OS {'Bot ' if is_bot else ''}Launcher Start ---")
         print(f"Python: {sys.version}")
         print(f"Platform: {sys.platform}")
         print(f"Executable: {sys.executable}")
@@ -53,10 +56,23 @@ _setup_logging()
 if "--run-bot" in sys.argv:
     # Remove the flag so the bot doesn't see it
     sys.argv.remove("--run-bot")
+
+    headless = False
+    if "--headless" in sys.argv:
+        sys.argv.remove("--headless")
+        headless = True
+    elif not sys.stdout.isatty():
+        headless = True
+
     try:
-        import asyncio
-        from bot.tui import run_headless  # noqa: E402
-        asyncio.run(run_headless())
+        if headless:
+            import asyncio
+            from bot.tui import run_headless  # noqa: E402
+            asyncio.run(run_headless())
+        else:
+            from bot.tui import OracleApp  # noqa: E402
+            app = OracleApp()
+            app.run()
     except Exception:
         import traceback as _tb
         _tb.print_exc()

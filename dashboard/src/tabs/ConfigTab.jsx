@@ -37,14 +37,14 @@ function TextField({ label, field, value, onChange, isPassword = false, placehol
             className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide"
             style={{ background: "var(--accent-warning-dim)", color: "var(--accent-warning)" }}
           >
-            restart
+            reiniciar
           </span>
         ) : (
           <span
             className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide"
             style={{ background: "var(--accent-success-dim)", color: "var(--accent-success)" }}
           >
-            runtime
+            tempo real
           </span>
         )}
       </div>
@@ -145,7 +145,7 @@ export default function ConfigTab() {
       setTimeout(() => setSaveState(null), 3000);
     } catch (err) {
       setSaveState("error");
-      setErrorMsg(err?.message || "Failed to save");
+      setErrorMsg(err?.message || "Falha ao salvar");
     }
   };
 
@@ -155,67 +155,67 @@ export default function ConfigTab() {
   return (
     <div className="space-y-4">
       {/* Credentials */}
-      <ConfigSection title="Credentials" icon="&#128273;" requiresRestart defaultOpen>
+      <ConfigSection title="Credenciais" icon="&#128273;" requiresRestart defaultOpen>
         <div className="grid gap-4 sm:grid-cols-2">
-          <TextField label="User Token" field="user_token" value={config.user_token} onChange={handleChange} isPassword placeholder="Discord token" isRequired />
-          <TextField label="Channel ID" field="channel_id" value={config.channel_id} onChange={handleChange} placeholder="123456789" isRequired />
-          <TextField label="Guild ID" field="guild_id" value={config.guild_id} onChange={handleChange} placeholder="987654321" isRequired />
+          <TextField label="Token do Usuário" field="user_token" value={config.user_token} onChange={handleChange} isPassword placeholder="Token do Discord" isRequired />
+          <TextField label="ID do Canal" field="channel_id" value={config.channel_id} onChange={handleChange} placeholder="123456789" isRequired />
+          <TextField label="ID do Servidor (Guild)" field="guild_id" value={config.guild_id} onChange={handleChange} placeholder="987654321" isRequired />
         </div>
       </ConfigSection>
 
       {/* General */}
-      <ConfigSection title="General" icon="&#9881;&#65039;">
+      <ConfigSection title="Geral" icon="&#9881;&#65039;">
         <div className="grid gap-4 sm:grid-cols-2">
-          <ToggleSwitch label="Random Interval (humanizer delay)" checked={isTrue("random_interval")} onChange={doToggle("random_interval")} />
-          <NumberField label="Typo Chance (e.g. 0.05 = 5%)" field="typo_chance" value={config.typo_chance} onChange={handleChange} min={0} max={1} step={0.01} />
+          <ToggleSwitch label="Intervalo Aleatório (atraso humanizador)" checked={isTrue("random_interval")} onChange={doToggle("random_interval")} />
+          <NumberField label="Chance de Erro de Digitação (ex: 0.05 = 5%)" field="typo_chance" value={config.typo_chance} onChange={handleChange} min={0} max={1} step={0.01} />
         </div>
       </ConfigSection>
 
       {/* Adventure */}
       <ConfigSection title="Adventure" icon="&#9876;&#65039;">
         <div className="grid gap-4 sm:grid-cols-2">
-          <NumberField label="Life Boost Before Adv" field="life_boost_before_adv" value={config.life_boost_before_adv} onChange={handleChange} min={0} max={100} />
-          <TextField label="Adventure Area" field="adventure_area" value={config.adventure_area} onChange={handleChange} />
-          <TextField label="Current Area" field="current_area" value={config.current_area} onChange={handleChange} />
-          <TextField label="Zombie Horde Response" field="zombie_horde_event_response" value={config.zombie_horde_event_response} onChange={handleChange} />
+          <NumberField label="Aumento de Vida antes de Adventure" field="life_boost_before_adv" value={config.life_boost_before_adv} onChange={handleChange} min={0} max={100} />
+          <TextField label="Área de Adventure" field="adventure_area" value={config.adventure_area} onChange={handleChange} />
+          <TextField label="Área Atual" field="current_area" value={config.current_area} onChange={handleChange} />
+          <TextField label="Resposta ao Evento Zombie Horde" field="zombie_horde_event_response" value={config.zombie_horde_event_response} onChange={handleChange} />
+          <TextField label="Comando de Aventura do Pet" field="pet_adventure_command" value={config.pet_adventure_command} onChange={handleChange} placeholder="rpg pet adv learn a (ex: find epic)" />
         </div>
       </ConfigSection>
 
       {/* Economy */}
-      <ConfigSection title="Economy" icon="&#127805;">
+      <ConfigSection title="Economia" icon="&#127805;">
         <div className="grid gap-4 sm:grid-cols-2">
           <SelectField
-            label="Lootbox Type"
+            label="Tipo de Lootbox"
             field="lootbox_type"
             value={config.lootbox_type}
             onChange={handleChange}
             options={[
-              { value: "common lb", label: "Common" },
-              { value: "uncommon lb", label: "Uncommon" },
-              { value: "rare lb", label: "Rare" },
-              { value: "ep lb", label: "Epic" },
-              { value: "ed lb", label: "Edgy" },
-              { value: "galaxy lb", label: "Galaxy" },
+              { value: "common lb", label: "Common Lootbox" },
+              { value: "uncommon lb", label: "Uncommon Lootbox" },
+              { value: "rare lb", label: "Rare Lootbox" },
+              { value: "ep lb", label: "Epic Lootbox" },
+              { value: "ed lb", label: "Edgy Lootbox" },
             ]}
           />
           <TextField label="Seed" field="seed" value={config.seed} onChange={handleChange} />
-          <TextField label="Work Command" field="work_command" value={config.work_command} onChange={handleChange} />
-          <NumberField label="Bankroll" field="bankroll" value={config.bankroll} onChange={handleChange} min={0} />
-          <NumberField label="Max Losses" field="max_losses" value={config.max_losses} onChange={handleChange} min={0} />
-          <NumberField label="Initial Step" field="initial_step" value={config.initial_step} onChange={handleChange} min={0} />
+          <TextField label="Comando de Trabalho (Work)" field="work_command" value={config.work_command} onChange={handleChange} />
+          <NumberField label="Banca Máxima (Bankroll)" field="bankroll" value={config.bankroll} onChange={handleChange} min={0} />
+          <NumberField label="Perdas Máximas (Max Losses)" field="max_losses" value={config.max_losses} onChange={handleChange} min={0} />
+          <NumberField label="Passo Inicial (Initial Step)" field="initial_step" value={config.initial_step} onChange={handleChange} min={0} />
         </div>
       </ConfigSection>
 
       {/* Telegram */}
       <ConfigSection title="Telegram" icon="&#128241;" requiresRestart>
         <div className="grid gap-4 sm:grid-cols-2">
-          <TextField label="Bot Token" field="telegram_bot_token" value={config.telegram_bot_token} onChange={handleChange} isPassword placeholder="123:ABC" />
-          <TextField label="Chat ID" field="telegram_chat_id" value={config.telegram_chat_id} onChange={handleChange} />
+          <TextField label="Token do Bot" field="telegram_bot_token" value={config.telegram_bot_token} onChange={handleChange} isPassword placeholder="123:ABC" />
+          <TextField label="ID do Chat" field="telegram_chat_id" value={config.telegram_chat_id} onChange={handleChange} />
         </div>
       </ConfigSection>
 
       {/* Features */}
-      <ConfigSection title="Features" icon="&#9989;">
+      <ConfigSection title="Recursos (Features)" icon="&#9989;">
         <div className="grid gap-3 sm:grid-cols-2">
           {[
             { field: "do_hunt", label: "Hunt" },
@@ -242,26 +242,44 @@ export default function ConfigTab() {
       </ConfigSection>
 
       {/* Advanced */}
-      <ConfigSection title="Advanced" icon="&#129514;">
+      <ConfigSection title="Avançado" icon="&#129514;">
         <div className="grid gap-4 sm:grid-cols-2">
-          <TextField label="Card Hand Action" field="card_hand_action" value={config.card_hand_action} onChange={handleChange} />
-          <NumberField label="TC Quantity" field="tc_quantity" value={config.tc_quantity} onChange={handleChange} min={1} />
-          <ToggleSwitch label="Is Eternal" checked={isTrue("is_eternal")} onChange={doToggle("is_eternal")} />
-          <ToggleSwitch label="Is Married" checked={isTrue("is_married")} onChange={doToggle("is_married")} />
-          <TextField label="Partner Name" field="partner_name" value={config.partner_name} onChange={handleChange} />
-          <ToggleSwitch label="Is Ascended" checked={isTrue("is_ascended")} onChange={doToggle("is_ascended")} />
-          <TextField label="Admin IDs" field="admin_ids" value={config.admin_ids} onChange={handleChange} placeholder="id1,id2" />
-          <TextField label="TC Stop On" field="tc_stop_on" value={config.tc_stop_on} onChange={handleChange} />
+          <TextField label="Ação do Card Hand" field="card_hand_action" value={config.card_hand_action} onChange={handleChange} />
+          <NumberField label="Quantidade de TC" field="tc_quantity" value={config.tc_quantity} onChange={handleChange} min={1} />
+          <ToggleSwitch label="Dungeon Eternal (Is Eternal)" checked={isTrue("is_eternal")} onChange={doToggle("is_eternal")} />
+          <SelectField
+            label="Tier de Eternal"
+            field="eternal_tier"
+            value={config.eternal_tier}
+            onChange={handleChange}
+            options={[
+              { value: "t1", label: "T1" },
+              { value: "t2", label: "T2" },
+              { value: "t3", label: "T3" },
+              { value: "t4", label: "T4" },
+              { value: "t5", label: "T5" },
+              { value: "t6", label: "T6" },
+              { value: "t7", label: "T7" },
+              { value: "t8", label: "T8" },
+              { value: "t9", label: "T9" },
+              { value: "t10", label: "T10" },
+            ]}
+          />
+          <ToggleSwitch label="Casado (Is Married)" checked={isTrue("is_married")} onChange={doToggle("is_married")} />
+          <TextField label="Nome do Parceiro(a)" field="partner_name" value={config.partner_name} onChange={handleChange} />
+          <ToggleSwitch label="Ascendido (Is Ascended)" checked={isTrue("is_ascended")} onChange={doToggle("is_ascended")} />
+          <TextField label="IDs dos Administradores" field="admin_ids" value={config.admin_ids} onChange={handleChange} placeholder="id1,id2" />
+          <TextField label="Parar TC Em (TC Stop On)" field="tc_stop_on" value={config.tc_stop_on} onChange={handleChange} />
         </div>
       </ConfigSection>
 
       {/* Schedule */}
-      <ConfigSection title="Schedule" icon="&#128336;">
+      <ConfigSection title="Agendamento" icon="&#128336;">
         <div className="grid gap-4 sm:grid-cols-2">
-          <TextField label="Sleep At (24h)" field="sleep_at" type="time" value={config.sleep_at} onChange={handleChange} />
-          <TextField label="Wake Up At (24h)" field="wake_up_at" type="time" value={config.wake_up_at} onChange={handleChange} />
+          <TextField label="Dormir às (Sleep At) (24h)" field="sleep_at" type="time" value={config.sleep_at} onChange={handleChange} />
+          <TextField label="Acordar às (Wake Up At) (24h)" field="wake_up_at" type="time" value={config.wake_up_at} onChange={handleChange} />
           <SelectField
-            label="Theme"
+            label="Tema"
             field="theme"
             value={config.theme}
             onChange={handleChange}
@@ -290,7 +308,7 @@ export default function ConfigTab() {
           {saveState === "success" ? (
             <>
               <CheckCircle size={16} style={{ color: "var(--accent-success)" }} />
-              <span style={{ color: "var(--accent-success)" }}>Saved</span>
+              <span style={{ color: "var(--accent-success)" }}>Salvo</span>
             </>
           ) : saveState === "error" ? (
             <>
@@ -298,9 +316,9 @@ export default function ConfigTab() {
               <span style={{ color: "var(--accent-danger)" }}>{errorMsg}</span>
             </>
           ) : configDirty ? (
-            <span style={{ color: "var(--text-dim)" }}>Unsaved changes</span>
+            <span style={{ color: "var(--text-dim)" }}>Alterações não salvas</span>
           ) : (
-            <span style={{ color: "var(--text-dim)" }}>No changes</span>
+            <span style={{ color: "var(--text-dim)" }}>Sem alterações</span>
           )}
         </div>
         <button
@@ -310,7 +328,7 @@ export default function ConfigTab() {
           className="btn btn-primary"
         >
           <Save size={14} />
-          {savingConfig ? "Saving..." : "Save"}
+          {savingConfig ? "Salvando..." : "Salvar"}
         </button>
       </div>
     </div>

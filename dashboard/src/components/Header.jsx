@@ -61,7 +61,7 @@ export default function Header({ onMenuToggle }) {
             className="truncate text-[11px] font-semibold uppercase tracking-[0.18em]"
             style={{ color: "var(--accent-cyan)" }}
           >
-            {profileName || "No profile"}
+            {profileName || "Sem perfil"}
           </p>
           <div className="mt-1 flex items-center gap-2">
             <StatusBadge state={botState} size="xs" />
@@ -87,7 +87,7 @@ export default function Header({ onMenuToggle }) {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">
               <polygon points="5 3 19 12 5 21 5 3" />
             </svg>
-            <span className="hidden sm:inline">Start</span>
+            <span className="hidden sm:inline">Iniciar</span>
           </button>
           <button
             type="button"
@@ -98,7 +98,7 @@ export default function Header({ onMenuToggle }) {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">
               <rect x="4" y="4" width="16" height="16" rx="2" />
             </svg>
-            <span className="hidden sm:inline">Stop</span>
+            <span className="hidden sm:inline">Parar</span>
           </button>
         </div>
       </div>
@@ -114,7 +114,7 @@ export default function Header({ onMenuToggle }) {
             fontFamily: "var(--font-mono)",
           }}
         >
-          ⚠ {lastError.message || "Unknown error"}
+          ⚠ {lastError.message || "Erro desconhecido"}
         </div>
       )}
     </header>

@@ -8,7 +8,7 @@ const STATUS_STYLES = {
     border: "rgba(148, 163, 184, 0.2)",
   },
   starting: {
-    label: "Starting",
+    label: "Iniciando",
     dot: "bg-amber-400",
     dotGlow: "",
     bg: "var(--accent-warning-dim)",
@@ -24,7 +24,7 @@ const STATUS_STYLES = {
     border: "var(--border-glow-cyan)",
   },
   stopping: {
-    label: "Stopping",
+    label: "Parando",
     dot: "bg-rose-400",
     dotGlow: "",
     bg: "var(--accent-danger-dim)",
