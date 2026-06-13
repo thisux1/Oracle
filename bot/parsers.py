@@ -181,7 +181,7 @@ def process_drops(lines, player_name, loot_data):
 async def rdCheckNavi(message):
     commands = [
         "hunt", "adventure", "farm", "training", "work",
-        "daily", "weekly", "lootbox", "pickup", "chop", "fish", "mine",
+        "daily", "weekly", "lootbox", "pickup", "chop", "fish", "mine", "duel",
     ]
     msg_lines = (
         message.strip().splitlines()
@@ -241,6 +241,11 @@ async def rdCheckNavi(message):
                 elif cmd in ["pickup", "chop", "fish", "mine"] and config.do_work:
                     add_to_low_priority_queue(f"rpg {cmd}", suppress_log=True)
                     logger.info(f"Command 'rpg {cmd}' added to LPQ from Navi Lite.")
+                elif cmd == "duel" and config.do_duel:
+                    partner_id = config.duel_partner_id
+                    if partner_id and not bot_state.duel_in_progress:
+                        add_to_low_priority_queue(f"rpg duel <@{partner_id}>")
+                        logger.info(f"Duel queued from Navi Lite: rpg duel <@{partner_id}>")
                 break
 
 
@@ -305,6 +310,7 @@ async def rdCheckEpicRPG(message):
         "lootbox": ["lootbox"],
         "quest": ["quest", "epic quest"],
         "card hand": ["card hand"],
+        "duel": ["duel"],
     }
 
     processed_commands = set()
@@ -319,6 +325,7 @@ async def rdCheckEpicRPG(message):
         "quest": "do_quest",
         "lootbox": "do_lootbox",
         "card hand": "do_card_hand",
+        "duel": "do_duel",
     }
 
     for line in all_lines:
@@ -447,6 +454,12 @@ async def rdCheckEpicRPG(message):
                     elif cmd_type == "quest":
                         add_to_high_priority_queue("rpg quest")
                         HUD.system("Quest pronta! Enfileirada na HPQ.")
+
+                    elif cmd_type == "duel":
+                        partner_id = config.duel_partner_id
+                        if partner_id and not bot_state.duel_in_progress:
+                            add_to_low_priority_queue(f"rpg duel <@{partner_id}>")
+                            logger.info(f"Command 'rpg duel <@{partner_id}>' added to LPQ from Epic RPG rd.")
 
                     else:
                         cmd = f"rpg {cmd_type}"

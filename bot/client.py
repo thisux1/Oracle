@@ -81,6 +81,10 @@ class DiscordClient(discord.Client):
         self.bg_task = self.loop.create_task(self.my_background_task())
 
     async def close(self):
+        try:
+            save_session_data(sessionData)
+        except Exception:
+            pass
         if hasattr(self, 'bg_task') and self.bg_task and not self.bg_task.done():
             self.bg_task.cancel()
             try:
@@ -282,6 +286,13 @@ class DiscordClient(discord.Client):
                                     sessionData["command_data"]["adventure"] += 1
                                 elif c_type in ["chop", "fish", "mine", "pickup", "axe", "net", "pickaxe", "ladder", "boat", "bow", "chainsaw", "bigboat"]:
                                     sessionData["command_data"]["work"] += 1
+                        save_session_data(sessionData)
+
+                    if bot_state.duel_in_progress and bot_state.last_duel_time > 0 and current_time - bot_state.last_duel_time > 60:
+                        bot_state.duel_in_progress = False
+                        bot_state.duel_step = None
+                        bot_state.last_duel_time = 0
+                        HUD.system("Timeout do Duel (60s). Filas liberadas.")
 
                     if current_time <= bot_state.minigame_pending_until:
                         # During a minigame, only allow the answer through HPQ
@@ -333,7 +344,7 @@ class DiscordClient(discord.Client):
                                 bot_state.last_sleepet_cmd_time = current_time
                             HUD.command(cmd, "HPQ")
                             await send_with_typo_chance(channel, cmd, "HPQ")
-                    elif lowPriorityQueue and bot_state.gambling_paused:
+                    elif lowPriorityQueue and bot_state.gambling_paused and not bot_state.duel_in_progress:
                         await human_delay(1.5, 2.5)
                         cmd = lowPriorityQueue.pop(0)
                         lowPriorityQueueSet.discard(cmd)
@@ -947,6 +958,7 @@ class DiscordClient(discord.Client):
                         HUD.system(f"NeonUtil (legacy): Carta ideal é '{rec}'")
         try:
             await responseResolver(message)
+            save_session_data(sessionData)
             # Track this message as processed to prevent on_message_edit
             # from re-processing it (Epic RPG often edits embeds after sending)
             if message.author.id == config.EPIC_RPG_ID and message.embeds:
@@ -983,6 +995,7 @@ class DiscordClient(discord.Client):
                 return
             try:
                 await responseResolver(after)
+                save_session_data(sessionData)
                 # Track it now so further edits are also skipped
                 if after.embeds:
                     self._track_processed_message(after.id)

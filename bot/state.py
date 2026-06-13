@@ -127,8 +127,13 @@ class BotState:
         self.sleepet_state = None  # None, "init", "waiting_summary", "waiting_claim", "waiting_adventure", "waiting_potion"
         self.last_sleepet_cmd_time = 0
         self.latest_neon_recommendation = None  # Tuple of (rec, formatted, timestamp)
+        # Cooldown override/Dungeon
         self.ruby_dragon_state = None
         self.ruby_dragon_time = 0
+        # Duel State
+        self.duel_in_progress = False
+        self.duel_step = None  # None, "waiting_confirmation", "waiting_weapon", "finished"
+        self.last_duel_time = 0
 
     @property
     def neon_updated_event(self):
@@ -324,6 +329,9 @@ def remove_base_action_from_queue(base_action, queue, queue_set):
 def add_to_low_priority_queue(command, suppress_log=False):
     if bot_state.sleepet_mode and not is_sleepet_command(command):
         return
+    # Block low-priority rpg commands if duel is active
+    if bot_state.duel_in_progress and command.lower().strip().startswith("rpg"):
+        return
     # Check if this action is already queued in either queue
     cmd_clean = command.lower().strip()
     if cmd_clean.startswith("rpg "):
@@ -423,6 +431,9 @@ def reset_bot_state():
     bot_state.last_sleepet_cmd_time = 0
     bot_state.ruby_dragon_state = None
     bot_state.ruby_dragon_time = 0
+    bot_state.duel_in_progress = False
+    bot_state.duel_step = None
+    bot_state.last_duel_time = 0
     logger.info("Bot state reset to initial values.")
 
 

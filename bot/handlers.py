@@ -1,6 +1,7 @@
 import re
 import time
 import asyncio
+import random
 from bot.hud import HUD, logger
 import bot.config as config
 from bot.state import (
@@ -603,6 +604,9 @@ async def responseResolver(message):
                 "rpg u              : Show bot uptime\n"
                 "\n=== New Features ===\n"
                 "do_[cmd]=true/false  : Toggle individual commands in options.ini\n"
+                "do_duel=true/false   : Actives/Deactives automatic duels\n"
+                "duel_partner_id=ID   : Mentions this partner ID in rpg duel\n"
+                "sleepet start/stop   : Controls sleepet mode automation\n"
                 "do_ultr=true         : ULTR training sequence override\n"
                 "is_eternal=true      : Dungeon auto-enter + dragon bite loop\n"
                 "card_hand_action     : auto (play) or notify (Telegram only)\n"
@@ -912,6 +916,59 @@ async def responseResolver(message):
             embed_text_raw = str(embed_dict).lower()
             # Strip Discord markdown so substring checks match cleanly
             embed_text = embed_text_raw.replace('**', '').replace('__', '').replace('`', '')
+
+            # ─── Duel State Machine ───
+            if config.do_duel:
+                if "duel will you accept" in embed_text:
+                    # Se fomos desafiados
+                    if f"{config.user_name_lower}, duel will you accept" in embed_text:
+                        from bot.state import lowPriorityQueue, lowPriorityQueueSet
+                        lowPriorityQueue.clear()
+                        lowPriorityQueueSet.clear()
+                        bot_state.duel_in_progress = True
+                        bot_state.duel_step = "waiting_weapon"
+                        bot_state.last_duel_time = time.time()
+                        add_to_high_priority_queue("yes")
+                        HUD.system("Duelo recebido! Aceitando com 'yes'. LPQ limpa.")
+                        return
+                    # Se nós desafiamos o parceiro
+                    elif config.user_name_lower in embed_text:
+                        from bot.state import lowPriorityQueue, lowPriorityQueueSet
+                        lowPriorityQueue.clear()
+                        lowPriorityQueueSet.clear()
+                        bot_state.duel_in_progress = True
+                        bot_state.duel_step = "waiting_confirmation"
+                        bot_state.last_duel_time = time.time()
+                        HUD.system("Duelo enviado! Aguardando resposta do parceiro. LPQ limpa.")
+                        return
+
+                if bot_state.duel_in_progress:
+                    # Escolha de Arma
+                    if "choose the weapon that better fits" in embed_text:
+                        if config.user_name_lower in embed_text:
+                            choice = random.choice(["a", "b", "c"])
+                            add_to_high_priority_queue(choice)
+                            bot_state.duel_step = "finished"
+                            bot_state.last_duel_time = time.time()
+                            HUD.system(f"Arma de duelo selecionada: '{choice}'")
+                            return
+
+                    # Finalização
+                    if any(x in embed_text for x in ["won!", "lost!", "it's a draw"]):
+                        if config.user_name_lower in embed_text:
+                            bot_state.duel_in_progress = False
+                            bot_state.duel_step = None
+                            bot_state.last_duel_time = 0
+                            HUD.system("Duelo concluído. Filas liberadas!")
+                            return
+                    
+                    # Erro / Cancelamento / Recusa
+                    elif any(x in embed_text for x in ["refused to duel", "duel cancelled", "you cannot duel", "already in a duel"]):
+                        bot_state.duel_in_progress = False
+                        bot_state.duel_step = None
+                        bot_state.last_duel_time = 0
+                        HUD.system("Duelo cancelado/recusado. Filas liberadas.")
+                        return
 
             # ─── Quest Completion Detection ───
             author_name = embed_dict.get("author", {}).get("name", "").lower()
