@@ -94,17 +94,19 @@ def make_channel_link():
     return f"https://discord.com/channels/{config.GUILD_ID}/{config.channelID}"
 
 
-async def send_telegram_keyboard(text, buttons):
+async def send_telegram_keyboard(text, buttons=None):
     if not config.TelegramBotToken or not config.TelegramChatID:
         return None
     url = f"https://api.telegram.org/bot{config.TelegramBotToken}/sendMessage"
     payload = {
         "chat_id": config.TelegramChatID,
         "text": text,
-        "reply_markup": {
+        "parse_mode": "Markdown",
+    }
+    if buttons:
+        payload["reply_markup"] = {
             "inline_keyboard": buttons
         }
-    }
     try:
         session = _get_session()
         async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=10)) as response:
@@ -127,9 +129,12 @@ async def edit_telegram_message(message_id, text, buttons=None):
         "chat_id": config.TelegramChatID,
         "message_id": message_id,
         "text": text,
+        "parse_mode": "Markdown",
     }
-    if buttons is not None:
+    if buttons:
         payload["reply_markup"] = {"inline_keyboard": buttons}
+    elif buttons is not None:
+        payload["reply_markup"] = {"inline_keyboard": []}
     try:
         session = _get_session()
         async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=10)) as response:

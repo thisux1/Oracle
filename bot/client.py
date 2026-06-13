@@ -597,6 +597,10 @@ class DiscordClient(discord.Client):
         ):
             return
 
+        # Forward cardhand image if applicable
+        from bot.handlers import check_and_forward_cardhand_image
+        await check_and_forward_cardhand_image(message)
+
         # ─── 3. Status Detection (bypasses pause) ───
         if message.author.id == config.EPIC_RPG_ID:
             # Maintenance Detection
@@ -909,6 +913,11 @@ class DiscordClient(discord.Client):
             return
         if after.channel.id != config.channelID:
             return
+
+        # Forward cardhand image if applicable on message edit
+        from bot.handlers import check_and_forward_cardhand_image
+        await check_and_forward_cardhand_image(after)
+
         if bot_state.paused:
             return
         if not after.embeds:

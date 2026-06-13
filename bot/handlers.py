@@ -204,6 +204,50 @@ async def find_neon_recommendation(channel):
     return None, None
 
 
+async def check_and_forward_cardhand_image(message):
+    """Downloads and forwards Card Hand images (cards2.png, cards3.png, etc.)
+    to Telegram. Only acts when cardhand_in_progress is active and message is on the correct channel.
+    """
+    if not bot_state.cardhand_in_progress:
+        return
+    if message.channel.id != config.channelID:
+        return
+    if not message.attachments:
+        return
+
+    import os
+    import options_resolver
+    from bot.captcha import save_and_crop_attachment
+    from bot.telegram import send_telegram_photo
+
+    for attachment in message.attachments:
+        filename = attachment.filename.lower()
+        if any(x in filename for x in ["cards2", "cards3", "cards4", "cards5"]):
+            if getattr(bot_state, 'last_sent_cardhand_image', None) != attachment.filename:
+                bot_state.last_sent_cardhand_image = attachment.filename
+                
+                photo_name = f"cardhand_{attachment.filename}"
+                photo_path = os.path.join(options_resolver.USER_DATA_DIR, photo_name)
+                
+                try:
+                    await save_and_crop_attachment(attachment, out_path=photo_path)
+                    
+                    caption = f"🃏 Card Hand — {attachment.filename}"
+                    embed_text = ""
+                    if message.embeds:
+                        embed_text = str(message.embeds[0].to_dict()).lower()
+                    
+                    if "goldened" in message.content.lower() or "goldened" in embed_text:
+                        caption += " (Final)"
+                    else:
+                        caption += f" (Turno {bot_state.cardhand_turn_count})"
+                        
+                    await send_telegram_photo(photo_path, caption)
+                    HUD.cardhand(f"Imagem {attachment.filename} encaminhada ao Telegram.")
+                except Exception as img_err:
+                    logger.error(f"Erro ao baixar/enviar imagem do Card Hand: {img_err}")
+
+
 async def interactive_card_hand_loop(message):
     global active_card_hand_msg_id
     HUD.system("Iniciando loop de Card Hand interativo-automático (Estilo Captcha)...")
@@ -225,29 +269,6 @@ async def interactive_card_hand_loop(message):
                 
             embed_dict = message.embeds[0].to_dict()
             embed_text = str(embed_dict).lower()
-            
-            # Try to save and send the card hand image
-            card_image_sent = False
-            if message.attachments:
-                attachment = message.attachments[0]
-                attachment_name = attachment.filename
-                
-                # Always send when attachment name changes (cards2→cards3→cards4→cards5)
-                if getattr(bot_state, 'last_sent_cardhand_image', None) != attachment_name:
-                    bot_state.last_sent_cardhand_image = attachment_name
-                    photo_path = f"cardhand_{attachment_name}"
-                    try:
-                        await save_and_crop_attachment(attachment, out_path=photo_path)
-                        caption = f"🃏 Card Hand — {attachment_name}"
-                        if "goldened" in embed_text:
-                            caption += " (Final)"
-                        else:
-                            caption += f" (Turno {bot_state.cardhand_turn_count})"
-                        await send_telegram_photo(photo_path, caption)
-                        card_image_sent = True
-                        HUD.cardhand(f"Imagem {attachment_name} enviada ao Telegram.")
-                    except Exception as img_err:
-                        logger.error(f"Erro ao enviar imagem do Card Hand: {img_err}")
             
             # Check if game is finished — "goldened" only appears in the final embed
             if "goldened" in embed_text:
@@ -308,27 +329,13 @@ async def interactive_card_hand_loop(message):
                 f"🃏 *CARD HAND ATIVO* (Turno {bot_state.cardhand_turn_count})\n\n"
                 f"{clean_txt}\n\n"
                 f"🤖 *Recomendação Auto*: `{rec_display}`\n"
-                f"⏳ *Autoplay em*: `{timeout}s` (Clique para Sobrescrever)"
+                f"⏳ *Autoplay em*: `{timeout}s` (Envie `1-5`, `pass` ou `fold` para sobrescrever)"
             )
             
-            buttons = [
-                [
-                    {"text": "🃏 1", "callback_data": "ch_1"},
-                    {"text": "🃏 2", "callback_data": "ch_2"},
-                    {"text": "🃏 3", "callback_data": "ch_3"},
-                    {"text": "🃏 4", "callback_data": "ch_4"},
-                    {"text": "🃏 5", "callback_data": "ch_5"},
-                ],
-                [
-                    {"text": "⏩ PASS", "callback_data": "ch_pass"},
-                    {"text": "❌ FOLD", "callback_data": "ch_fold"},
-                ]
-            ]
-            
             if active_card_hand_msg_id is None:
-                active_card_hand_msg_id = await send_telegram_keyboard(msg_text, buttons)
+                active_card_hand_msg_id = await send_telegram_keyboard(msg_text, None)
             else:
-                await edit_telegram_message(active_card_hand_msg_id, msg_text, buttons)
+                await edit_telegram_message(active_card_hand_msg_id, msg_text, None)
                 
             poll_start = time.time()
             user_choice = None
@@ -351,9 +358,9 @@ async def interactive_card_hand_loop(message):
                         f"🃏 *CARD HAND ATIVO* (Turno {bot_state.cardhand_turn_count})\n\n"
                         f"{clean_txt}\n\n"
                         f"🤖 *Recomendação Auto*: `{rec_display}`\n"
-                        f"⏳ *Autoplay em*: `{t_left}s` (Clique para Sobrescrever)"
+                        f"⏳ *Autoplay em*: `{t_left}s` (Envie `1-5`, `pass` ou `fold` para sobrescrever)"
                     )
-                    await edit_telegram_message(active_card_hand_msg_id, msg_text, buttons)
+                    await edit_telegram_message(active_card_hand_msg_id, msg_text, None)
                 await asyncio.sleep(1)
                 
             final_choice = None
