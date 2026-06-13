@@ -62,6 +62,15 @@ class HelpModal(ModalScreen):
             f"  [{fg}]Desativa o modo TC[/]"
         )
 
+        sleepet_cmds = (
+            f"[bold {acc}]MODO SLEEPET (PETS)[/]\n"
+            f"[{acc}]──────────────────────────────[/]\n"
+            f"[bold {acc}]sleepet start[/]\n"
+            f"  [{fg}]Ativa o loop de pets automatizado[/]\n"
+            f"[bold {acc}]sleepet stop[/]\n"
+            f"  [{fg}]Desativa o loop de pets[/]"
+        )
+
         gambling_cmds = (
             f"[bold {acc}]GAMBLING (COINFLIP)[/]\n"
             f"[{acc}]──────────────────────────────[/]\n"
@@ -107,6 +116,7 @@ class HelpModal(ModalScreen):
             VerticalScroll(
                 Static(core_cmds, classes="help-section"),
                 Static(tc_cmds, classes="help-section"),
+                Static(sleepet_cmds, classes="help-section"),
                 Static(gambling_cmds, classes="help-section"),
                 Static(config_cmds, classes="help-section"),
                 Static(rpg_cmds, classes="help-section"),
@@ -520,6 +530,7 @@ CONFIG_SCHEMA = [
         ("do_lootbox", "bool", "true"),
         ("do_dungeon", "bool", "true"),
         ("do_card_hand", "bool", "true"),
+        ("do_duel", "bool", "false"),
     ]),
     ("🧪 Advanced", [
         ("do_ultr", "bool", "false"),
@@ -531,6 +542,7 @@ CONFIG_SCHEMA = [
         ("partner_name", "text", ""),
         ("is_ascended", "bool", "false"),
         ("admin_ids", "text", ""),
+        ("duel_partner_id", "text", ""),
         ("tc_stop_on", "text", "dungeon,miniboss"),
         ("sleep_at", "text", "none"),
         ("wake_up_at", "text", "none"),
@@ -551,6 +563,8 @@ def load_example_comments() -> dict[str, str]:
         "do_lootbox": "Habilitar compra de lootbox automática",
         "do_dungeon": "Habilitar dungeons automáticas",
         "do_card_hand": "Habilitar jogo card hand automático",
+        "do_duel": "Habilitar duelo (duel) automático com o parceiro",
+        "duel_partner_id": "ID de Discord do parceiro para mencionar em rpg duel",
         "is_married": "Habilitar suporte a casamento/casado no Epic RPG",
         "partner_name": "Nome do parceiro(a) no jogo",
         "is_ascended": "Habilitar se o jogador já tiver ascendido no Epic RPG",

@@ -402,6 +402,8 @@ class SidebarPane(Static):
             state_str = "CARD HAND"
         elif bot_state.dungeon_in_progress:
             state_str = "DUNGEON"
+        elif bot_state.duel_in_progress:
+            state_str = f"DUEL ({bot_state.duel_step or 'init'})"
 
         tc_str = ""
         if bot_state.time_cookie_mode:
