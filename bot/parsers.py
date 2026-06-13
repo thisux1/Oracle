@@ -270,7 +270,6 @@ async def rdCheckEpicRPG(message):
                 if (
                     mentioned_user == target_name
                     or str(config.userID) in str(embed_dict).lower()
-                    or target_name in mentioned_user
                 ):
                     ready_for_user = True
                     logger.info(

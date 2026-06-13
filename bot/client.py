@@ -816,6 +816,24 @@ class DiscordClient(discord.Client):
             message.author.id == config.EPIC_RPG_ID
             or "EPIC NPC" in message.author.name
         ):
+            # Parse target username inside ** and verify exact match to avoid similar names (e.g. thix_._ vs thix_._2)
+            bold_names = []
+            if message.content:
+                bold_names.extend(re.findall(r"\*\*(.*?)\*\*", message.content))
+            for embed in message.embeds:
+                emb_dict = embed.to_dict()
+                if "description" in emb_dict and emb_dict["description"]:
+                    bold_names.extend(re.findall(r"\*\*(.*?)\*\*", emb_dict["description"]))
+                if "fields" in emb_dict:
+                    for field in emb_dict["fields"]:
+                        if field.get("value"):
+                            bold_names.extend(re.findall(r"\*\*(.*?)\*\*", field["value"]))
+            
+            bold_names_clean = [n.strip().lower() for n in bold_names if n]
+            if config.user_name_lower not in bold_names_clean:
+                logger.debug(f"Quest ignored (username not in bold elements): {bold_names_clean}")
+                return
+
             HUD.system("Diálogo de NPC detectado. Analisando quest...")
             if any(
                 x in combined_content

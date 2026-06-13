@@ -421,7 +421,7 @@ async def handle_sleepet_summary(embed_dict, embed_text):
     # Username verification:
     author_name = (embed_dict.get("title", "") or embed_dict.get("author", {}).get("name", "")).lower()
     user_matches = False
-    if config.user_name_lower and config.user_name_lower in author_name:
+    if config.user_name_lower and (author_name.split(" — ")[0].split("'s")[0].strip() == config.user_name_lower):
         user_matches = True
     elif str(config.userID) in author_name:
         user_matches = True
@@ -467,7 +467,7 @@ async def handle_sleepet_claim(embed_dict, embed_text):
     # Username verification:
     author_name = (embed_dict.get("title", "") or embed_dict.get("author", {}).get("name", "")).lower()
     user_matches = False
-    if config.user_name_lower and config.user_name_lower in author_name:
+    if config.user_name_lower and (author_name.split(" — ")[0].split("'s")[0].strip() == config.user_name_lower):
         user_matches = True
     elif str(config.userID) in author_name:
         user_matches = True
@@ -912,7 +912,7 @@ async def responseResolver(message):
             author_name = embed_dict.get("author", {}).get("name", "").lower()
             if "quest" in author_name:
                 user_matches = False
-                if config.user_name_lower and config.user_name_lower in author_name:
+                if config.user_name_lower and (author_name.split(" — ")[0].strip() == config.user_name_lower):
                     user_matches = True
                 elif str(config.userID) in author_name:
                     user_matches = True
