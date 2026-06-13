@@ -174,7 +174,18 @@ export default function ConfigTab() {
       {/* Adventure */}
       <ConfigSection title="Adventure" icon="&#9876;&#65039;">
         <div className="grid gap-4 sm:grid-cols-2">
-          <NumberField label="Aumento de Vida antes de Adventure" field="life_boost_before_adv" value={config.life_boost_before_adv} onChange={handleChange} min={0} max={100} />
+          <SelectField
+            label="Aumento de Vida antes de Adventure"
+            field="life_boost_before_adv"
+            value={config.life_boost_before_adv}
+            onChange={handleChange}
+            options={[
+              { value: "none", label: "Nenhum (None)" },
+              { value: "a", label: "A" },
+              { value: "b", label: "B" },
+              { value: "c", label: "C" },
+            ]}
+          />
           <TextField label="Área de Adventure" field="adventure_area" value={config.adventure_area} onChange={handleChange} />
           <TextField label="Área Atual" field="current_area" value={config.current_area} onChange={handleChange} />
           <TextField label="Resposta ao Evento Zombie Horde" field="zombie_horde_event_response" value={config.zombie_horde_event_response} onChange={handleChange} />

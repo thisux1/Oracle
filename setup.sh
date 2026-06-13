@@ -13,7 +13,7 @@ ADDED=false
 # Setup in ~/.zshrc
 if [ -f "$HOME/.zshrc" ]; then
     if ! grep -q "oracle()" "$HOME/.zshrc" && ! grep -q "alias oracle=" "$HOME/.zshrc"; then
-        echo -e "\n# ─── Oracle V2 Shortcut ───\noracle() {\n    \"$PROJECT_DIR/oracle\"\n}" >> "$HOME/.zshrc"
+        echo -e "\n# ─── Oracle V2 Shortcut ───\noracle() {\n    \"$PROJECT_DIR/oracle\" \"\$@\"\n}" >> "$HOME/.zshrc"
         echo "Global 'oracle' command added to ~/.zshrc"
         ADDED=true
     else
@@ -24,7 +24,7 @@ fi
 # Setup in ~/.bashrc
 if [ -f "$HOME/.bashrc" ]; then
     if ! grep -q "oracle()" "$HOME/.bashrc" && ! grep -q "alias oracle=" "$HOME/.bashrc"; then
-        echo -e "\n# ─── Oracle V2 Shortcut ───\noracle() {\n    \"$PROJECT_DIR/oracle\"\n}" >> "$HOME/.bashrc"
+        echo -e "\n# ─── Oracle V2 Shortcut ───\noracle() {\n    \"$PROJECT_DIR/oracle\" \"\$@\"\n}" >> "$HOME/.bashrc"
         echo "Global 'oracle' command added to ~/.bashrc"
         ADDED=true
     else

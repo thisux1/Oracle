@@ -104,9 +104,9 @@ class DiscordClient(discord.Client):
         # One-time initialization (guard against multiple on_ready calls during reconnects)
         if not self._ready_initialized:
             self._ready_initialized = True
-            # Add rpg pet to queue at startup to sync pet timers
-            add_to_low_priority_queue("rpg pet")
-            logger.info("Queued 'rpg pet' at session start.")
+            # Add rpg pet summary to queue at startup to sync pet timers
+            add_to_low_priority_queue("rpg pet summary")
+            logger.info("Queued 'rpg pet summary' at session start.")
         
         # Cancel existing telegram listener task before creating a new one
         # (on_ready fires on every reconnect, which would otherwise spawn duplicate loops)

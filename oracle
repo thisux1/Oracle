@@ -69,10 +69,10 @@ PASSTHROUGH_ARGS=()
 
 for arg in "$@"; do
     case "$arg" in
-        --dashboard|-d)
+        dashboard|--dashboard|-d)
             DASHBOARD_MODE=true
             ;;
-        --dev)
+        dev|--dev)
             DASHBOARD_MODE=true
             DEV_MODE=true
             ;;
