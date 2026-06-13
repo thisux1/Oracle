@@ -27,6 +27,8 @@ class HUD:
     tui_callback = None
     _pause_depth = 1
     _buffer: list[str] = []
+    _log_file = None
+    _log_path = None
 
     @staticmethod
     def _is_paused() -> bool:
@@ -61,13 +63,18 @@ class HUD:
             options_path = getattr(options_resolver, "optionsFilePath", None)
             if options_path:
                 log_path = options_path.rsplit(".", 1)[0] + ".log"
+                if HUD._log_path != log_path:
+                    if HUD._log_file:
+                        HUD._log_file.close()
+                    HUD._log_path = log_path
+                    HUD._log_file = open(log_path, "a", encoding="utf-8")
                 ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
                 clean_msg = ansi_escape.sub('', msg).strip()
                 if clean_msg:
                     import datetime
                     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    with open(log_path, "a", encoding="utf-8") as f:
-                        f.write(f"[{timestamp}] {clean_msg}\n")
+                    HUD._log_file.write(f"[{timestamp}] {clean_msg}\n")
+                    HUD._log_file.flush()
         except Exception:
             pass
 
