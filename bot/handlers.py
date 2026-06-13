@@ -99,14 +99,19 @@ active_card_hand_msg_id = None
 
 def clean_embed_text_for_telegram(embed_dict):
     desc = embed_dict.get("description", "")
+    # Escape HTML special characters to prevent Telegram API errors
+    desc = desc.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    
     fields_text = ""
     if embed_dict.get("fields"):
         for f in embed_dict["fields"]:
-            fields_text += f"\n*{f.get('name', '')}*:\n{f.get('value', '')}"
+            fname = f.get('name', '').replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            fval = f.get('value', '').replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            fields_text += f"\n<b>{fname}</b>:\n{fval}"
     
     full_text = desc + fields_text
     # Replace some common emojis / text for Telegram friendly presentation
-    full_text = full_text.replace("YOUR HAND", "🃏 *SUA MÃO*")
+    full_text = full_text.replace("YOUR HAND", "🃏 <b>SUA MÃO</b>")
     full_text = full_text.replace("try to get the best possible hand", "Tente conseguir a melhor mão possível")
     return full_text
 
@@ -273,7 +278,7 @@ async def interactive_card_hand_loop(message):
             # Check if game is finished — "goldened" only appears in the final embed
             if "goldened" in embed_text:
                 clean_txt = clean_embed_text_for_telegram(embed_dict)
-                final_msg = f"🎯 *CARD HAND CONCLUÍDO!*\n\n{clean_txt}"
+                final_msg = f"🎯 <b>CARD HAND CONCLUÍDO!</b>\n\n{clean_txt}"
                 if active_card_hand_msg_id:
                     await edit_telegram_message(active_card_hand_msg_id, final_msg, None)
                 else:
@@ -326,10 +331,10 @@ async def interactive_card_hand_loop(message):
             
             clean_txt = clean_embed_text_for_telegram(embed_dict)
             msg_text = (
-                f"🃏 *CARD HAND ATIVO* (Turno {bot_state.cardhand_turn_count})\n\n"
+                f"🃏 <b>CARD HAND ATIVO</b> (Turno {bot_state.cardhand_turn_count})\n\n"
                 f"{clean_txt}\n\n"
-                f"🤖 *Recomendação Auto*: `{rec_display}`\n"
-                f"⏳ *Autoplay em*: `{timeout}s` (Envie `1-5`, `pass` ou `fold` para sobrescrever)"
+                f"🤖 <b>Recomendação Auto</b>: <code>{rec_display}</code>\n"
+                f"⏳ <b>Autoplay em</b>: <code>{timeout}s</code> (Envie <code>1-5</code>, <code>pass</code> ou <code>fold</code> para sobrescrever)"
             )
             
             if active_card_hand_msg_id is None:
@@ -355,10 +360,10 @@ async def interactive_card_hand_loop(message):
                 # Edit countdown to keep it visually alive (limit requests to avoid Telegram rate limiting)
                 if t_left in [10, 5, 2] and active_card_hand_msg_id:
                     msg_text = (
-                        f"🃏 *CARD HAND ATIVO* (Turno {bot_state.cardhand_turn_count})\n\n"
+                        f"🃏 <b>CARD HAND ATIVO</b> (Turno {bot_state.cardhand_turn_count})\n\n"
                         f"{clean_txt}\n\n"
-                        f"🤖 *Recomendação Auto*: `{rec_display}`\n"
-                        f"⏳ *Autoplay em*: `{t_left}s` (Envie `1-5`, `pass` ou `fold` para sobrescrever)"
+                        f"🤖 <b>Recomendação Auto</b>: <code>{rec_display}</code>\n"
+                        f"⏳ <b>Autoplay em</b>: <code>{t_left}s</code> (Envie <code>1-5</code>, <code>pass</code> ou <code>fold</code> para sobrescrever)"
                     )
                     await edit_telegram_message(active_card_hand_msg_id, msg_text, None)
                 await asyncio.sleep(1)
@@ -373,11 +378,11 @@ async def interactive_card_hand_loop(message):
                 is_auto = True
                 HUD.oracle(f"Nenhuma resposta manual. Enviando escolha automática: '{final_choice}'")
                 
-            status_text = f"🤖 Enviando escolha automática: '{final_choice.upper()}'..." if is_auto else f"📲 Enviando escolha manual: '{final_choice.upper()}'..."
+            status_text = f"🤖 Enviando escolha automática: <code>{final_choice.upper()}</code>..." if is_auto else f"📲 Enviando escolha manual: <code>{final_choice.upper()}</code>..."
             
             await edit_telegram_message(
                 active_card_hand_msg_id,
-                f"🃏 *CARD HAND ATIVO* (Turno {bot_state.cardhand_turn_count})\n\n{clean_txt}\n\n{status_text}",
+                f"🃏 <b>CARD HAND ATIVO</b> (Turno {bot_state.cardhand_turn_count})\n\n{clean_txt}\n\n{status_text}",
                 None
             )
             

@@ -101,7 +101,7 @@ async def send_telegram_keyboard(text, buttons=None):
     payload = {
         "chat_id": config.TelegramChatID,
         "text": text,
-        "parse_mode": "Markdown",
+        "parse_mode": "HTML",
     }
     if buttons:
         payload["reply_markup"] = {
@@ -129,7 +129,7 @@ async def edit_telegram_message(message_id, text, buttons=None):
         "chat_id": config.TelegramChatID,
         "message_id": message_id,
         "text": text,
-        "parse_mode": "Markdown",
+        "parse_mode": "HTML",
     }
     if buttons:
         payload["reply_markup"] = {"inline_keyboard": buttons}
