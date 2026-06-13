@@ -16,7 +16,7 @@ const RARITY_ORDER = ["common", "uncommon", "epic", "omega", "godly", "eternal"]
 
 function LootTable({ drops, title }) {
   const entries = Object.entries(drops || {}).sort((a, b) => b[1] - a[1]);
-  const maxVal = entries.length > 0 ? Math.max(...entries.map(([, v]) => v)) : 1;
+  const maxVal = entries.length > 0 ? Math.max(...entries.map(([, v]) => v)) : 0;
 
   if (entries.length === 0) {
     return (
@@ -28,25 +28,28 @@ function LootTable({ drops, title }) {
 
   return (
     <div className="space-y-2">
-      {entries.map(([name, count]) => (
-        <div key={name}>
-          <div className="mb-1 flex items-center justify-between text-xs">
-            <span style={{ color: "var(--text-secondary)" }}>{name}</span>
-            <span className="tabular-nums" style={{ color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}>
-              {count}
-            </span>
+      {entries.map(([name, count]) => {
+        const pct = maxVal > 0 ? (count / maxVal) * 100 : 0;
+        return (
+          <div key={name}>
+            <div className="mb-1 flex items-center justify-between text-xs">
+              <span style={{ color: "var(--text-secondary)" }}>{name}</span>
+              <span className="tabular-nums" style={{ color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}>
+                {count}
+              </span>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full" style={{ background: "var(--bg-void)" }}>
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${pct}%`,
+                  background: "var(--accent-cyan)",
+                }}
+              />
+            </div>
           </div>
-          <div className="h-1.5 overflow-hidden rounded-full" style={{ background: "var(--bg-void)" }}>
-            <div
-              className="h-full rounded-full transition-all duration-500"
-              style={{
-                width: `${(count / maxVal) * 100}%`,
-                background: "var(--accent-cyan)",
-              }}
-            />
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

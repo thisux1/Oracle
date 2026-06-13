@@ -184,11 +184,27 @@ export default function ProfileSidebar({ open, onClose }) {
       style={{ borderRight: "1px solid var(--border-subtle)" }}
     >
       <div className="flex items-center justify-between px-4 pt-5 pb-3">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--accent-cyan)" }}>
-            Oracle OS
-          </p>
-          <p className="mt-0.5 text-[10px]" style={{ color: "var(--text-dim)" }}>v3.0</p>
+        <div className="flex items-center gap-3">
+          <svg width="28" height="28" viewBox="0 0 100 100" className="oracle-logo-svg shrink-0">
+            <defs>
+              <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#06b6d4" />
+                <stop offset="50%" stopColor="#a78bfa" />
+                <stop offset="100%" stopColor="#ec4899" />
+              </linearGradient>
+            </defs>
+            <circle cx="50" cy="50" r="40" fill="none" stroke="url(#logo-gradient)" strokeWidth="3.5" strokeDasharray="180" className="animate-spin-slow" />
+            <circle cx="50" cy="50" r="30" fill="none" stroke="#06b6d4" strokeWidth="2" strokeDasharray="40 20" className="animate-spin-reverse" />
+            <polygon points="50,25 71,50 50,75 29,50" fill="url(#logo-gradient)" />
+            <circle cx="50" cy="50" r="8" fill="#14141f" />
+            <circle cx="50" cy="50" r="4" fill="#06b6d4" className="animate-ping-slow" />
+          </svg>
+          <div>
+            <p className="text-[12px] font-bold uppercase tracking-[0.2em]" style={{ color: "var(--text-primary)" }}>
+              Oracle <span style={{ color: "var(--accent-cyan)" }}>OS</span>
+            </p>
+            <p className="text-[9px]" style={{ color: "var(--text-dim)", fontFamily: "var(--font-mono)" }}>v3.0</p>
+          </div>
         </div>
         <button type="button" onClick={() => fetchProfiles()} className="btn btn-ghost px-2 py-1 text-[11px]" title="Recarregar">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

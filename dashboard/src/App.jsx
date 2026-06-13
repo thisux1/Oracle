@@ -8,6 +8,7 @@ import OverviewTab from "./tabs/OverviewTab";
 import TerminalTab from "./tabs/TerminalTab";
 import ConfigTab from "./tabs/ConfigTab";
 import StatsTab from "./tabs/StatsTab";
+import CustomCursor from "./components/CustomCursor";
 
 const TAB_KEYS = ["overview", "terminal", "config", "stats"];
 
@@ -78,6 +79,8 @@ export default function App() {
 
   return (
     <div className="h-screen overflow-hidden bg-[var(--bg-void)]">
+      <CustomCursor />
+      <div className="scanline" />
       <ProfileSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {/* Main area offset by sidebar width on desktop */}
@@ -88,19 +91,19 @@ export default function App() {
         </div>
 
         <main className="flex-1 min-h-0 flex flex-col mt-4">
-          <div className={`flex-1 overflow-y-auto px-4 pb-4 md:px-6 md:pb-5 ${activeTab === "overview" ? "block" : "hidden"}`}>
+          <div className={`tab-pane flex-1 overflow-y-auto px-4 pb-4 md:px-6 md:pb-5 ${activeTab === "overview" ? "block" : "hidden"}`}>
             <OverviewTab onNavigateTerminal={navigateToTerminal} />
           </div>
 
-          <div className={`flex-1 flex flex-col px-4 pb-4 md:px-6 md:pb-5 min-h-0 ${activeTab === "terminal" ? "flex" : "hidden"}`}>
+          <div className={`tab-pane flex-1 flex flex-col px-4 pb-4 md:px-6 md:pb-5 min-h-0 ${activeTab === "terminal" ? "flex" : "hidden"}`}>
             <TerminalTab isActive={activeTab === "terminal"} />
           </div>
 
-          <div className={`flex-1 overflow-y-auto px-4 pb-4 md:px-6 md:pb-5 ${activeTab === "config" ? "block" : "hidden"}`}>
+          <div className={`tab-pane flex-1 overflow-y-auto px-4 pb-4 md:px-6 md:pb-5 ${activeTab === "config" ? "block" : "hidden"}`}>
             <ConfigTab />
           </div>
 
-          <div className={`flex-1 overflow-y-auto px-4 pb-4 md:px-6 md:pb-5 ${activeTab === "stats" ? "block" : "hidden"}`}>
+          <div className={`tab-pane flex-1 overflow-y-auto px-4 pb-4 md:px-6 md:pb-5 ${activeTab === "stats" ? "block" : "hidden"}`}>
             <StatsTab />
           </div>
         </main>
