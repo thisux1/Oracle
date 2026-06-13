@@ -509,6 +509,37 @@ class DiscordClient(discord.Client):
                     HUD.system("Gambling PAUSADO via Discord.")
                     await message.channel.send("⏸️ **Gambling Pausado.**")
                     return
+                elif cmd == "log":
+                    import options_resolver
+                    import os
+                    import io
+                    options_path = getattr(options_resolver, "optionsFilePath", None)
+                    if options_path:
+                        log_path = options_path.rsplit(".", 1)[0] + ".log"
+                        if os.path.exists(log_path):
+                            try:
+                                file_size = os.path.getsize(log_path)
+                                # Discord file limit is 8MB
+                                if file_size <= 8 * 1024 * 1024:
+                                    await message.channel.send(file=discord.File(log_path))
+                                else:
+                                    with open(log_path, "rb") as f:
+                                        f.seek(-5 * 1024 * 1024, os.SEEK_END)
+                                        log_data = f.read()
+                                    stream = io.BytesIO(log_data)
+                                    filename = os.path.basename(log_path)
+                                    await message.channel.send(
+                                        content="⚠️ O arquivo de log original excede 8MB. Enviando os últimos 5MB do log:",
+                                        file=discord.File(stream, filename=f"latest_{filename}")
+                                    )
+                                HUD.system("Arquivo de log enviado para o Discord.")
+                            except Exception as exc:
+                                await message.channel.send(f"⚠️ Erro ao enviar log: {exc}")
+                        else:
+                            await message.channel.send("⚠️ Arquivo de log não existe.")
+                    else:
+                        await message.channel.send("⚠️ Não foi possível determinar o arquivo de opções.")
+                    return
                 elif cmd in ["ajuda", "tutorial"]:
                     tutorial_msg = (
                         "📚 **Tutorial Oracle v2**\n\n"
@@ -521,7 +552,8 @@ class DiscordClient(discord.Client):
                         "• `sb g start` / `sb g pause`: Inicia ou pausa o gambling (Fibonacci)\n"
                         "• `sb stats [tempo]`: Mostra progresso, loot e status da sessão. "
                         "Ex: `sb stats 7d` (últimos 7 dias). Dados persistem entre reboots!\n"
-                        "• `sb say [texto]`: Envia uma mensagem no canal configurado\n\n"
+                        "• `sb say [texto]`: Envia uma mensagem no canal configurado\n"
+                        "• `sb log`: Envia o arquivo .log da sessão atual (ou os últimos 5MB dele)\n\n"
                         "**Configurações (options.ini):**\n"
                         "• `do_hunt`, `do_adv`, `do_farm`, etc: Liga/desliga comandos "
                         "individuais sem editar o código\n"
