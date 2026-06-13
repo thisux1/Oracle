@@ -526,7 +526,7 @@ class DiscordClient(discord.Client):
                         "• `do_hunt`, `do_adv`, `do_farm`, etc: Liga/desliga comandos "
                         "individuais sem editar o código\n"
                         "• `do_ultr`: Substitui training pela sequência ULTR "
-                        "(rpg ultr → double → attack → rpg use tc)\n"
+                        "(rpg ultr, ou rpg ultr → double → attack se não for eternal)\n"
                         "• `is_eternal`: Habilita auto-enter em dungeon e bite loop "
                         "automático no dragão eternal\n"
                         "• `card_hand_action`: `auto` (joga via IA) ou "

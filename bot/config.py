@@ -199,15 +199,10 @@ eternal_tier = userOptions.get("eternal_tier", "t1").lower()
 
 # ─── ULTR overrides training. If ultr active, training is ignored. ───
 if do_ultr:
-    tier_num = 1
-    tier_match = re.search(r'\d+', eternal_tier)
-    if tier_match:
-        tier_num = int(tier_match.group())
-
-    if tier_num >= 7:
+    if is_eternal:
         training_command_sequence = ["rpg ultr"]
     else:
-        training_command_sequence = ["rpg ultr", "double", "attack", f"rpg use tc {tc_quantity}"]
+        training_command_sequence = ["rpg ultr", "double", "attack"]
 elif do_training:
     training_command_sequence = ["rpg tr"]
 else:
@@ -318,15 +313,10 @@ def reload_config(profile_path=None):
     eternal_tier = userOptions.get("eternal_tier", "t1").lower()
 
     if do_ultr:
-        tier_num = 1
-        tier_match = re.search(r'\d+', eternal_tier)
-        if tier_match:
-            tier_num = int(tier_match.group())
-
-        if tier_num >= 7:
+        if is_eternal:
             training_command_sequence = ["rpg ultr"]
         else:
-            training_command_sequence = ["rpg ultr", "double", "attack", f"rpg use tc {tc_quantity}"]
+            training_command_sequence = ["rpg ultr", "double", "attack"]
     elif do_training:
         training_command_sequence = ["rpg tr"]
     else:
