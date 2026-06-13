@@ -350,7 +350,21 @@ async def rdCheckEpicRPG(message):
                         if cmd_type == "training":
                             flag_value = flag_value or config.do_ultr
                         if not flag_value:
-                            logger.debug("Command '%s' skipped (disabled via %s)", cmd_type, flag_name)
+                            # Special case: card hand still sends notification when disabled
+                            if cmd_type == "card hand":
+                                current_time = time.time()
+                                if current_time - bot_state.last_cardhand_notification_time >= 3600:
+                                    bot_state.last_cardhand_notification_time = current_time
+                                    asyncio.create_task(send_telegram_notification(
+                                        f"\U0001f0cf Card Hand PRONTO!\n"
+                                        f"Jogue manualmente:\n"
+                                        f"{make_channel_link()}"
+                                    ))
+                                    HUD.system("Mão de cartas pronta! Notificação de Telegram enviada.")
+                                else:
+                                    HUD.system("Mão de cartas pronta! Notificação omitida (cooldown de 1h ativo).")
+                            else:
+                                logger.debug("Command '%s' skipped (disabled via %s)", cmd_type, flag_name)
                             continue
 
                     if cmd_type == "hunt":
@@ -402,21 +416,8 @@ async def rdCheckEpicRPG(message):
                             HUD.system("Compra de lootbox pulada (Cooldown Financeiro).")
 
                     elif cmd_type == "card hand":
-                        if config.card_hand_action == "auto" and config.do_card_hand:
-                            add_to_high_priority_queue("rpg card hand")
-                            HUD.system("Mão de cartas pronta! Auto-play enfileirado.")
-                        else:
-                            current_time = time.time()
-                            if current_time - bot_state.last_cardhand_notification_time >= 3600:
-                                bot_state.last_cardhand_notification_time = current_time
-                                asyncio.create_task(send_telegram_notification(
-                                    f"\U0001f9b4 Card Hand PRONTO!\n"
-                                    f"Jogue manualmente:\n"
-                                    f"{make_channel_link()}"
-                                ))
-                                HUD.system("Mão de cartas pronta! Notificação de Telegram enviada.")
-                            else:
-                                HUD.system("Mão de cartas pronta! Notificação omitida (cooldown de 1h ativo).")
+                        add_to_high_priority_queue("rpg card hand")
+                        HUD.system("Mão de cartas pronta! Auto-play enfileirado.")
 
                     elif cmd_type == "training":
                         if config.training_command_sequence:

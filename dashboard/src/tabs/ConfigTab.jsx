@@ -255,7 +255,16 @@ export default function ConfigTab() {
       {/* Advanced */}
       <ConfigSection title="Avançado" icon="&#129514;">
         <div className="grid gap-4 sm:grid-cols-2">
-          <TextField label="Ação do Card Hand" field="card_hand_action" value={config.card_hand_action} onChange={handleChange} />
+          <SelectField
+            label="Ação do Card Hand"
+            field="card_hand_action"
+            value={config.card_hand_action}
+            onChange={handleChange}
+            options={[
+              { value: "auto", label: "Auto (Híbrido — Neon + Override via Telegram)" },
+              { value: "legacy_auto", label: "Legacy Auto (Automático direto via Neon)" },
+            ]}
+          />
           <NumberField label="Quantidade de TC" field="tc_quantity" value={config.tc_quantity} onChange={handleChange} min={1} />
           <ToggleSwitch label="Dungeon Eternal (Is Eternal)" checked={isTrue("is_eternal")} onChange={doToggle("is_eternal")} />
           <SelectField

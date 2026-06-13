@@ -23,7 +23,6 @@ from bot.telegram import (
     make_channel_link,
     send_telegram_keyboard,
     edit_telegram_message,
-    get_telegram_callback_query,
     send_telegram_photo,
 )
 from bot.captcha import save_and_crop_attachment
@@ -227,7 +226,7 @@ async def check_and_forward_cardhand_image(message):
 
     for attachment in message.attachments:
         filename = attachment.filename.lower()
-        if any(x in filename for x in ["cards2", "cards3", "cards4", "cards5"]):
+        if any(x in filename for x in ["cards", "card_hand"]):
             if getattr(bot_state, 'last_sent_cardhand_image', None) != attachment.filename:
                 bot_state.last_sent_cardhand_image = attachment.filename
                 
@@ -255,7 +254,7 @@ async def check_and_forward_cardhand_image(message):
 
 async def interactive_card_hand_loop(message):
     global active_card_hand_msg_id
-    HUD.system("Iniciando loop de Card Hand interativo-automático (Estilo Captcha)...")
+    HUD.system("Iniciando loop de Card Hand interativo-automático...")
     
     try:
         for turn in range(15):  # Max 15 interactions
@@ -334,27 +333,27 @@ async def interactive_card_hand_loop(message):
                 f"🃏 <b>CARD HAND ATIVO</b> (Turno {bot_state.cardhand_turn_count})\n\n"
                 f"{clean_txt}\n\n"
                 f"🤖 <b>Recomendação Auto</b>: <code>{rec_display}</code>\n"
-                f"⏳ <b>Autoplay em</b>: <code>{timeout}s</code> (Envie <code>1-5</code>, <code>pass</code> ou <code>fold</code> para sobrescrever)"
+                f"⏳ <b>Autoplay em</b>: <code>{timeout}s</code> (Envie nome da carta ex: <code>s5</code>, <code>hk</code> ou <code>pass</code> via Telegram para sobrescrever)"
             )
             
             if active_card_hand_msg_id is None:
                 active_card_hand_msg_id = await send_telegram_keyboard(msg_text, None)
             else:
                 await edit_telegram_message(active_card_hand_msg_id, msg_text, None)
-                
-            poll_start = time.time()
+            
+            # Clear any stale user choice before polling
+            bot_state.cardhand_user_choice = None
+            
             user_choice = None
             
-            # Poll for the duration of the timeout
+            # Poll for the duration of the timeout, checking centralized state
             for t_left in range(timeout, 0, -1):
                 if not bot_state.cardhand_in_progress:
                     break
-                choice = await get_telegram_callback_query(poll_start)
-                if choice:
-                    if choice.startswith("ch_"):
-                        user_choice = choice.split("_")[1]
-                    else:
-                        user_choice = choice.strip().lower()
+                # Check for user override via Telegram (set by telegram_listener_loop)
+                if bot_state.cardhand_user_choice:
+                    user_choice = bot_state.cardhand_user_choice.strip().lower()
+                    bot_state.cardhand_user_choice = None
                     break
                 
                 # Edit countdown to keep it visually alive (limit requests to avoid Telegram rate limiting)
@@ -363,7 +362,7 @@ async def interactive_card_hand_loop(message):
                         f"🃏 <b>CARD HAND ATIVO</b> (Turno {bot_state.cardhand_turn_count})\n\n"
                         f"{clean_txt}\n\n"
                         f"🤖 <b>Recomendação Auto</b>: <code>{rec_display}</code>\n"
-                        f"⏳ <b>Autoplay em</b>: <code>{t_left}s</code> (Envie <code>1-5</code>, <code>pass</code> ou <code>fold</code> para sobrescrever)"
+                        f"⏳ <b>Autoplay em</b>: <code>{t_left}s</code> (Envie nome da carta ex: <code>s5</code>, <code>hk</code> ou <code>pass</code> via Telegram para sobrescrever)"
                     )
                     await edit_telegram_message(active_card_hand_msg_id, msg_text, None)
                 await asyncio.sleep(1)
@@ -390,7 +389,12 @@ async def interactive_card_hand_loop(message):
             await message.channel.send(final_choice)
             bot_state.cardhand_turn_count += 1
             
-            # Wait for message to be edited to avoid reprocessing the same turn
+            # Reset Neon recommendation to avoid using stale data on the next turn
+            bot_state.latest_neon_recommendation = None
+            
+            # Wait for message to be edited (use edited_at timestamp to detect ANY edit,
+            # even if the embed text is nearly identical after "pass")
+            pre_edit_time = message.edited_at
             updated = False
             for _ in range(30):
                 await asyncio.sleep(0.5)
@@ -398,8 +402,8 @@ async def interactive_card_hand_loop(message):
                     break
                 try:
                     new_msg = await message.channel.fetch_message(message.id)
-                    new_embed_text = str(new_msg.embeds[0].to_dict()).lower() if new_msg.embeds else ""
-                    if new_embed_text != embed_text:
+                    # Detect edit by timestamp change (works even when text is similar after pass)
+                    if new_msg.edited_at and new_msg.edited_at != pre_edit_time:
                         updated = True
                         break
                 except Exception:
@@ -414,6 +418,7 @@ async def interactive_card_hand_loop(message):
         bot_state.cardhand_first_pass_done = False
         bot_state.cardhand_turn_count = 1
         bot_state.last_sent_cardhand_image = None
+        bot_state.cardhand_user_choice = None
         active_card_hand_msg_id = None
 
 
@@ -1058,11 +1063,14 @@ async def responseResolver(message):
             # Check game-over FIRST — final embed has both "try to get the best
             # possible hand" AND "goldened", so goldened must be checked before
             # the mid-game pattern to avoid an early return.
+            # Only reset here if the interactive loop hasn't started yet;
+            # otherwise let the loop handle it to avoid concurrent state resets.
             if bot_state.cardhand_in_progress and "goldened" in embed_text:
-                bot_state.cardhand_in_progress = False
-                bot_state.cardhand_first_pass_done = False
-                bot_state.cardhand_turn_count = 1
-                HUD.system("Card Hand concluído! Filas liberadas.")
+                if not bot_state.cardhand_first_pass_done:
+                    bot_state.cardhand_in_progress = False
+                    bot_state.cardhand_first_pass_done = False
+                    bot_state.cardhand_turn_count = 1
+                    HUD.system("Card Hand concluído! Filas liberadas.")
                 return
 
             if (
@@ -1071,7 +1079,7 @@ async def responseResolver(message):
                 and "try to get the best possible hand" in embed_text
                 and bot_state.cardhand_in_progress
             ):
-                if config.card_hand_action in ["auto", "notify"]:
+                if config.card_hand_action == "auto":
                     if not bot_state.cardhand_first_pass_done:
                         bot_state.cardhand_first_pass_done = True
                         asyncio.create_task(interactive_card_hand_loop(message))

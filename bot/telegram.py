@@ -144,42 +144,7 @@ async def edit_telegram_message(message_id, text, buttons=None):
     return False
 
 
-async def get_telegram_callback_query(start_time):
-    """Polls Telegram for any callback query or message sent AFTER start_time."""
-    if not config.TelegramBotToken:
-        return None
-    url = f"https://api.telegram.org/bot{config.TelegramBotToken}/getUpdates"
-    try:
-        session = _get_session()
-        params = {"offset": -1, "limit": 10, "timeout": 0}
-        async with session.get(url, params=params, timeout=aiohttp.ClientTimeout(total=5)) as response:
-            data = await response.json()
-            if data.get("ok") and data.get("result"):
-                for update in reversed(data["result"]):
-                    # 1. Check for callback query
-                    cb = update.get("callback_query")
-                    if cb:
-                        msg_time = cb.get("message", {}).get("date", 0)
-                        if msg_time > start_time:
-                            # Answer the callback query to clear loading spinner
-                            cb_id = cb.get("id")
-                            ans_url = f"https://api.telegram.org/bot{config.TelegramBotToken}/answerCallbackQuery"
-                            try:
-                                await session.post(ans_url, json={"callback_query_id": cb_id}, timeout=2)
-                            except Exception:
-                                pass
-                            return cb.get("data")
-                    
-                    # 2. Check for regular text message
-                    msg = update.get("message")
-                    if msg:
-                        msg_time = msg.get("date", 0)
-                        msg_text = msg.get("text", "").strip().lower()
-                        if msg_time > start_time and (time.time() - msg_time < 60):
-                            return msg_text
-    except Exception as e:
-        logger.error(f"Error polling Telegram updates: {e}")
-    return None
+
 
 
 async def get_telegram_override(start_time):

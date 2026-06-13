@@ -111,6 +111,7 @@ class BotState:
         self.last_cardhand_notification_time = 0
         self.last_sent_time = 0
         self.last_sent_cardhand_image = None
+        self.cardhand_user_choice = None
         # Pet Adventure
         self.pet_adventure_return_time = 0
         self.last_save_time = time.time()
@@ -408,6 +409,7 @@ def reset_bot_state():
     bot_state.cardhand_first_pass_done = False
     bot_state.cardhand_turn_count = 1
     bot_state.last_sent_cardhand_image = None
+    bot_state.cardhand_user_choice = None
     bot_state.dungeon_waiting_confirmation = False
     bot_state.dungeon_in_progress = False
     bot_state.dragon_alive = False

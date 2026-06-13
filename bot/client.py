@@ -320,7 +320,7 @@ class DiscordClient(discord.Client):
                             HUD.system(f"Comando duplicado '{cmd}' ignorado (Anti-Spam).")
                         else:
                             # Set card hand lock BEFORE sending the command
-                            if cmd.lower() == "rpg card hand" and config.card_hand_action in ["auto", "notify"]:
+                            if cmd.lower() == "rpg card hand" and config.card_hand_action == "auto":
                                 bot_state.cardhand_in_progress = True
                                 bot_state.cardhand_first_pass_done = False
                                 bot_state.cardhand_start_time = current_time
@@ -342,7 +342,7 @@ class DiscordClient(discord.Client):
                             HUD.system(f"Comando duplicado '{cmd}' ignorado (Anti-Spam).")
                         else:
                             # Set card hand lock BEFORE sending the command (if queued in LPQ too)
-                            if cmd.lower() == "rpg card hand" and config.card_hand_action in ["auto", "notify"]:
+                            if cmd.lower() == "rpg card hand" and config.card_hand_action == "auto":
                                 bot_state.cardhand_in_progress = True
                                 bot_state.cardhand_first_pass_done = False
                                 bot_state.cardhand_start_time = current_time
@@ -1003,7 +1003,7 @@ class DiscordClient(discord.Client):
                 HUD.cardhand(f"Neon Bot Helper atualizou análise do Card Hand.")
                 logger.info(f"Neon edit detected (rec: {rec})...")
 
-                if config.card_hand_action in ["auto", "notify", "legacy_auto"]:
+                if config.card_hand_action in ["auto", "legacy_auto"]:
                     try:
                         await send_telegram_raw(formatted)
                     except Exception as e:
@@ -1048,8 +1048,22 @@ class DiscordClient(discord.Client):
                         for update in data["result"]:
                             last_update_id = update["update_id"]
                             
-                            # Skip if it is a callback query (handled by interactive minigames)
+                            # Route callback queries and text to card hand if active
                             if "callback_query" in update:
+                                cb = update["callback_query"]
+                                cb_data = cb.get("data", "")
+                                if bot_state.cardhand_in_progress and cb_data:
+                                    if cb_data.startswith("ch_"):
+                                        bot_state.cardhand_user_choice = cb_data.split("_")[1]
+                                    else:
+                                        bot_state.cardhand_user_choice = cb_data
+                                    # Answer callback to clear loading spinner
+                                    cb_id = cb.get("id")
+                                    ans_url = f"https://api.telegram.org/bot{config.TelegramBotToken}/answerCallbackQuery"
+                                    try:
+                                        await session.post(ans_url, json={"callback_query_id": cb_id}, timeout=2)
+                                    except Exception:
+                                        pass
                                 continue
                                 
                             msg = update.get("message")
@@ -1197,6 +1211,8 @@ class DiscordClient(discord.Client):
             await send_telegram_notification(help_msg)
         else:
             if bot_state.cardhand_in_progress:
+                # Route text messages to card hand during active game
+                bot_state.cardhand_user_choice = text
                 return
             if not cmd.startswith("/start"):
                 await send_telegram_notification("❓ Comando não reconhecido. Digite `/help` para ver as opções.")

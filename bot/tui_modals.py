@@ -523,7 +523,7 @@ CONFIG_SCHEMA = [
     ]),
     ("🧪 Advanced", [
         ("do_ultr", "bool", "false"),
-        ("card_hand_action", "dropdown", "auto", ["auto", "notify"]),
+        ("card_hand_action", "dropdown", "auto", ["auto", "legacy_auto"]),
         ("tc_quantity", "text", "1"),
         ("is_eternal", "bool", "false"),
         ("eternal_tier", "dropdown", "t1", ["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9", "t10"]),
