@@ -17,6 +17,7 @@ from bot.parsers import (
     rdCheckNavi,
     rdCheckEpicRPG,
     format_session_data,
+    process_pet_claim_drops,
 )
 from bot.telegram import (
     send_telegram_notification,
@@ -99,19 +100,17 @@ active_card_hand_msg_id = None
 
 def clean_embed_text_for_telegram(embed_dict):
     desc = embed_dict.get("description", "")
-    # Escape HTML special characters to prevent Telegram API errors
-    desc = desc.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     
     fields_text = ""
     if embed_dict.get("fields"):
         for f in embed_dict["fields"]:
-            fname = f.get('name', '').replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-            fval = f.get('value', '').replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-            fields_text += f"\n<b>{fname}</b>:\n{fval}"
+            fname = f.get('name', '')
+            fval = f.get('value', '')
+            fields_text += f"\n{fname}:\n{fval}"
     
     full_text = desc + fields_text
     # Replace some common emojis / text for Telegram friendly presentation
-    full_text = full_text.replace("YOUR HAND", "🃏 <b>SUA MÃO</b>")
+    full_text = full_text.replace("YOUR HAND", "🃏 SUA MÃO")
     full_text = full_text.replace("try to get the best possible hand", "Tente conseguir a melhor mão possível")
     return full_text
 
@@ -278,11 +277,11 @@ async def interactive_card_hand_loop(message):
             # Check if game is finished — "goldened" only appears in the final embed
             if "goldened" in embed_text:
                 clean_txt = clean_embed_text_for_telegram(embed_dict)
-                final_msg = f"🎯 <b>CARD HAND CONCLUÍDO!</b>\n\n{clean_txt}"
+                final_msg = f"🎯 CARD HAND CONCLUÍDO!\n\n{clean_txt}"
                 if active_card_hand_msg_id:
-                    await edit_telegram_message(active_card_hand_msg_id, final_msg, None)
+                    await edit_telegram_message(active_card_hand_msg_id, final_msg, None, parse_mode=None)
                 else:
-                    await send_telegram_notification(final_msg)
+                    await send_telegram_raw(final_msg)
                 
                 bot_state.cardhand_in_progress = False
                 bot_state.cardhand_first_pass_done = False
@@ -331,16 +330,16 @@ async def interactive_card_hand_loop(message):
             
             clean_txt = clean_embed_text_for_telegram(embed_dict)
             msg_text = (
-                f"🃏 <b>CARD HAND ATIVO</b> (Turno {bot_state.cardhand_turn_count})\n\n"
+                f"🃏 CARD HAND ATIVO (Turno {bot_state.cardhand_turn_count})\n\n"
                 f"{clean_txt}\n\n"
-                f"🤖 <b>Recomendação Auto</b>: <code>{rec_display}</code>\n"
-                f"⏳ <b>Autoplay em</b>: <code>{timeout}s</code> (Envie nome da carta ex: <code>s5</code>, <code>hk</code> ou <code>pass</code> via Telegram para sobrescrever)"
+                f"🤖 Recomendação Auto: {rec_display}\n"
+                f"⏳ Autoplay em: {timeout}s (Envie nome da carta ex: s5, hk ou pass via Telegram para sobrescrever)"
             )
             
             if active_card_hand_msg_id is None:
-                active_card_hand_msg_id = await send_telegram_keyboard(msg_text, None)
+                active_card_hand_msg_id = await send_telegram_keyboard(msg_text, None, parse_mode=None)
             else:
-                await edit_telegram_message(active_card_hand_msg_id, msg_text, None)
+                await edit_telegram_message(active_card_hand_msg_id, msg_text, None, parse_mode=None)
             
             # Clear any stale user choice before polling
             bot_state.cardhand_user_choice = None
@@ -360,12 +359,12 @@ async def interactive_card_hand_loop(message):
                 # Edit countdown to keep it visually alive (limit requests to avoid Telegram rate limiting)
                 if t_left in [10, 5, 2] and active_card_hand_msg_id:
                     msg_text = (
-                        f"🃏 <b>CARD HAND ATIVO</b> (Turno {bot_state.cardhand_turn_count})\n\n"
+                        f"🃏 CARD HAND ATIVO (Turno {bot_state.cardhand_turn_count})\n\n"
                         f"{clean_txt}\n\n"
-                        f"🤖 <b>Recomendação Auto</b>: <code>{rec_display}</code>\n"
-                        f"⏳ <b>Autoplay em</b>: <code>{t_left}s</code> (Envie nome da carta ex: <code>s5</code>, <code>hk</code> ou <code>pass</code> via Telegram para sobrescrever)"
+                        f"🤖 Recomendação Auto: {rec_display}\n"
+                        f"⏳ Autoplay em: {t_left}s (Envie nome da carta ex: s5, hk ou pass via Telegram para sobrescrever)"
                     )
-                    await edit_telegram_message(active_card_hand_msg_id, msg_text, None)
+                    await edit_telegram_message(active_card_hand_msg_id, msg_text, None, parse_mode=None)
                 await asyncio.sleep(1)
                 
             final_choice = None
@@ -423,16 +422,22 @@ async def interactive_card_hand_loop(message):
         active_card_hand_msg_id = None
 
 
-async def handle_sleepet_summary(embed_dict, embed_text):
-    # Username verification:
+def check_user_matches(embed_dict, target_username, target_userid):
     author_name = (embed_dict.get("title", "") or embed_dict.get("author", {}).get("name", "")).lower()
-    user_matches = False
-    if config.user_name_lower and (author_name.split(" — ")[0].split("'s")[0].strip() == config.user_name_lower):
-        user_matches = True
-    elif str(config.userID) in author_name:
-        user_matches = True
+    author_name = author_name.replace("’", "'").replace(" - ", " — ")
+    
+    if target_userid and str(target_userid) in author_name:
+        return True
+        
+    part = author_name.split(" — ")[0].split("'s")[0].strip()
+    if target_username and part == target_username.lower():
+        return True
+        
+    return False
 
-    if not user_matches:
+
+async def handle_sleepet_summary(embed_dict, embed_text):
+    if not check_user_matches(embed_dict, config.user_name_lower, config.userID):
         logger.debug("Sleepet summary ignored: Username mismatch.")
         return
 
@@ -470,15 +475,16 @@ async def handle_sleepet_summary(embed_dict, embed_text):
 
 
 async def handle_sleepet_claim(embed_dict, embed_text):
-    # Username verification:
-    author_name = (embed_dict.get("title", "") or embed_dict.get("author", {}).get("name", "")).lower()
-    user_matches = False
-    if config.user_name_lower and (author_name.split(" — ")[0].split("'s")[0].strip() == config.user_name_lower):
-        user_matches = True
-    elif str(config.userID) in author_name:
-        user_matches = True
+    if not check_user_matches(embed_dict, config.user_name_lower, config.userID):
+        return
 
-    if not user_matches:
+    # Check if pet inventory is full (Purrency check)
+    if "purrency" in embed_text.lower():
+        bot_state.sleepet_mode = False
+        bot_state.sleepet_state = None
+        HUD.error("Sleepet Mode desativado: Inventário de pets cheio (Purrency ganho)!")
+        await send_telegram_notification("⚠️ *Sleepet Mode desativado:* Inventário de pets cheio (Purrency ganho)!")
+        add_to_high_priority_queue("rpg rd")
         return
 
     HUD.system("[Sleepet] Recompensas coletadas! Enviando pet para aventura...")
@@ -784,6 +790,7 @@ async def responseResolver(message):
                         bot_state.sleepet_state = None
                         HUD.error("Sleepet Mode desativado: Sem poções de sleepet!")
                         await send_telegram_notification("⚠️ *Sleepet Mode desativado:* Poções esgotadas!")
+                        add_to_high_priority_queue("rpg rd")
                     else:
                         HUD.system("Sleepet potion usada com sucesso! Resgatando recompensas...")
                         bot_state.sleepet_state = "waiting_claim"
@@ -795,6 +802,7 @@ async def responseResolver(message):
                 bot_state.sleepet_state = None
                 HUD.error("Sleepet Mode desativado: Sem poções de sleepet!")
                 await send_telegram_notification("⚠️ *Sleepet Mode desativado:* Poções esgotadas ou item indisponível!")
+                add_to_high_priority_queue("rpg rd")
                 return
 
         is_pet_message = False
@@ -919,19 +927,53 @@ async def responseResolver(message):
 
             # ─── Duel State Machine ───
             if config.do_duel:
-                if "duel will you accept" in embed_text:
-                    # Se fomos desafiados
-                    if f"{config.user_name_lower}, duel will you accept" in embed_text:
+                if "will you accept" in embed_text:
+                    if f"will you accept, {config.user_name_lower}" in embed_text:
                         from bot.state import lowPriorityQueue, lowPriorityQueueSet
-                        lowPriorityQueue.clear()
-                        lowPriorityQueueSet.clear()
-                        bot_state.duel_in_progress = True
-                        bot_state.duel_step = "waiting_weapon"
-                        bot_state.last_duel_time = time.time()
-                        add_to_high_priority_queue("yes")
-                        HUD.system("Duelo recebido! Aceitando com 'yes'. LPQ limpa.")
-                        return
-                    # Se nós desafiamos o parceiro
+                        can_accept = False
+                        
+                        author_title = (embed_dict.get("title", "") or embed_dict.get("author", {}).get("name", ""))
+                        challenger_name = ""
+                        if " — duel" in author_title:
+                            challenger_name = author_title.split(" — duel")[0].strip().lower()
+                        elif " - duel" in author_title:
+                            challenger_name = author_title.split(" - duel")[0].strip().lower()
+
+                        if challenger_name:
+                            guild = message.guild
+                            challenger_member = None
+                            if guild:
+                                challenger_member = guild.get_member_named(challenger_name)
+                                if not challenger_member:
+                                    for m in guild.members:
+                                        if m.name.lower() == challenger_name or (m.nick and m.nick.lower() == challenger_name):
+                                            challenger_member = m
+                                            break
+                            
+                            if challenger_member:
+                                challenger_id = challenger_member.id
+                                if config.duel_partner_id and str(challenger_id) == config.duel_partner_id:
+                                    can_accept = True
+                                elif challenger_id in config.ADMIN_IDS:
+                                    can_accept = True
+
+                            # Fallback check against partner name
+                            if not can_accept and config.partner_name:
+                                if challenger_name == config.partner_name.lower():
+                                    can_accept = True
+
+                        if can_accept:
+                            lowPriorityQueue.clear()
+                            lowPriorityQueueSet.clear()
+                            bot_state.duel_in_progress = True
+                            bot_state.duel_step = "waiting_weapon"
+                            bot_state.last_duel_time = time.time()
+                            add_to_high_priority_queue("yes")
+                            HUD.system("Duelo recebido! Aceitando com 'yes'. LPQ limpa.")
+                            return
+                        else:
+                            HUD.system("Duelo ignorado (desafiante não autorizado).")
+                            return
                     elif config.user_name_lower in embed_text:
                         from bot.state import lowPriorityQueue, lowPriorityQueueSet
                         lowPriorityQueue.clear()
@@ -973,13 +1015,7 @@ async def responseResolver(message):
             # ─── Quest Completion Detection ───
             author_name = embed_dict.get("author", {}).get("name", "").lower()
             if "quest" in author_name:
-                user_matches = False
-                if config.user_name_lower and (author_name.split(" — ")[0].strip() == config.user_name_lower):
-                    user_matches = True
-                elif str(config.userID) in author_name:
-                    user_matches = True
-                
-                if user_matches:
+                if check_user_matches(embed_dict, config.user_name_lower, config.userID):
                     description = embed_dict.get("description", "").lower()
                     fields_text = ""
                     for field in embed_dict.get("fields", []):
@@ -1142,12 +1178,34 @@ async def responseResolver(message):
                         asyncio.create_task(interactive_card_hand_loop(message))
                     return
 
-            # ─── Pet Adventure Detection ───
-            if "— pets" in embed_text:
+            # ─── Pet Embeds (Summary / Reward / Status) ───
+            if "— pets" in embed_text or "pet adventure rewards" in embed_text:
+                is_reward = "reward summary" in embed_text or "pet adventure rewards" in embed_text
+
                 if bot_state.sleepet_mode:
-                    await handle_sleepet_summary(embed_dict, embed_text)
+                    if is_reward:
+                        await handle_sleepet_claim(embed_dict, embed_text)
+                    else:
+                        await handle_sleepet_summary(embed_dict, embed_text)
                     return
-                # rpg pets embed: check if pet is on adventure or idle
+
+                if is_reward:
+                    player_name = config.user_name_lower
+                    if config.partner_name and check_user_matches(embed_dict, config.partner_name, None):
+                        player_name = config.partner_name
+
+                    if check_user_matches(embed_dict, player_name, config.userID if player_name == config.user_name_lower else None):
+                        process_pet_claim_drops(embed_dict, embed_text, player_name)
+
+                    if "purrency" in embed_text:
+                        HUD.alert("Purrency recebida — inventário de pets cheio!")
+
+                    bot_state.pet_adventure_return_time = 0
+                    add_to_low_priority_queue(config.pet_adventure_command)
+                    HUD.system("Recompensas do pet resgatadas! Reenviando para aventura...")
+                    return
+
+                # Summary: parse pet status (timer / back / idle)
                 timer_match = re.search(
                     r'status:\s*[a-z]+\s*\|\s*'
                     r'(?:(\d+)h\s*)?(?:(\d+)m\s*)?(?:(\d+)s)?',
@@ -1157,11 +1215,9 @@ async def responseResolver(message):
                     h = int(timer_match.group(1) or 0)
                     m = int(timer_match.group(2) or 0)
                     s = int(timer_match.group(3) or 0)
-                    total_seconds = h * 3600 + m * 60 + s + 30  # +30s buffer
+                    total_seconds = h * 3600 + m * 60 + s + 30
                     bot_state.pet_adventure_return_time = time.time() + total_seconds
-                    HUD.system(
-                        f"Pet em aventura - retorna em {h}h {m}m {s}s"
-                    )
+                    HUD.system(f"Pet em aventura - retorna em {h}h {m}m {s}s")
                 elif "back from adventure" in embed_text:
                     bot_state.pet_adventure_return_time = 0
                     add_to_low_priority_queue("rpg pet claim")
@@ -1171,17 +1227,10 @@ async def responseResolver(message):
                     HUD.system("Pet ocioso - enviando para aventura!")
                 return
 
-            if "pet adventure rewards" in embed_text:
-                if bot_state.sleepet_mode:
-                    await handle_sleepet_claim(embed_dict, embed_text)
-                    return
-                # rpg pet claim response: rewards collected, re-send
-                bot_state.pet_adventure_return_time = 0
-                add_to_low_priority_queue(config.pet_adventure_command)
-                HUD.system("Recompensas do pet resgatadas! Reenviando para aventura...")
-                return
-
             if "— lootbox" in embed_text and "lootbox opened!" in embed_text:
+                if not (config.user_name_lower and f"{config.user_name_lower} — lootbox" in embed_text):
+                    logger.debug("Lootbox opened by another user, ignoring.")
+                    return
                 all_lines = []
                 if "description" in embed_dict:
                     all_lines.extend(
@@ -1395,31 +1444,32 @@ async def responseResolver(message):
                         )
 
                 else:
-                    if "found and killed a" in msg:
-                        coins_xp_match = (
-                            config.coins_xp_regex_new.search(msg)
-                            or config.coins_xp_regex_old.search(msg)
-                        )
-                        if coins_xp_match:
-                            coins = int(
-                                coins_xp_match.group(1).replace(",", "")
+                    if config.user_name_lower and f"**{config.user_name_lower}**" in msg.lower():
+                        if "found and killed a" in msg:
+                            coins_xp_match = (
+                                config.coins_xp_regex_new.search(msg)
+                                or config.coins_xp_regex_old.search(msg)
                             )
-                            xp = int(
-                                coins_xp_match.group(2).replace(",", "")
-                            )
-                            sessionData["progress_data"]["coins"] += coins
-                            sessionData["progress_data"]["xp"] += xp
-                            logger.info(
-                                f"{Fore.YELLOW}{config.user_name_lower}"
-                                f"{Style.RESET_ALL} earned: "
-                                f"{coins:,} coins, {xp:,} XP"
-                            )
+                            if coins_xp_match:
+                                coins = int(
+                                    coins_xp_match.group(1).replace(",", "")
+                                )
+                                xp = int(
+                                    coins_xp_match.group(2).replace(",", "")
+                                )
+                                sessionData["progress_data"]["coins"] += coins
+                                sessionData["progress_data"]["xp"] += xp
+                                logger.info(
+                                    f"{Fore.YELLOW}{config.user_name_lower}"
+                                    f"{Style.RESET_ALL} earned: "
+                                    f"{coins:,} coins, {xp:,} XP"
+                                )
 
-                    process_drops(
-                        msg_lines,
-                        config.user_name_lower,
-                        sessionData["loot_data"],
-                    )
+                        process_drops(
+                            msg_lines,
+                            config.user_name_lower,
+                            sessionData["loot_data"],
+                        )
 
                 if "leveled up" in msg:
                     if (
@@ -1439,76 +1489,79 @@ async def responseResolver(message):
                             ] += 1
                             logger.info(f"{config.partner_name} leveled up")
                     else:
-                        sessionData["progress_data"]["levels"] += 1
-                        logger.info(
-                            f"{Fore.YELLOW}{config.user_name_lower}"
-                            f"{Style.RESET_ALL} leveled up"
-                        )
+                        if config.user_name_lower and f"**{config.user_name_lower}**" in msg.lower():
+                            sessionData["progress_data"]["levels"] += 1
+                            logger.info(
+                                f"{Fore.YELLOW}{config.user_name_lower}"
+                                f"{Style.RESET_ALL} leveled up"
+                            )
 
             elif "fine, i will let you go" in msg:
                 bot_state.captcha_pending = False
                 bot_state.jailed = False
                 logger.info("User released from captcha/jail")
             elif "seed in the ground" in msg:
-                farm_drop_match = config.farm_drop_regex.search(msg)
-                if farm_drop_match:
-                    qty = int(farm_drop_match.group(1))
-                    item = farm_drop_match.group(2).lower()
-                    if item in sessionData["loot_data"]["farm_drops"]:
-                        sessionData["loot_data"]["farm_drops"][item] += qty
+                if config.user_name_lower and f"**{config.user_name_lower}**" in msg.lower():
+                    farm_drop_match = config.farm_drop_regex.search(msg)
+                    if farm_drop_match:
+                        qty = int(farm_drop_match.group(1))
+                        item = farm_drop_match.group(2).lower()
+                        if item in sessionData["loot_data"]["farm_drops"]:
+                            sessionData["loot_data"]["farm_drops"][item] += qty
+                            logger.info(
+                                f"{Fore.YELLOW}{config.user_name_lower}"
+                                f"{Style.RESET_ALL} collected farm drop: "
+                                f"{item}, quantity: {qty:,}"
+                            )
+                        else:
+                            logger.warning(f"Unknown farm item: {item}")
+
+                    if "leveled up" in msg:
+                        xp_gained = [
+                            int(word)
+                            for word in msg.replace(",", "").splitlines()[-2].split()
+                            if word.isdigit()
+                        ][0]
+                        sessionData["progress_data"]["xp"] += xp_gained
+                        sessionData["progress_data"]["levels"] += 1
                         logger.info(
                             f"{Fore.YELLOW}{config.user_name_lower}"
-                            f"{Style.RESET_ALL} collected farm drop: "
-                            f"{item}, quantity: {qty:,}"
+                            f"{Style.RESET_ALL} gained {xp_gained:,} XP "
+                            f"and leveled up"
                         )
                     else:
-                        logger.warning(f"Unknown farm item: {item}")
-
-                if "leveled up" in msg:
+                        xp_gained = [
+                            int(word)
+                            for word in msg.replace(",", "").splitlines()[-1].split()
+                            if word.isdigit()
+                        ][0]
+                        sessionData["progress_data"]["xp"] += xp_gained
+                        logger.info(
+                            f"{Fore.YELLOW}{config.user_name_lower}"
+                            f"{Style.RESET_ALL} gained {xp_gained:,} XP"
+                        )
+                    logger.info("Seed planted, XP updated")
+            elif "well done" in msg:
+                if config.user_name_lower and f"**{config.user_name_lower}**" in msg.lower():
                     xp_gained = [
                         int(word)
-                        for word in msg.replace(",", "").splitlines()[-2].split()
+                        for word in msg.replace(",", "").splitlines()[1].split()
                         if word.isdigit()
                     ][0]
                     sessionData["progress_data"]["xp"] += xp_gained
-                    sessionData["progress_data"]["levels"] += 1
                     logger.info(
                         f"{Fore.YELLOW}{config.user_name_lower}"
                         f"{Style.RESET_ALL} gained {xp_gained:,} XP "
-                        f"and leveled up"
+                        f"for 'well done'"
                     )
-                else:
-                    xp_gained = [
-                        int(word)
-                        for word in msg.replace(",", "").splitlines()[-1].split()
-                        if word.isdigit()
-                    ][0]
-                    sessionData["progress_data"]["xp"] += xp_gained
-                    logger.info(
-                        f"{Fore.YELLOW}{config.user_name_lower}"
-                        f"{Style.RESET_ALL} gained {xp_gained:,} XP"
-                    )
-                logger.info("Seed planted, XP updated")
-            elif "well done" in msg:
-                xp_gained = [
-                    int(word)
-                    for word in msg.replace(",", "").splitlines()[1].split()
-                    if word.isdigit()
-                ][0]
-                sessionData["progress_data"]["xp"] += xp_gained
-                logger.info(
-                    f"{Fore.YELLOW}{config.user_name_lower}"
-                    f"{Style.RESET_ALL} gained {xp_gained:,} XP "
-                    f"for 'well done'"
-                )
-                if "leveled up" in msg:
-                    sessionData["progress_data"]["levels"] += 1
-                    logger.info(
-                        f"{Fore.YELLOW}{config.user_name_lower}"
-                        f"{Style.RESET_ALL} leveled up"
-                    )
+                    if "leveled up" in msg:
+                        sessionData["progress_data"]["levels"] += 1
+                        logger.info(
+                            f"{Fore.YELLOW}{config.user_name_lower}"
+                            f"{Style.RESET_ALL} leveled up"
+                        )
             else:
-                if "training" not in msg:
+                if "training" not in msg and (config.user_name_lower and f"**{config.user_name_lower}**" in msg.lower()):
                     for item in sessionData["loot_data"]["work_drops"]:
                         if item in msg:
                             numOfDrops = [
