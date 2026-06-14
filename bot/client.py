@@ -127,29 +127,10 @@ class DiscordClient(discord.Client):
         if self.user.id not in config.ADMIN_IDS:
             config.ADMIN_IDS.append(self.user.id)
             config.ALLOWED_IDS.append(self.user.id)
-        # Resolve server nickname
+        # Resolve username (Epic RPG uses the username/tag for prefixing embeds, not server nicknames)
         await asyncio.sleep(1)
-        guild = self.get_guild(config.GUILD_ID)
-        if guild:
-            member = guild.get_member(self.user.id)
-            if member and member.nick:
-                config.user_name_lower = member.nick.lower()
-                logger.info(
-                    f"Using server nickname for Epic RPG filtering: "
-                    f"{config.user_name_lower}"
-                )
-            else:
-                config.user_name_lower = self.user.name.lower()
-                logger.info(
-                    f"Using bot name for Epic RPG filtering: "
-                    f"{config.user_name_lower} (no server nickname)"
-                )
-        else:
-            config.user_name_lower = self.user.name.lower()
-            logger.warning(
-                f"Could not retrieve guild (ID: {config.GUILD_ID}). "
-                f"Using default bot name for filtering: {config.user_name_lower}"
-            )
+        config.user_name_lower = self.user.name.lower()
+        logger.info(f"Using username for Epic RPG filtering: {config.user_name_lower}")
 
     async def my_background_task(self):
         await self.wait_until_ready()
@@ -264,11 +245,16 @@ class DiscordClient(discord.Client):
                 if bot_state.no_response_count >= 3:
                     bot_state.paused = True
                     bot_state.no_response_count = 0
-                    bot_state.watchdog_paused_until = current_time + 3600
-                    HUD.alert("WATCHDOG: Sem resposta. Pausa de emergência (1h de cooldown)!")
+                    cooldown_minutes = randint(45, 90)
+                    bot_state.watchdog_paused_until = current_time + (cooldown_minutes * 60)
+                    highPriorityQueue.clear()
+                    highPriorityQueueSet.clear()
+                    lowPriorityQueue.clear()
+                    lowPriorityQueueSet.clear()
+                    HUD.alert(f"WATCHDOG: Sem resposta. Pausa de emergência ({cooldown_minutes}m de cooldown)!")
                     await send_telegram_notification(
-                        "🚨 WATCHDOG: Pausa de Emergência ativada por 1 hora "
-                        "devido à falta de respostas do jogo. Tentará auto-retomar depois."
+                        f"🚨 WATCHDOG: Pausa de Emergência ativada por {cooldown_minutes} minutos "
+                        "devido à falta de respostas do jogo. Filas limpas. Tentará auto-retomar depois."
                     )
                     continue
 
@@ -375,7 +361,7 @@ class DiscordClient(discord.Client):
                         cmd = highPriorityQueue.pop(0)
                         highPriorityQueueSet.discard(cmd)
                         current_time = time.time()
-                        if cmd == bot_state.last_sent_command and (current_time - bot_state.last_sent_time) < 5.0 and not cmd.startswith("rpg cf"):
+                        if cmd == bot_state.last_sent_command and (current_time - bot_state.last_sent_time) < 5.0 and not cmd.startswith("rpg cf") and not is_sleepet_command(cmd):
                             HUD.system(f"Comando duplicado '{cmd}' ignorado (Anti-Spam).")
                         else:
                             # Set card hand lock BEFORE sending the command
@@ -399,7 +385,7 @@ class DiscordClient(discord.Client):
                         cmd = lowPriorityQueue.pop(0)
                         lowPriorityQueueSet.discard(cmd)
                         current_time = time.time()
-                        if cmd == bot_state.last_sent_command and (current_time - bot_state.last_sent_time) < 5.0 and not cmd.startswith("rpg cf"):
+                        if cmd == bot_state.last_sent_command and (current_time - bot_state.last_sent_time) < 5.0 and not cmd.startswith("rpg cf") and not is_sleepet_command(cmd):
                             HUD.system(f"Comando duplicado '{cmd}' ignorado (Anti-Spam).")
                         else:
                             # Set card hand lock BEFORE sending the command (if queued in LPQ too)
@@ -663,10 +649,7 @@ class DiscordClient(discord.Client):
                     )
                     return
 
-        # Reset Watchdog and response-pending on any Epic RPG / Navi message
-        if message.author.id in [config.EPIC_RPG_ID, config.NAVI_LITE_ID]:
-            bot_state.no_response_count = 0
-            bot_state.response_pending_until = 0
+        # (Watchdog reset moved inside status detection below to respect channel filter)
 
         # ─── 1. Content Extraction (Embed Vision) ───
         msg_lower = message.content.lower()
@@ -700,20 +683,39 @@ class DiscordClient(discord.Client):
         # ─── 3. Status Detection (bypasses pause) ───
         if message.author.id == config.EPIC_RPG_ID:
             # Maintenance Detection
-            if "bot is under maintenance" in combined_content or "is under maintenance" in combined_content:
+            if any(x in combined_content for x in ["maintenance", "manutenção"]):
                 if not bot_state.paused:
                     bot_state.paused = True
                     bot_state.no_response_count = 0
-                    bot_state.watchdog_paused_until = time.time() + 3600
+                    maint_cooldown_minutes = randint(45, 90)
+                    bot_state.watchdog_paused_until = time.time() + (maint_cooldown_minutes * 60)
                     highPriorityQueue.clear()
                     highPriorityQueueSet.clear()
                     lowPriorityQueue.clear()
                     lowPriorityQueueSet.clear()
-                    HUD.alert("MANUTENÇÃO DETECTADA! Bot pausado por segurança.")
+                    HUD.alert(f"MANUTENÇÃO DETECTADA! Bot pausado por segurança ({maint_cooldown_minutes}m de cooldown).")
                     await send_telegram_notification(
-                        "🛠️ EPIC RPG em Manutenção! O bot foi pausado automaticamente por 1 hora e tentará retomar atividades depois."
+                        f"🛠️ EPIC RPG em Manutenção! O bot foi pausado automaticamente por {maint_cooldown_minutes} minutos e tentará retomar atividades depois."
                     )
                 return
+
+            # Verify if this message is for us to reset watchdog/pending timers
+            is_for_us = False
+            if message.reference and message.reference.resolved:
+                ref = message.reference.resolved
+                if hasattr(ref, "author") and ref.author.id == config.userID:
+                    is_for_us = True
+            
+            if not is_for_us:
+                from bot.handlers import check_user_matches
+                embed_dict = message.embeds[0].to_dict() if message.embeds else None
+                is_for_us = check_user_matches(embed_dict, config.user_name_lower, config.userID) or \
+                            config.user_name_lower in combined_content or \
+                            str(config.userID) in combined_content
+
+            if is_for_us:
+                bot_state.no_response_count = 0
+                bot_state.response_pending_until = 0
 
             # Captcha Detection
             elif (
@@ -1016,7 +1018,13 @@ class DiscordClient(discord.Client):
             save_session_data(sessionData)
             # Track this message as processed to prevent on_message_edit
             # from re-processing it (Epic RPG often edits embeds after sending)
-            if message.author.id == config.EPIC_RPG_ID and message.embeds:
+            # EXCEPT for pet/sleepet messages because they might be loaded dynamically.
+            is_pet_message = False
+            if message.embeds:
+                msg_text = str(message.embeds[0].to_dict()).lower()
+                if "— pets" in msg_text or "pet adventure rewards" in msg_text:
+                    is_pet_message = True
+            if message.author.id == config.EPIC_RPG_ID and message.embeds and not is_pet_message:
                 self._track_processed_message(message.id)
         except Exception as e:
             logger.error(
@@ -1045,14 +1053,21 @@ class DiscordClient(discord.Client):
         if after.author.id == config.EPIC_RPG_ID:
             # Skip if this message was already fully processed by on_message
             # (Epic RPG frequently edits embeds after sending, causing duplicate processing)
-            if after.id in self._processed_msg_ids:
+            # EXCEPT for pet/sleepet messages because they might be loaded dynamically.
+            is_pet_edit = False
+            if after.embeds:
+                after_text = str(after.embeds[0].to_dict()).lower()
+                if "— pets" in after_text or "pet adventure rewards" in after_text:
+                    is_pet_edit = True
+
+            if after.id in self._processed_msg_ids and not is_pet_edit:
                 logger.debug(f"Skipping already-processed Epic RPG edit: {after.id}")
                 return
             try:
                 await responseResolver(after)
                 save_session_data(sessionData)
-                # Track it now so further edits are also skipped
-                if after.embeds:
+                # Track it now so further edits are also skipped (except if it's still a pet message edit)
+                if after.embeds and not is_pet_edit:
                     self._track_processed_message(after.id)
             except Exception as e:
                 logger.error(f"Error processing edited message: {e}\n{traceback.format_exc()}")

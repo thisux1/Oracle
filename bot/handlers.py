@@ -423,6 +423,8 @@ async def interactive_card_hand_loop(message):
 
 
 def check_user_matches(embed_dict, target_username, target_userid):
+    if not embed_dict:
+        return False
     title = (embed_dict.get("title", "") or "").lower()
     author_name = (embed_dict.get("author", {}).get("name", "") or "").lower()
     
@@ -435,13 +437,18 @@ def check_user_matches(embed_dict, target_username, target_userid):
             return True
             
         part = text.split(" — ")[0].split("'s")[0].strip()
-        if target_username and part == target_username.lower():
-            return True
+        if target_username:
+            t_clean = target_username.lower().strip()
+            p_clean = part.lower().strip()
+            if p_clean == t_clean or t_clean in p_clean or p_clean in t_clean:
+                return True
             
     return False
 
 
 async def handle_sleepet_summary(embed_dict, embed_text):
+    if bot_state.sleepet_state != "waiting_summary":
+        return
     if not check_user_matches(embed_dict, config.user_name_lower, config.userID):
         logger.debug("Sleepet summary ignored: Username mismatch.")
         return
@@ -488,6 +495,8 @@ async def handle_sleepet_summary(embed_dict, embed_text):
 
 
 async def handle_sleepet_claim(embed_dict, embed_text):
+    if bot_state.sleepet_state != "waiting_claim":
+        return
     if not check_user_matches(embed_dict, config.user_name_lower, config.userID):
         return
 
@@ -507,6 +516,8 @@ async def handle_sleepet_claim(embed_dict, embed_text):
 
 
 async def handle_sleepet_adv(message, msg):
+    if bot_state.sleepet_state != "waiting_adventure":
+        return
     # Verify that it is for the user
     is_for_us = False
     
@@ -870,7 +881,7 @@ async def responseResolver(message):
         # ─── Sleepet Potion Detection ───
         if bot_state.sleepet_mode:
             if "sleepet potion" in msg or "sleepet_potion" in msg:
-                if config.user_name_lower in msg:
+                if config.user_name_lower in msg and bot_state.sleepet_state == "waiting_potion":
                     if any(err in msg for err in ["don't have", "do not have", "not have"]):
                         bot_state.sleepet_mode = False
                         bot_state.sleepet_state = None
