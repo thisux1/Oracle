@@ -191,8 +191,8 @@ def step_pyinstaller() -> None:
         (SCRIPT_DIR / "bot" / "tui_theme.tcss", "bot"),
     ]
 
-    # Add .h5 models if they exist
-    for model_name in ["oracle_v2_color.h5", "oracle_v2_gray.h5"]:
+    # Add models if they exist
+    for model_name in ["oracle_v2_color.h5", "oracle_v2_gray.h5", "oracle_v2_color.tflite", "oracle_v2_gray.tflite"]:
         model_path = SCRIPT_DIR / model_name
         if model_path.exists():
             data_files.append((model_path, "."))
@@ -204,7 +204,7 @@ def step_pyinstaller() -> None:
     # Hidden imports — every module that PyInstaller cannot auto-detect
     hidden_imports = [
         # TensorFlow / ML
-        "tensorflow",
+        "tflite_runtime",
         "numpy",
         "PIL",
         # Uvicorn / ASGI (auto-detection is unreliable in frozen builds)

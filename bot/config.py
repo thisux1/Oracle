@@ -3,7 +3,6 @@ import os
 import time
 import warnings
 warnings.simplefilter("ignore", category=UserWarning)
-import tensorflow as tf
 import numpy as np
 from PIL import Image
 import options_resolver
@@ -17,33 +16,67 @@ NEON_BOT_IDS = [754276211302088704, 787861783143637032, 851436490415931422]
 img_height, img_width = 128, 128
 model_path_color = os.path.join(options_resolver.BUNDLE_DIR, 'oracle_v2_color.h5')
 model_path_gray = os.path.join(options_resolver.BUNDLE_DIR, 'oracle_v2_gray.h5')
+tflite_path_color = os.path.join(options_resolver.BUNDLE_DIR, 'oracle_v2_color.tflite')
+tflite_path_gray = os.path.join(options_resolver.BUNDLE_DIR, 'oracle_v2_gray.tflite')
 classes_path = os.path.join(options_resolver.BUNDLE_DIR, 'classes.txt')
 
 import sys
 import traceback
 
+class TFLiteModelWrapper:
+    def __init__(self, model_path):
+        try:
+            import tflite_runtime.interpreter as tflite
+        except ImportError:
+            from tensorflow import lite as tflite
+        self.interpreter = tflite.Interpreter(model_path=model_path)
+        self.interpreter.allocate_tensors()
+        self.input_details = self.interpreter.get_input_details()
+        self.output_details = self.interpreter.get_output_details()
+
+    def predict(self, x, verbose=0):
+        x_input = x.astype(np.float32)
+        self.interpreter.set_tensor(self.input_details[0]['index'], x_input)
+        self.interpreter.invoke()
+        return self.interpreter.get_tensor(self.output_details[0]['index'])
+
 captcha_model_color = None
 captcha_model_gray = None
 
-try:
-    captcha_model_color = tf.keras.models.load_model(model_path_color)
-except Exception as e:
-    print(f"\033[1;31m🚨 AVISO: Falha ao carregar modelo de captcha COLOR:\033[0m {e}", file=sys.stderr)
-    traceback.print_exc(file=sys.stderr)
+# Try loading TFLite first to save RAM and avoid loading full TensorFlow
+if os.path.exists(tflite_path_color) or os.path.exists(tflite_path_gray):
+    try:
+        try:
+            import tflite_runtime.interpreter
+        except ImportError:
+            import tensorflow as tf
+            
+        if os.path.exists(tflite_path_color):
+            captcha_model_color = TFLiteModelWrapper(tflite_path_color)
+        if os.path.exists(tflite_path_gray):
+            captcha_model_gray = TFLiteModelWrapper(tflite_path_gray)
+    except Exception as e:
+        pass
 
-try:
-    captcha_model_gray = tf.keras.models.load_model(model_path_gray)
-except Exception as e:
-    print(f"\033[1;31m🚨 AVISO: Falha ao carregar modelo de captcha GRAY:\033[0m {e}", file=sys.stderr)
-    traceback.print_exc(file=sys.stderr)
+# Fallback to loading original .h5 models if TFLite models could not be loaded
+if captcha_model_color is None and captcha_model_gray is None:
+    try:
+        import tensorflow as tf
+        if os.path.exists(model_path_color):
+            captcha_model_color = tf.keras.models.load_model(model_path_color)
+        if os.path.exists(model_path_gray):
+            captcha_model_gray = tf.keras.models.load_model(model_path_gray)
+    except Exception as e:
+        print(f"\033[1;31m🚨 AVISO: Falha ao carregar modelos Keras (.h5):\033[0m {e}", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
 
 if captcha_model_color is None and captcha_model_gray is None:
     print("\n\033[1;31m" + "="*80 + "\033[0m", file=sys.stderr)
     print("\033[1;31m🚨 ERRO CRÍTICO: NENHUM MODELO DE CAPTCHA FOI CARREGADO! 🚨\033[0m", file=sys.stderr)
     print("O Oráculo não conseguirá resolver os captchas do Epic RPG automaticamente.", file=sys.stderr)
-    print("Por favor, verifique se a versão do TensorFlow e Keras é compatível com os modelos (.h5).", file=sys.stderr)
+    print("Por favor, verifique se a versão do TensorFlow/TFLite é compatível com os modelos.", file=sys.stderr)
     print(f"Interpretador Python ativo: {sys.executable}", file=sys.stderr)
-    print("Tente atualizar as dependências executando: pip install --upgrade tensorflow", file=sys.stderr)
+    print("Tente instalar o runtime executando: pip install tflite-runtime", file=sys.stderr)
     print("\033[1;31m" + "="*80 + "\033[0m\n", file=sys.stderr)
     sys.exit(1)
 

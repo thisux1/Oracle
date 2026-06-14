@@ -1,5 +1,5 @@
 discord.py-self
-tensorflow>=2.16.0
+tflite-runtime
 numpy
 Pillow
 colorama
