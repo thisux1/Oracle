@@ -344,6 +344,32 @@ class DiscordClient(discord.Client):
                                     HUD.command(cmd_to_send, "HPQ-CH")
                                     await send_with_typo_chance(channel, cmd_to_send, "HPQ-CH")
                                     break
+                    elif current_time < bot_state.response_pending_until:
+                        # Waiting for Epic RPG to respond to previous rpg command.
+                        # Only allow non-rpg answers through HPQ (e.g. training answers, event responses).
+                        for i, cmd in enumerate(highPriorityQueue):
+                            if not cmd.lower().startswith("rpg"):
+                                await human_delay(1.5, 2.0)
+                                cmd_to_send = highPriorityQueue.pop(i)
+                                highPriorityQueueSet.discard(cmd_to_send)
+                                bot_state.no_response_count += 1
+                                bot_state.response_pending_until = current_time + 5.0
+                                HUD.command(cmd_to_send, "HPQ-RP")
+                                await send_with_typo_chance(channel, cmd_to_send, "HPQ-RP")
+                                break
+                        # else: wait for response before sending next rpg command
+                    elif bot_state.duel_in_progress:
+                        # Duel active — only allow non-rpg answers (yes, a/b/c) through HPQ
+                        for i, cmd in enumerate(highPriorityQueue):
+                            if not cmd.lower().startswith("rpg"):
+                                await human_delay(1.5, 2.0)
+                                cmd_to_send = highPriorityQueue.pop(i)
+                                highPriorityQueueSet.discard(cmd_to_send)
+                                bot_state.no_response_count += 1
+                                HUD.command(cmd_to_send, "HPQ-DL")
+                                await send_with_typo_chance(channel, cmd_to_send, "HPQ-DL")
+                                break
+                        # else: wait for duel to finish
                     elif highPriorityQueue:
                         await human_delay(1.5, 2.0)
                         cmd = highPriorityQueue.pop(0)
@@ -362,6 +388,8 @@ class DiscordClient(discord.Client):
                             bot_state.no_response_count += 1
                             bot_state.last_sent_command = cmd
                             bot_state.last_sent_time = current_time
+                            if cmd.lower().startswith("rpg"):
+                                bot_state.response_pending_until = current_time + 5.0
                             if is_sleepet_command(cmd):
                                 bot_state.last_sleepet_cmd_time = current_time
                             HUD.command(cmd, "HPQ")
@@ -384,6 +412,8 @@ class DiscordClient(discord.Client):
                             bot_state.no_response_count += 1
                             bot_state.last_sent_command = cmd
                             bot_state.last_sent_time = current_time
+                            if cmd.lower().startswith("rpg"):
+                                bot_state.response_pending_until = current_time + 5.0
                             if is_sleepet_command(cmd):
                                 bot_state.last_sleepet_cmd_time = current_time
                             HUD.command(cmd, "LPQ")
@@ -397,7 +427,7 @@ class DiscordClient(discord.Client):
                                 add_to_high_priority_queue("rpg pet summary")
                                 HUD.system("[Sleepet] State machine started with summary command.")
                             elif current_time - bot_state.last_sleepet_cmd_time > 20:
-                                HUD.warning(f"[Sleepet] State '{bot_state.sleepet_state}' timed out! Re-syncing with pet summary...")
+                                HUD.alert(f"[Sleepet] State '{bot_state.sleepet_state}' timed out! Re-syncing with pet summary...")
                                 bot_state.sleepet_state = "waiting_summary"
                                 bot_state.last_sleepet_cmd_time = current_time
                                 add_to_high_priority_queue("rpg pet summary")
@@ -633,9 +663,10 @@ class DiscordClient(discord.Client):
                     )
                     return
 
-        # Reset Watchdog on any Epic RPG / Navi message
+        # Reset Watchdog and response-pending on any Epic RPG / Navi message
         if message.author.id in [config.EPIC_RPG_ID, config.NAVI_LITE_ID]:
             bot_state.no_response_count = 0
+            bot_state.response_pending_until = 0
 
         # ─── 1. Content Extraction (Embed Vision) ───
         msg_lower = message.content.lower()

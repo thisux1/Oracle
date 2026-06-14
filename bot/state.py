@@ -103,6 +103,7 @@ class BotState:
         self.tc_end_time = 0
         self.last_tc_use_time = 0
         self.minigame_pending_until = 0
+        self.response_pending_until = 0  # Blocks new rpg commands until Epic RPG responds
         self.cardhand_in_progress = False
         self.cardhand_first_pass_done = False
         self.cardhand_start_time = 0
@@ -413,6 +414,7 @@ def reset_bot_state():
     if getattr(bot_state, "captcha_task", None) and not bot_state.captcha_task.done():
         bot_state.captcha_task.cancel()
     bot_state.captcha_task = None
+    bot_state.response_pending_until = 0
     bot_state.cardhand_in_progress = False
     bot_state.cardhand_first_pass_done = False
     bot_state.cardhand_turn_count = 1

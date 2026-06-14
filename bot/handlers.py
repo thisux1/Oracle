@@ -423,16 +423,21 @@ async def interactive_card_hand_loop(message):
 
 
 def check_user_matches(embed_dict, target_username, target_userid):
-    author_name = (embed_dict.get("title", "") or embed_dict.get("author", {}).get("name", "")).lower()
-    author_name = author_name.replace("’", "'").replace(" - ", " — ")
+    title = (embed_dict.get("title", "") or "").lower()
+    author_name = (embed_dict.get("author", {}).get("name", "") or "").lower()
     
-    if target_userid and str(target_userid) in author_name:
-        return True
+    for text in [author_name, title]:
+        if not text:
+            continue
+        text = text.replace("’", "'").replace(" - ", " — ")
         
-    part = author_name.split(" — ")[0].split("'s")[0].strip()
-    if target_username and part == target_username.lower():
-        return True
-        
+        if target_userid and str(target_userid) in text:
+            return True
+            
+        part = text.split(" — ")[0].split("'s")[0].strip()
+        if target_username and part == target_username.lower():
+            return True
+            
     return False
 
 
@@ -453,6 +458,14 @@ async def handle_sleepet_summary(embed_dict, embed_text):
     total_on_adventure = int(ready_claim_match.group(2))
     total_pets = int(pet_count_match.group(1))
     idle_pets = total_pets - total_on_adventure
+
+    if total_pets == 0:
+        bot_state.sleepet_mode = False
+        bot_state.sleepet_state = None
+        HUD.alert("Sleepet Mode desativado: Nenhum pet na conta!")
+        await send_telegram_notification("⚠️ *Sleepet Mode desativado:* Nenhum pet encontrado na conta!")
+        add_to_high_priority_queue("rpg rd")
+        return
 
     HUD.system(f"[Sleepet] Summary parsed: Ready={ready_to_claim}, OnAdv={total_on_adventure}, Total={total_pets}, Idle={idle_pets}")
 
@@ -482,7 +495,7 @@ async def handle_sleepet_claim(embed_dict, embed_text):
     if "purrency" in embed_text.lower():
         bot_state.sleepet_mode = False
         bot_state.sleepet_state = None
-        HUD.error("Sleepet Mode desativado: Inventário de pets cheio (Purrency ganho)!")
+        HUD.alert("Sleepet Mode desativado: Inventário de pets cheio (Purrency ganho)!")
         await send_telegram_notification("⚠️ *Sleepet Mode desativado:* Inventário de pets cheio (Purrency ganho)!")
         add_to_high_priority_queue("rpg rd")
         return
@@ -496,17 +509,31 @@ async def handle_sleepet_claim(embed_dict, embed_text):
 async def handle_sleepet_adv(message, msg):
     # Verify that it is for the user
     is_for_us = False
+    
+    # 1. Check if it is a direct reply to our command
     if message.reference and message.reference.resolved:
         ref = message.reference.resolved
         if hasattr(ref, "author") and ref.author.id == config.userID:
             is_for_us = True
-    elif bot_state.sleepet_mode and bot_state.sleepet_state == "waiting_adventure":
+
+    # 2. Validation by time interval and compatible command
+    # If the last sent command contained "pet" and ("adv" or "adventure"), and was sent within 6 seconds
+    current_time = time.time()
+    time_since_last_cmd = current_time - bot_state.last_sent_time
+    
+    is_recent_our_command = False
+    if bot_state.last_sent_command:
+        last_cmd = bot_state.last_sent_command.lower()
+        if "pet" in last_cmd and ("adv" in last_cmd or "adventure" in last_cmd) and time_since_last_cmd < 6.0:
+            is_recent_our_command = True
+            
+    if is_recent_our_command:
+        is_for_us = True
+    elif bot_state.sleepet_mode and bot_state.sleepet_state == "waiting_adventure" and time_since_last_cmd < 6.0:
         is_for_us = True
 
-    if config.user_name_lower and config.user_name_lower not in msg:
-        is_for_us = False
-
     if not is_for_us:
+        logger.debug("handle_sleepet_adv ignored: not for us.")
         return
 
     # Check for instant returns
@@ -667,16 +694,36 @@ async def responseResolver(message):
             if not cmd_flag_map.get(cmd_name, True):
                 logger.debug("Navi slash command '%s' skipped (disabled via config)", cmd_name)
                 return
-            final_cmd = "rpg hunt" if cmd_name == "hunt" else f"rpg {cmd_name}"
             if cmd_name == "hunt":
+                final_cmd = "rpg hunt"
                 if config.is_ascended:
                     final_cmd += " h"
                 if config.is_married:
                     final_cmd += " t"
+                add_to_high_priority_queue(final_cmd)
             elif cmd_name == "adventure":
+                final_cmd = "rpg adv"
                 if config.is_ascended:
                     final_cmd += " h"
-            add_to_high_priority_queue(final_cmd)
+                add_to_high_priority_queue(final_cmd)
+            elif cmd_name == "farm":
+                farm_cmd = f"rpg farm {config.farm_seed}" if config.farm_seed and config.farm_seed.lower() != "none" else "rpg farm"
+                add_to_high_priority_queue(farm_cmd)
+                final_cmd = farm_cmd
+            elif cmd_name in ("tr", "training"):
+                if config.training_command_sequence:
+                    for tc_cmd in config.training_command_sequence:
+                        add_to_high_priority_queue(tc_cmd)
+                    final_cmd = str(config.training_command_sequence)
+                else:
+                    final_cmd = "rpg training"
+                    add_to_high_priority_queue(final_cmd)
+            elif cmd_name in ("fish", "chop", "mine", "pickup"):
+                final_cmd = f"rpg {config.userOptions.get('work_command', cmd_name)}"
+                add_to_high_priority_queue(final_cmd)
+            else:
+                final_cmd = f"rpg {cmd_name}"
+                add_to_high_priority_queue(final_cmd)
             HUD.system(f"Comando de Slash da Navi detectado: {final_cmd}")
             return
 
@@ -749,6 +796,32 @@ async def responseResolver(message):
 
     # ─── Epic RPG Responses ───
     elif message.author.id == config.EPIC_RPG_ID:
+        # Check for locked pet commands error (no pets / no 2nd time travel)
+        if "command is unlocked after the second" in msg or "when you get your first pet" in msg:
+            current_time = time.time()
+            is_our_error = False
+            
+            # Check if reference is our command
+            if message.reference and message.reference.resolved:
+                ref = message.reference.resolved
+                if hasattr(ref, "author") and ref.author.id == config.userID:
+                    is_our_error = True
+            
+            # Or if we sent a pet command recently (within 6 seconds)
+            if bot_state.last_sent_command:
+                last_cmd = bot_state.last_sent_command.lower()
+                if "pet" in last_cmd and (current_time - bot_state.last_sent_time) < 6.0:
+                    is_our_error = True
+                    
+            if is_our_error:
+                if bot_state.sleepet_mode:
+                    bot_state.sleepet_mode = False
+                    bot_state.sleepet_state = None
+                    HUD.alert("Sleepet Mode desativado: Pets não liberados nesta conta!")
+                    await send_telegram_notification("⚠️ *Sleepet Mode desativado:* Pets ou comando não liberados na conta!")
+                    add_to_high_priority_queue("rpg rd")
+                return
+
         # Check for instant pet returns (perks / VOIDog time travel)
         full_msg = msg
         if message.embeds:
@@ -762,11 +835,23 @@ async def responseResolver(message):
 
         if is_instant_return:
             current_time = time.time()
-            is_our_pet_command = (
-                bot_state.last_sent_command
-                and "pet" in bot_state.last_sent_command.lower()
-                and (current_time - bot_state.last_sent_time) < 5.0
-            ) or bot_state.sleepet_mode
+            
+            # Check if reference is our message
+            is_reference_ours = False
+            if message.reference and message.reference.resolved:
+                ref = message.reference.resolved
+                if hasattr(ref, "author") and ref.author.id == config.userID:
+                    is_reference_ours = True
+                    
+            # Check if we sent a pet command recently (within 6 seconds)
+            is_recent_our_pet_command = False
+            if bot_state.last_sent_command:
+                last_cmd = bot_state.last_sent_command.lower()
+                if "pet" in last_cmd and (current_time - bot_state.last_sent_time) < 6.0:
+                    is_recent_our_pet_command = True
+
+            is_our_pet_command = is_reference_ours or is_recent_our_pet_command
+
             if is_our_pet_command:
                 if bot_state.sleepet_mode:
                     HUD.system("Retorno instantâneo do pet detectado no Sleepet Mode! Resgatando recompensas...")
@@ -776,6 +861,7 @@ async def responseResolver(message):
                     return
                 HUD.system("Retorno instantâneo do pet detectado! Resgatando recompensas...")
                 bot_state.pet_adventure_return_time = 0
+                bot_state.last_sleepet_cmd_time = time.time()
                 add_to_low_priority_queue("rpg pet claim")
                 return
             else:
@@ -788,7 +874,7 @@ async def responseResolver(message):
                     if any(err in msg for err in ["don't have", "do not have", "not have"]):
                         bot_state.sleepet_mode = False
                         bot_state.sleepet_state = None
-                        HUD.error("Sleepet Mode desativado: Sem poções de sleepet!")
+                        HUD.alert("Sleepet Mode desativado: Sem poções de sleepet!")
                         await send_telegram_notification("⚠️ *Sleepet Mode desativado:* Poções esgotadas!")
                         add_to_high_priority_queue("rpg rd")
                     else:
@@ -798,12 +884,24 @@ async def responseResolver(message):
                         add_to_high_priority_queue("rpg pet claim")
                     return
             elif bot_state.sleepet_state == "waiting_potion" and any(err in msg for err in ["don't have", "do not have", "not have"]):
-                bot_state.sleepet_mode = False
-                bot_state.sleepet_state = None
-                HUD.error("Sleepet Mode desativado: Sem poções de sleepet!")
-                await send_telegram_notification("⚠️ *Sleepet Mode desativado:* Poções esgotadas ou item indisponível!")
-                add_to_high_priority_queue("rpg rd")
-                return
+                is_our_error = False
+                if message.reference and message.reference.resolved:
+                    ref = message.reference.resolved
+                    if hasattr(ref, "author") and ref.author.id == config.userID:
+                        is_our_error = True
+                if config.user_name_lower in msg or str(config.userID) in msg:
+                    is_our_error = True
+                if bot_state.last_sent_command:
+                    last_cmd = bot_state.last_sent_command.lower()
+                    if "sleepet" in last_cmd and (time.time() - bot_state.last_sent_time) < 6.0:
+                        is_our_error = True
+                if is_our_error:
+                    bot_state.sleepet_mode = False
+                    bot_state.sleepet_state = None
+                    HUD.alert("Sleepet Mode desativado: Sem poções de sleepet!")
+                    await send_telegram_notification("⚠️ *Sleepet Mode desativado:* Poções esgotadas ou item indisponível!")
+                    add_to_high_priority_queue("rpg rd")
+                    return
 
         is_pet_message = False
         if "is approaching" in msg and config.user_name_lower in msg:
@@ -1204,6 +1302,16 @@ async def responseResolver(message):
                     add_to_low_priority_queue(config.pet_adventure_command)
                     HUD.system("Recompensas do pet resgatadas! Reenviando para aventura...")
                     return
+
+                # Summary: check ready to claim first (rpg pet summary embed format)
+                ready_claim_match = re.search(r'ready to claim:\s*(\d+)/(\d+)', embed_text)
+                if ready_claim_match:
+                    ready_to_claim = int(ready_claim_match.group(1))
+                    if ready_to_claim > 0:
+                        bot_state.pet_adventure_return_time = 0
+                        add_to_low_priority_queue("rpg pet claim")
+                        HUD.system(f"Pets prontos para resgate: {ready_to_claim}! Resgatando...")
+                        return
 
                 # Summary: parse pet status (timer / back / idle)
                 timer_match = re.search(
