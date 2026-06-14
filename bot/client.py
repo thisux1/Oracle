@@ -164,11 +164,20 @@ class DiscordClient(discord.Client):
                 logger.warning(f"Could not fetch channel {config.channelID} on startup: {e}")
                 channel = None
 
+        import os
+        last_config_mtime = 0.0
+        try:
+            if config.active_profile_path and os.path.exists(config.active_profile_path):
+                last_config_mtime = os.path.getmtime(config.active_profile_path)
+        except Exception:
+            pass
+        last_mtime_check_time = 0.0
+
         last_check = time.time() - 120
 
         while not self.is_closed():
-            # Dynamic recovery of channel if it was not resolved yet
-            if not channel:
+            # Dynamic recovery of channel if it was not resolved yet or config channel changed
+            if not channel or channel.id != config.channelID:
                 channel = self.get_channel(config.channelID)
                 if not channel:
                     try:
@@ -192,6 +201,19 @@ class DiscordClient(discord.Client):
 
             try:
                 current_time = time.time()
+
+                # Dynamic config reload check
+                if current_time - last_mtime_check_time > 3.0:
+                    last_mtime_check_time = current_time
+                    try:
+                        if config.active_profile_path and os.path.exists(config.active_profile_path):
+                            mtime = os.path.getmtime(config.active_profile_path)
+                            if mtime > last_config_mtime:
+                                last_config_mtime = mtime
+                                config.reload_config()
+                                HUD.system(f"Configurações recarregadas dinamicamente: {os.path.basename(config.active_profile_path)}")
+                    except Exception as reload_err:
+                        logger.debug(f"Failed to check config mtime/reload: {reload_err}")
 
                 # Watchdog/Maintenance Auto-Resume Check
                 if bot_state.paused and bot_state.watchdog_paused_until > 0 and current_time >= bot_state.watchdog_paused_until:
@@ -664,8 +686,9 @@ class DiscordClient(discord.Client):
 
             # Captcha Detection
             elif (
-                "check you are actually playing" in combined_content
-                or "stop there" in combined_content
+                ("check you are actually playing" in combined_content
+                 or "stop there" in combined_content)
+                and (str(config.userID) in combined_content)
             ):
                 bot_state.paused = True
                 HUD.alert("CAPTCHA DETECTADO! Bot pausado por segurança.")
@@ -689,8 +712,9 @@ class DiscordClient(discord.Client):
 
             # Jail Detection
             elif (
-                "is now in the jail" in combined_content
-                or "is now in the adventure jail" in combined_content
+                ("is now in the jail" in combined_content
+                 or "is now in the adventure jail" in combined_content)
+                and (config.user_name_lower and config.user_name_lower in combined_content)
             ):
                 bot_state.jailed = True
                 bot_state.paused = True
@@ -711,7 +735,7 @@ class DiscordClient(discord.Client):
                     "everything seems fine",
                     "everything looks fine",
                 ]
-            ):
+            ) and (config.user_name_lower and config.user_name_lower in combined_content):
                 bot_state.jailed = False
                 bot_state.paused = False
                 bot_state.captcha_pending = False

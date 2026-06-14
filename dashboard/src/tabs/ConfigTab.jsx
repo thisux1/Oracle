@@ -240,6 +240,7 @@ export default function ConfigTab() {
             { field: "do_lootbox", label: "Lootbox" },
             { field: "do_dungeon", label: "Dungeon" },
             { field: "do_card_hand", label: "Card Hand" },
+            { field: "do_duel", label: "Duel" },
             { field: "do_ultr", label: "Ultra" },
           ].map(({ field, label }) => (
             <ToggleSwitch
@@ -287,6 +288,7 @@ export default function ConfigTab() {
           />
           <ToggleSwitch label="Casado (Is Married)" checked={isTrue("is_married")} onChange={doToggle("is_married")} />
           <TextField label="Nome do Parceiro(a)" field="partner_name" value={config.partner_name} onChange={handleChange} />
+          <TextField label="ID do Parceiro de Duelo" field="duel_partner_id" value={config.duel_partner_id} onChange={handleChange} placeholder="ID do Discord" />
           <ToggleSwitch label="Ascendido (Is Ascended)" checked={isTrue("is_ascended")} onChange={doToggle("is_ascended")} />
           <TextField label="IDs dos Administradores" field="admin_ids" value={config.admin_ids} onChange={handleChange} placeholder="id1,id2" />
           <TextField label="Parar TC Em (TC Stop On)" field="tc_stop_on" value={config.tc_stop_on} onChange={handleChange} />

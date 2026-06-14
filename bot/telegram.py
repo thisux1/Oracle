@@ -2,9 +2,17 @@ import time
 import aiohttp
 from bot.hud import logger
 import bot.config as config
+import os
+import options_resolver
 
 
 _http_session = None
+
+
+def append_profile_info(text):
+    profile = os.path.basename(options_resolver.optionsFilePath)
+    user = config.user_name_lower or "unknown"
+    return f"🔮 [{profile} | @{user}]\n{text}"
 
 
 def _get_session():
@@ -15,6 +23,7 @@ def _get_session():
 
 
 async def send_telegram_notification(text):
+    text = append_profile_info(text)
     if not config.TelegramBotToken or not config.TelegramChatID:
         logger.warning("Telegram bot token or chat ID not set. Notification not sent.")
         return
@@ -45,6 +54,7 @@ async def send_telegram_notification(text):
 async def send_telegram_raw(text):
     """Send a pre-formatted message to Telegram without escaping.
     Uses plain text mode — emojis and unicode render normally, no Markdown parsing."""
+    text = append_profile_info(text)
     if not config.TelegramBotToken or not config.TelegramChatID:
         return
 
@@ -66,6 +76,7 @@ async def send_telegram_raw(text):
 
 
 async def send_telegram_photo(photo_path, caption):
+    caption = append_profile_info(caption)
     if not config.TelegramBotToken or not config.TelegramChatID:
         return
 
@@ -94,15 +105,17 @@ def make_channel_link():
     return f"https://discord.com/channels/{config.GUILD_ID}/{config.channelID}"
 
 
-async def send_telegram_keyboard(text, buttons=None):
+async def send_telegram_keyboard(text, buttons=None, parse_mode="HTML"):
+    text = append_profile_info(text)
     if not config.TelegramBotToken or not config.TelegramChatID:
         return None
     url = f"https://api.telegram.org/bot{config.TelegramBotToken}/sendMessage"
     payload = {
         "chat_id": config.TelegramChatID,
         "text": text,
-        "parse_mode": "HTML",
     }
+    if parse_mode:
+        payload["parse_mode"] = parse_mode
     if buttons:
         payload["reply_markup"] = {
             "inline_keyboard": buttons
@@ -121,7 +134,8 @@ async def send_telegram_keyboard(text, buttons=None):
     return None
 
 
-async def edit_telegram_message(message_id, text, buttons=None):
+async def edit_telegram_message(message_id, text, buttons=None, parse_mode="HTML"):
+    text = append_profile_info(text)
     if not config.TelegramBotToken or not config.TelegramChatID:
         return False
     url = f"https://api.telegram.org/bot{config.TelegramBotToken}/editMessageText"
@@ -129,8 +143,9 @@ async def edit_telegram_message(message_id, text, buttons=None):
         "chat_id": config.TelegramChatID,
         "message_id": message_id,
         "text": text,
-        "parse_mode": "HTML",
     }
+    if parse_mode:
+        payload["parse_mode"] = parse_mode
     if buttons:
         payload["reply_markup"] = {"inline_keyboard": buttons}
     elif buttons is not None:

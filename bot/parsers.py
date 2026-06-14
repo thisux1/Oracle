@@ -565,3 +565,95 @@ def format_session_data(data, title="Dados da Sessão"):
                     output.append(f"    {Fore.WHITE}{item}{Style.RESET_ALL}: {Fore.YELLOW}{qty:,}{Style.RESET_ALL}")
 
     return "\n".join(output)
+
+
+def process_pet_claim_drops(embed_dict, embed_text, player_name):
+    if player_name == config.user_name_lower:
+        loot_data = sessionData["loot_data"]
+        progress_data = sessionData["progress_data"]
+        misc = sessionData["misc"]
+    else:
+        loot_data = sessionData["partner_loot_data"]
+        progress_data = None
+        misc = sessionData["partner_loot_data"].setdefault("misc", {})
+
+    lines = []
+    if "description" in embed_dict:
+        lines.extend(embed_dict["description"].splitlines())
+    for field in embed_dict.get("fields", []):
+        if "value" in field:
+            lines.extend(field["value"].splitlines())
+
+    pattern = re.compile(
+        r'\+\s*([\d,]+)\s*(?:<:[^:]+:\d+>|:[a-zA-Z0-9_-]+:)?\s*([a-zA-Z0-9\s()-\[\]\'’|]+)',
+        re.IGNORECASE
+    )
+
+    for line in lines:
+        match = pattern.search(line)
+        if not match:
+            continue
+        
+        qty = int(match.group(1).replace(',', ''))
+        item_raw = match.group(2).strip().lower()
+
+        if "|" in item_raw:
+            item_raw = item_raw.split("|")[0].strip()
+
+        item_name = item_raw
+        if item_name == "coins":
+            item_name = "coin"
+        elif item_name.endswith(" lootbox"):
+            item_name = item_name.replace(" lootbox", "")
+            
+        if item_name == "coin":
+            if progress_data is not None:
+                progress_data["coins"] += qty
+                HUD.loot(player_name, "coins", qty)
+            continue
+
+        # 1. work_drops (standard logs, fish, etc.)
+        work_drops = loot_data.get("work_drops", {})
+        if item_name in work_drops:
+            work_drops[item_name] += qty
+            HUD.loot(player_name, item_name, qty)
+            logger.info(f"{player_name} collected (pet claim): {item_name}, quantity: {qty:,}")
+            continue
+            
+        matched_work = False
+        for k in work_drops.keys():
+            if k.replace(" ", "") == item_name.replace(" ", ""):
+                work_drops[k] += qty
+                HUD.loot(player_name, k, qty)
+                logger.info(f"{player_name} collected (pet claim): {k}, quantity: {qty:,}")
+                matched_work = True
+                break
+        if matched_work:
+            continue
+
+        # 2. lootbox_drops
+        lootbox_drops = loot_data.get("lootbox_drops", {})
+        if item_name in lootbox_drops:
+            lootbox_drops[item_name] += qty
+            HUD.loot(player_name, f"{item_name} lootbox", qty)
+            logger.info(f"{player_name} collected (pet claim): {item_name} lootbox, quantity: {qty:,}")
+            continue
+
+        # 3. mob_drops (e.g. mermaid hair)
+        mob_drops = loot_data.get("mob_drops", {})
+        matched_mob = False
+        for k in mob_drops.keys():
+            if k in item_name or item_name in k or k.replace(" ", "") == item_name.replace(" ", ""):
+                mob_drops[k] += qty
+                HUD.loot(player_name, k, qty)
+                logger.info(f"{player_name} collected (pet claim): {k}, quantity: {qty:,}")
+                matched_mob = True
+                break
+        if matched_mob:
+            continue
+
+        # 4. Fallback to misc_drops
+        misc_drops = misc.setdefault("misc", {})
+        misc_drops[item_name] = misc_drops.get(item_name, 0) + qty
+        HUD.loot(player_name, item_name, qty)
+        logger.info(f"{player_name} collected (pet claim misc): {item_name}, quantity: {qty:,}")
