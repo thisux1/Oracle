@@ -317,7 +317,11 @@ def reload_config(profile_path=None):
     partner_name = userOptions.get("partner_name", "").lower() if is_married else None
     is_ascended = userOptions.get("is_ascended", "false").lower() == "true"
     farm_seed = userOptions.get("seed", "carrot").lower()
-    user_name_lower = userOptions.get("username", "").lower()
+    ini_username = userOptions.get("username", "").strip().lower()
+    if ini_username:
+        user_name_lower = ini_username
+    elif not user_name_lower:
+        user_name_lower = ""
     TelegramBotToken = userOptions.get("telegram_bot_token", "")
     TelegramChatID = userOptions.get("telegram_chat_id", "")
     try:
