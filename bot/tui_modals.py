@@ -531,6 +531,7 @@ CONFIG_SCHEMA = [
         ("do_dungeon", "bool", "true"),
         ("do_card_hand", "bool", "true"),
         ("do_duel", "bool", "false"),
+        ("win_duel", "bool", "true"),
         ("do_pet", "bool", "true"),
     ]),
     ("🧪 Advanced", [
@@ -565,6 +566,7 @@ def load_example_comments() -> dict[str, str]:
         "do_dungeon": "Habilitar dungeons automáticas",
         "do_card_hand": "Habilitar jogo card hand automático",
         "do_duel": "Habilitar duelo (duel) automático com o parceiro",
+        "win_duel": "Se true, escolhe arma para ganhar duelos. Se false, não envia arma e perde por WO.",
         "do_pet": "Habilitar a automação e coleta de aventuras de pets",
         "duel_partner_id": "ID de Discord do parceiro para mencionar em rpg duel",
         "is_married": "Habilitar suporte a casamento/casado no Epic RPG",

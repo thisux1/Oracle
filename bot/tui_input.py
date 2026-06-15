@@ -73,6 +73,7 @@ CONFIG_METADATA = {
     "do_dungeon": "Habilitar dungeons automáticas",
     "do_card_hand": "Habilitar minijogo de mão de cartas",
     "do_duel": "Habilitar duelo (duel) automático com o parceiro",
+    "win_duel": "Se true, escolhe arma para ganhar duelos. Se false, perde por WO.",
     "duel_partner_id": "ID de Discord do parceiro para mencionar em rpg duel",
     "do_ultr": "ULTR Mode: envia apenas rpg ultr se for eternal (sobrescreve tr)",
     "card_hand_action": "Jogar cartas automaticamente ou apenas notificar",

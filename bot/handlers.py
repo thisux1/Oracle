@@ -1037,7 +1037,7 @@ async def responseResolver(message):
             embed_text = embed_text_raw.replace('**', '').replace('__', '').replace('`', '')
 
             # ─── Duel State Machine ───
-            if config.do_duel:
+            if config.do_duel or bot_state.duel_in_progress or "will you accept" in embed_text:
                 if "will you accept" in embed_text:
                     if f"will you accept, {config.user_name_lower}" in embed_text:
                         from bot.state import lowPriorityQueue, lowPriorityQueueSet
@@ -1091,13 +1091,14 @@ async def responseResolver(message):
                             
                             if challenger_member:
                                 challenger_id = challenger_member.id
-                                if config.duel_partner_id and str(challenger_id) == config.duel_partner_id:
+                                if challenger_id in config.ADMIN_IDS:
                                     can_accept = True
-                                elif challenger_id in config.ADMIN_IDS:
-                                    can_accept = True
+                                elif config.do_duel:
+                                    if config.duel_partner_id and str(challenger_id) == config.duel_partner_id:
+                                        can_accept = True
 
                             # Fallback check against partner name
-                            if not can_accept and config.partner_name:
+                            if not can_accept and config.do_duel and config.partner_name:
                                 if challenger_name == config.partner_name.lower():
                                     can_accept = True
 
@@ -1129,11 +1130,15 @@ async def responseResolver(message):
                     # Escolha de Arma
                     if "choose the weapon that better fits" in embed_text:
                         if config.user_name_lower in embed_text:
-                            choice = random.choice(["a", "b", "c"])
-                            add_to_high_priority_queue(choice)
-                            bot_state.duel_step = "finished"
-                            bot_state.last_duel_time = time.time()
-                            HUD.system(f"Arma de duelo selecionada: '{choice}'")
+                            if config.win_duel:
+                                choice = random.choice(["a", "b", "c"])
+                                add_to_high_priority_queue(choice)
+                                bot_state.duel_step = "finished"
+                                bot_state.last_duel_time = time.time()
+                                HUD.system(f"Arma de duelo selecionada: '{choice}'")
+                            else:
+                                bot_state.duel_step = "finished"
+                                HUD.system("Duelo com win_duel=False. Não enviando arma para perder por WO.")
                             return
 
                     # Finalização

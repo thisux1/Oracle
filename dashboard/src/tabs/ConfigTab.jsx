@@ -241,6 +241,7 @@ export default function ConfigTab() {
             { field: "do_dungeon", label: "Dungeon" },
             { field: "do_card_hand", label: "Card Hand" },
             { field: "do_duel", label: "Duel" },
+            { field: "win_duel", label: "Win Duel" },
             { field: "do_pet", label: "Pets" },
             { field: "do_ultr", label: "Ultra" },
           ].map(({ field, label }) => (

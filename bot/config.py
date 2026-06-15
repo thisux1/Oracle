@@ -224,6 +224,7 @@ do_lootbox  = userOptions.get("do_lootbox", "true").lower() == "true"
 do_dungeon  = userOptions.get("do_dungeon", "true").lower() == "true"
 do_card_hand = userOptions.get("do_card_hand", "true").lower() == "true"
 do_duel      = userOptions.get("do_duel", "false").lower() == "true"
+win_duel     = userOptions.get("win_duel", "true").lower() == "true"
 duel_partner_id = userOptions.get("duel_partner_id", "").strip()
 do_pet       = userOptions.get("do_pet", "true").lower() == "true"
 
@@ -299,7 +300,7 @@ def reload_config(profile_path=None):
     global do_lootbox, do_dungeon, do_card_hand, do_ultr, card_hand_action, tc_quantity
     global training_command_sequence, is_eternal, life_boost_before_adv, adventure_area
     global current_area, ADMIN_IDS, ALLOWED_IDS, eternal_tier, pet_adventure_command
-    global max_area, active_profile_path, do_duel, duel_partner_id, do_pet
+    global max_area, active_profile_path, do_duel, win_duel, duel_partner_id, do_pet
 
     if profile_path is not None:
         active_profile_path = profile_path
@@ -352,6 +353,7 @@ def reload_config(profile_path=None):
     do_dungeon  = userOptions.get("do_dungeon", "true").lower() == "true"
     do_card_hand = userOptions.get("do_card_hand", "true").lower() == "true"
     do_duel      = userOptions.get("do_duel", "false").lower() == "true"
+    win_duel     = userOptions.get("win_duel", "true").lower() == "true"
     duel_partner_id = userOptions.get("duel_partner_id", "").strip()
     do_pet       = userOptions.get("do_pet", "true").lower() == "true"
 

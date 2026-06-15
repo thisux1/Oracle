@@ -744,7 +744,7 @@ class DiscordClient(discord.Client):
 
         # ─── 2. Channel Filter ───
         is_duel_message = False
-        if message.author.id == config.EPIC_RPG_ID and config.do_duel:
+        if message.author.id == config.EPIC_RPG_ID:
             # Case A: Duel request received for us in any channel
             if "will you accept" in combined_content and f"will you accept, {config.user_name_lower}" in combined_content:
                 is_duel_message = True
