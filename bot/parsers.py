@@ -405,19 +405,13 @@ async def rdCheckEpicRPG(message):
                             lootbox_type != "none"
                             and time.time() > bot_state.lootbox_cooldown_until
                         ):
-                            if bot_state.has_bank_account:
-                                add_to_low_priority_queue(
-                                    "rpg withdraw 420666", suppress_log=True
-                                )
                             add_to_low_priority_queue(
                                 f"rpg buy {lootbox_type}", suppress_log=True
                             )
-                            if bot_state.has_bank_account:
-                                add_to_low_priority_queue(
-                                    "rpg deposit all", suppress_log=True
-                                )
+                            bot_state.pending_lootbox_buy = lootbox_type
+                            bot_state.lootbox_fallback_triggered = False
                             HUD.system(
-                                f"Sequência de compra de lootbox ({lootbox_type}) enfileirada."
+                                f"Comando de compra de lootbox ({lootbox_type}) enfileirado."
                             )
                         elif time.time() < bot_state.lootbox_cooldown_until:
                             HUD.system("Compra de lootbox pulada (Cooldown Financeiro).")

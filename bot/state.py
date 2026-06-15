@@ -73,6 +73,15 @@ class CoinFlipFibonacci:
         logger.info("Gambling state reset: step, profit, and consecutive losses cleared.")
 
 
+ENCHANT_TIERS_ORDER = [
+    "normie", "good", "great", "mega", "epic", "hyper", "ultimate",
+    "perfect", "edgy", "ultraedgy", "omega", "ultraomega",
+    "godly", "void", "eternal",
+]
+
+AUTO_ENCHANT_MAX_ATTEMPTS = 200
+
+
 class BotState:
     def __init__(self):
         self._paused = False
@@ -94,6 +103,8 @@ class BotState:
         self.coffee_break_end_time = 0
         self.last_curiosity_time = 0
         self.lootbox_cooldown_until = 0
+        self.pending_lootbox_buy = None
+        self.lootbox_fallback_triggered = False
         self.has_bank_account = True
         self.quest_active = False
         self.gamble_quest_goal = 0
@@ -135,6 +146,13 @@ class BotState:
         self.duel_in_progress = False
         self.duel_step = None  # None, "waiting_confirmation", "waiting_weapon", "finished"
         self.last_duel_time = 0
+        # Auto Enchant
+        self.auto_enchant_active = False
+        self.auto_enchant_tier = ""
+        self.auto_enchant_target = ""
+        self.auto_enchant_target_value = ""
+        self.auto_enchant_channel_id = 0
+        self.auto_enchant_attempts = 0
 
     @property
     def neon_updated_event(self):
@@ -144,7 +162,7 @@ class BotState:
 
     @property
     def paused(self):
-        return self._paused and not (self._gambling_paused == False)
+        return self._paused
 
     @paused.setter
     def paused(self, value):
@@ -330,8 +348,8 @@ def remove_base_action_from_queue(base_action, queue, queue_set):
 def add_to_low_priority_queue(command, suppress_log=False):
     if bot_state.sleepet_mode and not is_sleepet_command(command):
         return
-    # Block low-priority rpg commands if duel is active
-    if bot_state.duel_in_progress and command.lower().strip().startswith("rpg"):
+    # Block low-priority rpg commands if duel or auto-enchant is active
+    if (bot_state.duel_in_progress or bot_state.auto_enchant_active) and command.lower().strip().startswith("rpg"):
         return
     # Check if this action is already queued in either queue
     cmd_clean = command.lower().strip()
@@ -436,6 +454,17 @@ def reset_bot_state():
     bot_state.duel_in_progress = False
     bot_state.duel_step = None
     bot_state.last_duel_time = 0
+    bot_state.pending_lootbox_buy = None
+    bot_state.lootbox_fallback_triggered = False
+    bot_state.has_bank_account = True
+    bot_state.auto_enchant_active = False
+    bot_state.auto_enchant_tier = ""
+    bot_state.auto_enchant_target = ""
+    bot_state.auto_enchant_target_value = ""
+    bot_state.auto_enchant_channel_id = 0
+    bot_state.auto_enchant_attempts = 0
+    lowPriorityQueue.clear()
+    lowPriorityQueueSet.clear()
     logger.info("Bot state reset to initial values.")
 
 

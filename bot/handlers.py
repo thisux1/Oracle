@@ -66,10 +66,11 @@ async def handleCoinflipResponse(message):
                 add_to_high_priority_queue("rpg quest")
                 return True
                 
-        next_bet = coinflip_strategy.get_bet_command()
-        add_to_high_priority_queue(next_bet)
-        bot_state.coinflip_pending = True
-        logger.info(f"Coinflip won. Next bet queued: {next_bet}")
+        if not bot_state.gambling_paused:
+            next_bet = coinflip_strategy.get_bet_command()
+            add_to_high_priority_queue(next_bet)
+            bot_state.coinflip_pending = True
+            logger.info(f"Coinflip won. Next bet queued: {next_bet}")
         return True
     elif "you lost" in msg:
         bot_state.coinflip_pending = False
@@ -87,10 +88,11 @@ async def handleCoinflipResponse(message):
                 "⚠️ Max consecutive losses reached. Gambling paused."
             )
             return True
-        next_bet = coinflip_strategy.get_bet_command()
-        add_to_high_priority_queue(next_bet)
-        bot_state.coinflip_pending = True
-        logger.info(f"Coinflip lost. Next bet queued: {next_bet}")
+        if not bot_state.gambling_paused:
+            next_bet = coinflip_strategy.get_bet_command()
+            add_to_high_priority_queue(next_bet)
+            bot_state.coinflip_pending = True
+            logger.info(f"Coinflip lost. Next bet queued: {next_bet}")
         return True
     return False
 
