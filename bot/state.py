@@ -126,6 +126,7 @@ class BotState:
         self.cardhand_user_choice = None
         # Pet Adventure
         self.pet_adventure_return_time = 0
+        self.next_pet_summary_check = time.time() + randint(5400, 10800)
         self.last_save_time = time.time()
         # Dungeon State
         self.dungeon_waiting_confirmation = False
@@ -449,6 +450,7 @@ def reset_bot_state():
     bot_state.sleepet_mode = False
     bot_state.sleepet_state = None
     bot_state.last_sleepet_cmd_time = 0
+    bot_state.next_pet_summary_check = time.time() + randint(5400, 10800)
     bot_state.ruby_dragon_state = None
     bot_state.duel_in_progress = False
     bot_state.duel_step = None

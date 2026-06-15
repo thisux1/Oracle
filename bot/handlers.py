@@ -688,7 +688,7 @@ async def responseResolver(message):
             return
 
         slash_match = re.search(
-            r'</(hunt|adventure|fish|chop|mine|pickup|tr|farm|training):[0-9]+>',
+            r'</(hunt|adventure|fish|chop|mine|pickup|tr|farm|training|pets claim|pets):[0-9]+>',
             _temp,
         )
         if slash_match:
@@ -703,6 +703,8 @@ async def responseResolver(message):
                 "chop": config.do_work,
                 "mine": config.do_work,
                 "pickup": config.do_work,
+                "pets claim": config.do_pet,
+                "pets": config.do_pet,
             }
             if not cmd_flag_map.get(cmd_name, True):
                 logger.debug("Navi slash command '%s' skipped (disabled via config)", cmd_name)
@@ -734,6 +736,9 @@ async def responseResolver(message):
             elif cmd_name in ("fish", "chop", "mine", "pickup"):
                 final_cmd = f"rpg {config.userOptions.get('work_command', cmd_name)}"
                 add_to_high_priority_queue(final_cmd)
+            elif cmd_name in ("pets claim", "pets"):
+                final_cmd = "rpg pet claim"
+                add_to_low_priority_queue(final_cmd)
             else:
                 final_cmd = f"rpg {cmd_name}"
                 add_to_high_priority_queue(final_cmd)
@@ -781,7 +786,7 @@ async def responseResolver(message):
                 return
 
         # Ignora avisos normais do Navi Lite que não são comandos
-        if "hey! it's time for" not in msg:
+        if "hey! it's time for" not in msg and "your pet" not in msg and "is back!" not in msg:
             runtimeErrors.append(
                 time.strftime(
                     "%Y/%m/%d %H:%M:%S - unexpected helper response " + _temp
@@ -1328,7 +1333,13 @@ async def responseResolver(message):
 
             # ─── Pet Embeds (Summary / Reward / Status) ───
             if config.do_pet and ("— pets" in embed_text or "pet adventure rewards" in embed_text):
-                is_reward = "reward summary" in embed_text or "pet adventure rewards" in embed_text
+                from random import randint
+                bot_state.next_pet_summary_check = time.time() + randint(5400, 10800)
+                
+                author_name = (embed_dict.get("author") or {}).get("name") or ""
+                author_name = author_name.lower()
+                title = (embed_dict.get("title") or "").lower()
+                is_reward = "reward summary" in author_name or "reward summary" in title or "pet adventure rewards" in author_name or "pet adventure rewards" in title
 
                 if bot_state.sleepet_mode:
                     if is_reward:

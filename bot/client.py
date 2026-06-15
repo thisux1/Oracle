@@ -476,6 +476,16 @@ class DiscordClient(discord.Client):
                         add_to_low_priority_queue("rpg pet claim")
                         HUD.system("Aventura do pet completa! Resgatando recompensas...")
 
+                    # Periodic pet summary fallback: send every 1.5h to 3h
+                    if (
+                        config.do_pet
+                        and not bot_state.sleepet_mode
+                        and current_time >= bot_state.next_pet_summary_check
+                    ):
+                        bot_state.next_pet_summary_check = current_time + randint(5400, 10800)
+                        add_to_low_priority_queue("rpg pet summary")
+                        HUD.system("Verificação periódica de pets: enviando rpg pet summary...")
+
                     if current_time - last_check >= 120:
                         last_check = current_time
                         add_to_low_priority_queue("rpg rd", suppress_log=True)
