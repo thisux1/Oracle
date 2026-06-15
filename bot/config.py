@@ -201,7 +201,14 @@ startTime = time.time()
 tc_stop_conditions = [x.strip().lower() for x in userOptions.get("tc_stop_on", "dungeon,miniboss").split(",") if x.strip()]
 sleep_at = userOptions.get("sleep_at", "")
 wake_up_at = userOptions.get("wake_up_at", "")
-theme = userOptions.get("theme", "cathedral")
+theme_raw = userOptions.get("theme", "cathedral").lower().strip()
+theme_map = {
+    "tokyo night": "tokyonight",
+    "rosé pine": "rosepine",
+    "rose pine": "rosepine",
+    "monokai pro": "monokai",
+}
+theme = theme_map.get(theme_raw, theme_raw)
 pet_adventure_command = normalize_pet_adventure_command(userOptions.get("pet_adventure_command", "rpg pet adv learn a"))
 
 # ─── Togglable Command Flags ───
@@ -218,6 +225,7 @@ do_dungeon  = userOptions.get("do_dungeon", "true").lower() == "true"
 do_card_hand = userOptions.get("do_card_hand", "true").lower() == "true"
 do_duel      = userOptions.get("do_duel", "false").lower() == "true"
 duel_partner_id = userOptions.get("duel_partner_id", "").strip()
+do_pet       = userOptions.get("do_pet", "true").lower() == "true"
 
 # ─── ULTR / Training ───
 do_ultr = userOptions.get("do_ultr", "false").lower() == "true"
@@ -291,7 +299,7 @@ def reload_config(profile_path=None):
     global do_lootbox, do_dungeon, do_card_hand, do_ultr, card_hand_action, tc_quantity
     global training_command_sequence, is_eternal, life_boost_before_adv, adventure_area
     global current_area, ADMIN_IDS, ALLOWED_IDS, eternal_tier, pet_adventure_command
-    global max_area, active_profile_path, do_duel, duel_partner_id
+    global max_area, active_profile_path, do_duel, duel_partner_id, do_pet
 
     if profile_path is not None:
         active_profile_path = profile_path
@@ -322,7 +330,14 @@ def reload_config(profile_path=None):
     tc_stop_conditions = [x.strip().lower() for x in userOptions.get("tc_stop_on", "dungeon,miniboss").split(",") if x.strip()]
     sleep_at = userOptions.get("sleep_at", "")
     wake_up_at = userOptions.get("wake_up_at", "")
-    theme = userOptions.get("theme", "cathedral")
+    theme_raw = userOptions.get("theme", "cathedral").lower().strip()
+    theme_map = {
+        "tokyo night": "tokyonight",
+        "rosé pine": "rosepine",
+        "rose pine": "rosepine",
+        "monokai pro": "monokai",
+    }
+    theme = theme_map.get(theme_raw, theme_raw)
     pet_adventure_command = normalize_pet_adventure_command(userOptions.get("pet_adventure_command", "rpg pet adv learn a"))
 
     do_hunt     = userOptions.get("do_hunt", "true").lower() == "true"
@@ -338,6 +353,7 @@ def reload_config(profile_path=None):
     do_card_hand = userOptions.get("do_card_hand", "true").lower() == "true"
     do_duel      = userOptions.get("do_duel", "false").lower() == "true"
     duel_partner_id = userOptions.get("duel_partner_id", "").strip()
+    do_pet       = userOptions.get("do_pet", "true").lower() == "true"
 
     do_ultr = userOptions.get("do_ultr", "false").lower() == "true"
     card_hand_action = userOptions.get("card_hand_action", "auto").lower()

@@ -72,6 +72,8 @@ CONFIG_METADATA = {
     "do_lootbox": "Habilitar compra de lootbox automática",
     "do_dungeon": "Habilitar dungeons automáticas",
     "do_card_hand": "Habilitar minijogo de mão de cartas",
+    "do_duel": "Habilitar duelo (duel) automático com o parceiro",
+    "duel_partner_id": "ID de Discord do parceiro para mencionar em rpg duel",
     "do_ultr": "ULTR Mode: envia apenas rpg ultr se for eternal (sobrescreve tr)",
     "card_hand_action": "Jogar cartas automaticamente ou apenas notificar",
     "tc_quantity": "Quantidade de cápsulas de tempo (TC) por uso",
@@ -86,6 +88,7 @@ CONFIG_METADATA = {
     "wake_up_at": "Horário para acordar (formato 24h, ex: 09:00)",
     "theme": "Tema visual a ser utilizado na interface TUI",
     "pet_adventure_command": "Comando de aventura do pet (ex: 'find epic', 'learn a', 'rpg pet adv find epic')",
+    "do_pet": "Habilitar a automação e coleta de aventuras de pets",
 }
 
 

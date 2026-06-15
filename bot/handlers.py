@@ -1057,9 +1057,37 @@ async def responseResolver(message):
                                 challenger_member = guild.get_member_named(challenger_name)
                                 if not challenger_member:
                                     for m in guild.members:
-                                        if m.name.lower() == challenger_name or (m.nick and m.nick.lower() == challenger_name):
+                                        if (m.name.lower() == challenger_name or 
+                                            (m.nick and m.nick.lower() == challenger_name) or
+                                            (getattr(m, "global_name", None) and m.global_name.lower() == challenger_name)):
                                             challenger_member = m
                                             break
+                                            
+                                # If not found in cache, fall back to fetching configured partner and admins to check display/global names
+                                if not challenger_member:
+                                    candidate_ids = []
+                                    if config.duel_partner_id:
+                                        try:
+                                            candidate_ids.append(int(config.duel_partner_id))
+                                        except ValueError:
+                                            pass
+                                    for admin_id in config.ADMIN_IDS:
+                                        if admin_id not in candidate_ids:
+                                            candidate_ids.append(admin_id)
+                                            
+                                    for cid in candidate_ids:
+                                        try:
+                                            m = await guild.fetch_member(cid)
+                                            if m and (
+                                                m.name.lower() == challenger_name or 
+                                                (m.nick and m.nick.lower() == challenger_name) or 
+                                                (getattr(m, "global_name", None) and m.global_name.lower() == challenger_name) or
+                                                (getattr(m, "display_name", None) and m.display_name.lower() == challenger_name)
+                                            ):
+                                                challenger_member = m
+                                                break
+                                        except Exception:
+                                            pass
                             
                             if challenger_member:
                                 challenger_id = challenger_member.id
@@ -1079,8 +1107,9 @@ async def responseResolver(message):
                             bot_state.duel_in_progress = True
                             bot_state.duel_step = "waiting_weapon"
                             bot_state.last_duel_time = time.time()
+                            bot_state.duel_channel_id = message.channel.id
                             add_to_high_priority_queue("yes")
-                            HUD.system("Duelo recebido! Aceitando com 'yes'. LPQ limpa.")
+                            HUD.system(f"Duelo recebido! Aceitando com 'yes' no canal {message.channel.id}. LPQ limpa.")
                             return
                         else:
                             HUD.system("Duelo ignorado (desafiante não autorizado).")
@@ -1092,7 +1121,8 @@ async def responseResolver(message):
                         bot_state.duel_in_progress = True
                         bot_state.duel_step = "waiting_confirmation"
                         bot_state.last_duel_time = time.time()
-                        HUD.system("Duelo enviado! Aguardando resposta do parceiro. LPQ limpa.")
+                        bot_state.duel_channel_id = message.channel.id
+                        HUD.system(f"Duelo enviado! Aguardando resposta do parceiro no canal {message.channel.id}. LPQ limpa.")
                         return
 
                 if bot_state.duel_in_progress:
@@ -1112,6 +1142,7 @@ async def responseResolver(message):
                             bot_state.duel_in_progress = False
                             bot_state.duel_step = None
                             bot_state.last_duel_time = 0
+                            bot_state.duel_channel_id = 0
                             HUD.system("Duelo concluído. Filas liberadas!")
                             return
                     
@@ -1120,6 +1151,7 @@ async def responseResolver(message):
                         bot_state.duel_in_progress = False
                         bot_state.duel_step = None
                         bot_state.last_duel_time = 0
+                        bot_state.duel_channel_id = 0
                         HUD.system("Duelo cancelado/recusado. Filas liberadas.")
                         return
 
@@ -1290,7 +1322,7 @@ async def responseResolver(message):
                     return
 
             # ─── Pet Embeds (Summary / Reward / Status) ───
-            if "— pets" in embed_text or "pet adventure rewards" in embed_text:
+            if config.do_pet and ("— pets" in embed_text or "pet adventure rewards" in embed_text):
                 is_reward = "reward summary" in embed_text or "pet adventure rewards" in embed_text
 
                 if bot_state.sleepet_mode:

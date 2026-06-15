@@ -142,10 +142,10 @@ class BotState:
         # Cooldown override/Dungeon
         self.ruby_dragon_state = None
         self.ruby_dragon_time = 0
-        # Duel State
         self.duel_in_progress = False
         self.duel_step = None  # None, "waiting_confirmation", "waiting_weapon", "finished"
         self.last_duel_time = 0
+        self.duel_channel_id = 0
         # Auto Enchant
         self.auto_enchant_active = False
         self.auto_enchant_tier = ""
@@ -450,10 +450,10 @@ def reset_bot_state():
     bot_state.sleepet_state = None
     bot_state.last_sleepet_cmd_time = 0
     bot_state.ruby_dragon_state = None
-    bot_state.ruby_dragon_time = 0
     bot_state.duel_in_progress = False
     bot_state.duel_step = None
     bot_state.last_duel_time = 0
+    bot_state.duel_channel_id = 0
     bot_state.pending_lootbox_buy = None
     bot_state.lootbox_fallback_triggered = False
     bot_state.has_bank_account = True

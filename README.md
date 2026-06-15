@@ -25,7 +25,16 @@ Uma interface desktop moderna com design premium glassmorphism, construída em *
 *   **Gerenciador de Perfis:** Salve, importe, exporte e alterne facilmente entre múltiplos perfis de configuração.
 *   **Modo Desktop Nativo:** Janela dedicada sem barra de navegação no Windows utilizando `pywebview` (com fallback automático para o navegador padrão).
 
+### 3. Recursos Avançados de Automação
+*   **Auto-Enchant Inteligente:** Loops automáticos de `rpg enchant`, `rpg refine`, `rpg transmute` ou `rpg transcend` até obter um encantamento desejado ou superior, com proteção financeira integrada (cancela se faltar gold).
+*   **Automação de Duelos:** Sistema inteligente com máquina de estados para duelar cooperativamente com uma conta parceira configurada (`duel_partner_id`).
+*   **Sleepet Mode:** Loop contínuo otimizado para envio e resgate de aventuras de pets.
+*   **Suporte a Eternal Player:** Entrada automática em dungeons Eternal e loop automático do comando `rpg bite` até a conclusão.
+*   **Ciclo de Sono (Sleep & Wake):** Desconexão do websocket e pausas durante a noite simulando horários reais de sono humana.
+*   **Recarregamento Dinâmico (Config Reload):** Monitora o arquivo de configuração e aplica alterações do `options.ini` dinamicamente sem necessidade de reiniciar o bot.
+
 ---
+
 
 ## Segurança e Diretrizes de Uso
 
@@ -125,9 +134,15 @@ Os comandos listados abaixo podem ser enviados pela CLI da TUI ou pelo chat do D
 | **`tc stop`** | Desativa o modo Time Cookie. |
 | **`g start`** | Inicia o modo gambling/coinflip com estratégia Fibonacci. |
 | **`g pause`** / **`g stop`** | Pausa o modo gambling/coinflip. |
+| **`sleepet start`** | Inicia o loop automático de Sleepet Mode (limpa LPQ, foca em aventuras de pets). |
+| **`sleepet stop`** | Para o loop de Sleepet Mode e restabelece a fila normal. |
+| **`<enchant/refine/transmute/transcend> <a/s> <enchant_name>`** | Auto-encanta espada (`s`) ou armadura (`a`) até atingir ou superar o nível desejado (ex: `refine s godly`). |
+| **`<enchant/refine/transmute/transcend> stop`** | Cancela o processo de encantamento automático. |
+| **`log`** | Envia o arquivo .log da sessão atual (ou os últimos 5MB dele). |
 | **`cfg <chave> <valor>`** | Modifica dinamicamente uma configuração em tempo real e a salva no `options.ini` (ex: `cfg do_hunt false`). |
 | **`theme`** | Abre a tela de escolha de temas visuais (TUI). |
 | **`exit`** / **`quit`** | Encerra com segurança o bot e a interface. |
+
 
 ### Atalhos Rápidos (Discord Self-bot)
 Se você estiver digitando diretamente da sua conta no canal do Discord, o bot também responderá a comandos que se passam por mensagens de RPG normais:

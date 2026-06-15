@@ -531,6 +531,7 @@ CONFIG_SCHEMA = [
         ("do_dungeon", "bool", "true"),
         ("do_card_hand", "bool", "true"),
         ("do_duel", "bool", "false"),
+        ("do_pet", "bool", "true"),
     ]),
     ("🧪 Advanced", [
         ("do_ultr", "bool", "false"),
@@ -546,7 +547,7 @@ CONFIG_SCHEMA = [
         ("tc_stop_on", "text", "dungeon,miniboss"),
         ("sleep_at", "text", "none"),
         ("wake_up_at", "text", "none"),
-        ("theme", "dropdown", "dracula", ["cathedral", "dracula", "nord", "monokai pro", "gruvbox", "catppuccin", "tokyo night", "rosé pine", "solarized", "cyberpunk"]),
+        ("theme", "dropdown", "dracula", ["cathedral", "dracula", "nord", "monokai", "gruvbox", "catppuccin", "tokyonight", "rosepine", "solarized", "cyberpunk"]),
     ]),
 ]
 
@@ -564,6 +565,7 @@ def load_example_comments() -> dict[str, str]:
         "do_dungeon": "Habilitar dungeons automáticas",
         "do_card_hand": "Habilitar jogo card hand automático",
         "do_duel": "Habilitar duelo (duel) automático com o parceiro",
+        "do_pet": "Habilitar a automação e coleta de aventuras de pets",
         "duel_partner_id": "ID de Discord do parceiro para mencionar em rpg duel",
         "is_married": "Habilitar suporte a casamento/casado no Epic RPG",
         "partner_name": "Nome do parceiro(a) no jogo",
@@ -645,7 +647,22 @@ class ConfigModal(ModalScreen):
                     ctrl = Switch(value=switch_val, id=f"cfg_{key}")
                 elif ftype == "dropdown":
                     options = field[3]
-                    select_options = [(opt, opt) for opt in options]
+                    if key == "theme":
+                        theme_labels = {
+                            "cathedral": "Cathedral",
+                            "dracula": "Dracula",
+                            "nord": "Nord",
+                            "monokai": "Monokai Pro",
+                            "gruvbox": "Gruvbox",
+                            "catppuccin": "Catppuccin",
+                            "tokyonight": "Tokyo Night",
+                            "rosepine": "Rosé Pine",
+                            "solarized": "Solarized",
+                            "cyberpunk": "Cyberpunk"
+                        }
+                        select_options = [(theme_labels.get(opt, opt), opt) for opt in options]
+                    else:
+                        select_options = [(opt, opt) for opt in options]
                     select_val = curr_val if curr_val in options else options[0]
                     ctrl = Select(options=select_options, value=select_val, id=f"cfg_{key}", allow_blank=False)
                 else:

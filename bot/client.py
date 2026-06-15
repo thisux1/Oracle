@@ -111,8 +111,9 @@ class DiscordClient(discord.Client):
         if not self._ready_initialized:
             self._ready_initialized = True
             # Add rpg pet summary to queue at startup to sync pet timers
-            add_to_low_priority_queue("rpg pet summary")
-            logger.info("Queued 'rpg pet summary' at session start.")
+            if config.do_pet:
+                add_to_low_priority_queue("rpg pet summary")
+                logger.info("Queued 'rpg pet summary' at session start.")
         
         # Cancel existing telegram listener task before creating a new one
         # (on_ready fires on every reconnect, which would otherwise spawn duplicate loops)
@@ -302,7 +303,20 @@ class DiscordClient(discord.Client):
                         bot_state.duel_in_progress = False
                         bot_state.duel_step = None
                         bot_state.last_duel_time = 0
+                        bot_state.duel_channel_id = 0
                         HUD.system("Timeout do Duel (60s). Filas liberadas.")
+
+                    # Resolve channel to send commands (respecting duel channel if in progress)
+                    active_channel = channel
+                    if bot_state.duel_in_progress and getattr(bot_state, "duel_channel_id", 0):
+                        duel_chan = self.get_channel(bot_state.duel_channel_id)
+                        if not duel_chan:
+                            try:
+                                duel_chan = await self.fetch_channel(bot_state.duel_channel_id)
+                            except Exception:
+                                pass
+                        if duel_chan:
+                            active_channel = duel_chan
 
                     if current_time <= bot_state.minigame_pending_until:
                         # During a minigame, only allow the answer through HPQ
@@ -314,7 +328,7 @@ class DiscordClient(discord.Client):
                                 highPriorityQueueSet.discard(cmd_to_send)
                                 bot_state.no_response_count += 1
                                 HUD.command(cmd_to_send, "HPQ-MG")
-                                await send_with_typo_chance(channel, cmd_to_send, "HPQ-MG")
+                                await send_with_typo_chance(active_channel, cmd_to_send, "HPQ-MG")
                                 break
                         # else: wait silently for minigame to resolve
                     elif bot_state.cardhand_in_progress:
@@ -330,7 +344,7 @@ class DiscordClient(discord.Client):
                                     cmd_to_send = highPriorityQueue.pop(i)
                                     highPriorityQueueSet.discard(cmd_to_send)
                                     HUD.command(cmd_to_send, "HPQ-CH")
-                                    await send_with_typo_chance(channel, cmd_to_send, "HPQ-CH")
+                                    await send_with_typo_chance(active_channel, cmd_to_send, "HPQ-CH")
                                     break
                     elif current_time < bot_state.response_pending_until:
                         # Waiting for Epic RPG to respond to previous rpg command.
@@ -343,7 +357,7 @@ class DiscordClient(discord.Client):
                                 bot_state.no_response_count += 1
                                 bot_state.response_pending_until = current_time + 5.0
                                 HUD.command(cmd_to_send, "HPQ-RP")
-                                await send_with_typo_chance(channel, cmd_to_send, "HPQ-RP")
+                                await send_with_typo_chance(active_channel, cmd_to_send, "HPQ-RP")
                                 break
                         # else: wait for response before sending next rpg command
                     elif bot_state.duel_in_progress:
@@ -355,7 +369,7 @@ class DiscordClient(discord.Client):
                                 highPriorityQueueSet.discard(cmd_to_send)
                                 bot_state.no_response_count += 1
                                 HUD.command(cmd_to_send, "HPQ-DL")
-                                await send_with_typo_chance(channel, cmd_to_send, "HPQ-DL")
+                                await send_with_typo_chance(active_channel, cmd_to_send, "HPQ-DL")
                                 break
                         # else: wait for duel to finish
                     elif highPriorityQueue:
@@ -395,7 +409,7 @@ class DiscordClient(discord.Client):
                             if is_sleepet_command(cmd):
                                 bot_state.last_sleepet_cmd_time = current_time
                             HUD.command(cmd, "HPQ")
-                            await send_with_typo_chance(channel, cmd, "HPQ")
+                            await send_with_typo_chance(active_channel, cmd, "HPQ")
                     elif lowPriorityQueue and bot_state.gambling_paused and not bot_state.duel_in_progress and not bot_state.auto_enchant_active:
                         await human_delay(1.5, 2.5)
                         cmd = lowPriorityQueue.pop(0)
@@ -419,7 +433,7 @@ class DiscordClient(discord.Client):
                             if is_sleepet_command(cmd):
                                 bot_state.last_sleepet_cmd_time = current_time
                             HUD.command(cmd, "LPQ")
-                            await send_with_typo_chance(channel, cmd, "LPQ")
+                            await send_with_typo_chance(active_channel, cmd, "LPQ")
                     else:
                         if bot_state.sleepet_mode:
                             current_time = time.time()
@@ -453,7 +467,8 @@ class DiscordClient(discord.Client):
 
                     # Pet Adventure: auto-claim when timer expires
                     if (
-                        not bot_state.sleepet_mode
+                        config.do_pet
+                        and not bot_state.sleepet_mode
                         and bot_state.pet_adventure_return_time > 0
                         and current_time >= bot_state.pet_adventure_return_time
                     ):
@@ -649,31 +664,28 @@ class DiscordClient(discord.Client):
                     else:
                         await message.channel.send("⚠️ Não foi possível determinar o arquivo de opções.")
                     return
-                elif cmd in ["ajuda", "tutorial"]:
+                elif cmd in ["ajuda", "tutorial", "help"]:
+
                     tutorial_msg = (
                         "📚 **Tutorial Oracle v2**\n\n"
                         "**Comandos de Controle:**\n"
                         "• `sb start` / `sb pause`: Inicia ou pausa a execução do bot\n"
                         "• `sb reset`: Limpa todas as filas e reseta variáveis de estado\n"
-                        "• `sb tc start [Xc] [m]`: Ativa modo Time Cookie. "
-                        "Ex: `sb tc start 4c 60m` (4 cookies, 60 min). "
+                        "• `sb tc start [Xc] [m]`: Ativa modo Time Cookie. Ex: `sb tc start 4c 60m` (4 cookies, 60 min)\n"
                         "• `sb tc stop`: Desativa o modo Time Cookie\n"
                         "• `sb g start` / `sb g pause`: Inicia ou pausa o gambling (Fibonacci)\n"
-                        "• `sb stats [tempo]`: Mostra progresso, loot e status da sessão. "
-                        "Ex: `sb stats 7d` (últimos 7 dias). Dados persistem entre reboots!\n"
+                        "• `sb sleepet start` / `sb sleepet stop`: Inicia ou encerra o loop automático do Sleepet Mode\n"
+                        "• `sb <enchant/refine/transmute/transcend> <a/s> <enchant_name>`: Auto-encanta arma (`s`) ou armadura (`a`) até atingir ou superar o nível desejado (ex: `sb refine s godly`)\n"
+                        "• `sb <enchant/refine/transmute/transcend> stop`: Interrompe o encantamento automático\n"
+                        "• `sb stats [tempo]`: Mostra progresso, loot e status da sessão. Ex: `sb stats 7d` (últimos 7 dias)\n"
                         "• `sb say [texto]`: Envia uma mensagem no canal configurado\n"
                         "• `sb log`: Envia o arquivo .log da sessão atual (ou os últimos 5MB dele)\n\n"
                         "**Configurações (options.ini):**\n"
-                        "• `do_hunt`, `do_adv`, `do_farm`, etc: Liga/desliga comandos "
-                        "individuais sem editar o código\n"
-                        "• `do_ultr`: Substitui training pela sequência ULTR "
-                        "(rpg ultr, ou rpg ultr → double → attack se não for eternal)\n"
-                        "• `is_eternal`: Habilita auto-enter em dungeon e bite loop "
-                        "automático no dragão eternal\n"
-                        "• `card_hand_action`: `auto` (joga via IA) ou "
-                        "`notify` (só notifica Telegram pra jogar manual)\n"
-                        "• `tc_quantity`: Quantidade padrão de cookies por uso. "
-                        "Sobrescrito via `sb tc start Xc`\n"
+                        "• `do_hunt`, `do_adv`, `do_farm`, etc: Liga/desliga comandos individuais sem editar o código\n"
+                        "• `do_ultr`: Substitui training pela sequência ULTR (rpg ultr, ou rpg ultr → double → attack se não for eternal)\n"
+                        "• `is_eternal`: Habilita auto-enter em dungeon e bite loop automático no dragão eternal\n"
+                        "• `card_hand_action`: `auto` (joga via IA) ou `notify` (só notifica Telegram pra jogar manual)\n"
+                        "• `tc_quantity`: Quantidade padrão de cookies por uso. Sobrescrito via `sb tc start Xc`\n"
                         "• `life_boost_before_adv`: Compra life boost antes de adventure\n"
                         "• `adventure_area` / `current_area`: Troca de área no adv\n"
                         "• `user_id` / `channel_id` / `admin_ids`: IDs fundamentais\n"
@@ -686,6 +698,7 @@ class DiscordClient(discord.Client):
                         "• `bankroll` / `max_losses` / `initial_step`: Gambling (Fibonacci)\n"
                         "• `daysToCloseVoid`: Quantidade de dias para fechamento da área atual (void tr)"
                     )
+
                     await message.channel.send(tutorial_msg)
                     return
                 elif cmd.startswith("stats"):
@@ -730,7 +743,16 @@ class DiscordClient(discord.Client):
         content_to_log = combined_content.strip()
 
         # ─── 2. Channel Filter ───
-        if message.channel.id != config.channelID and not (
+        is_duel_message = False
+        if message.author.id == config.EPIC_RPG_ID and config.do_duel:
+            # Case A: Duel request received for us in any channel
+            if "will you accept" in combined_content and f"will you accept, {config.user_name_lower}" in combined_content:
+                is_duel_message = True
+            # Case B: Subsequent message for an active duel we are participating in
+            elif bot_state.duel_in_progress and getattr(bot_state, "duel_channel_id", 0) == message.channel.id:
+                is_duel_message = True
+
+        if message.channel.id != config.channelID and not is_duel_message and not (
             isinstance(message.channel, discord.DMChannel)
             and message.author.id in config.ADMIN_IDS
         ):
