@@ -21,6 +21,8 @@ stats_totals.json
 session_baseline*.json
 TUI_PLAN.md
 
+AGENTS.md
+
 # Build artifacts
 build_windows/
 Output/

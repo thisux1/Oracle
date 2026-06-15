@@ -2,6 +2,7 @@ import re
 import os
 import time
 import warnings
+from typing import Optional
 warnings.simplefilter("ignore", category=UserWarning)
 import numpy as np
 from PIL import Image
@@ -292,7 +293,7 @@ lootbox_drop_regex = re.compile(
 )
 
 
-def reload_config(profile_path=None):
+def reload_config(profile_path: Optional[str] = None) -> None:
     global userOptions, userToken, channelID, randomIntervals, is_married, partner_name
     global is_ascended, farm_seed, user_name_lower, TelegramBotToken, TelegramChatID
     global typo_chance, GUILD_ID, tc_stop_conditions, sleep_at, wake_up_at, theme

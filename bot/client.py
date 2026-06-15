@@ -1,4 +1,5 @@
 import warnings
+from typing import Optional
 warnings.simplefilter("ignore", category=RuntimeWarning)
 import discord
 import asyncio
@@ -32,7 +33,40 @@ from bot.captcha import tentar_resolver_captcha, set_client
 from bot.handlers import responseResolver
 from bot.parsers import format_session_data
 from bot.persistence import save_session_data, get_stats_for_period
-def parse_neon_recommendation(embed_dict):
+
+# ─── Constants ───
+CONFIG_RELOAD_CHECK_INTERVAL = 3.0
+WATCHDOG_NO_RESPONSE_LIMIT = 3
+WATCHDOG_COOLDOWN_MIN = 45
+WATCHDOG_COOLDOWN_MAX = 90
+CURIOSITY_TRIGGER_PERCENT = 5
+CURIOSITY_COOLDOWN = 300
+DUEL_TIMEOUT = 60
+CARD_HAND_TIMEOUT = 120
+RESPONSE_PENDING_DURATION = 5.0
+ANTI_SPAM_WINDOW = 5.0
+SLEEPET_STATE_TIMEOUT = 20
+TC_REUSE_INTERVAL = 2
+DUNGEON_TIMEOUT = 60
+MAIN_LOOP_SLEEP = 0.5
+DISCORD_FILE_SIZE_LIMIT = 8 * 1024 * 1024
+TRUNCATED_LOG_SIZE = 5 * 1024 * 1024
+COFFEE_BREAK_DURATION_MIN = 300
+COFFEE_BREAK_DURATION_MAX = 900
+COFFEE_BREAK_INTERVAL_MIN = 3600
+COFFEE_BREAK_INTERVAL_MAX = 7200
+MAINTENANCE_COOLDOWN_MIN = 45
+MAINTENANCE_COOLDOWN_MAX = 90
+LOOTBOX_COOLDOWN = 1800
+RD_INTERVAL = 120
+SAVE_INTERVAL = 300
+TELEGRAM_GETUPDATES_TIMEOUT = 10
+TELEGRAM_HTTP_TIMEOUT = 15
+TELEGRAM_CALLBACK_TIMEOUT = 2
+TELEGRAM_POLL_INTERVAL = 3
+
+
+def parse_neon_recommendation(embed_dict: dict) -> Optional[str]:
     embed_text = str(embed_dict).lower()
     if "expected tc per choice" not in embed_text:
         return None
@@ -58,7 +92,7 @@ def parse_neon_recommendation(embed_dict):
 
 
 class DiscordClient(discord.Client):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         # Deduplication cache: tracks recently processed message IDs
         # to prevent on_message_edit from re-processing messages
@@ -68,7 +102,7 @@ class DiscordClient(discord.Client):
         self._PROCESSED_MSG_CACHE_SIZE = 200
         self._ready_initialized = False  # Guard for one-time on_ready actions
 
-    def _track_processed_message(self, message_id):
+    def _track_processed_message(self, message_id: int) -> None:
         """Add a message ID to the deduplication cache."""
         if message_id in self._processed_msg_ids:
             return
@@ -186,8 +220,8 @@ class DiscordClient(discord.Client):
             try:
                 current_time = time.time()
 
-                # Dynamic config reload check
-                if current_time - last_mtime_check_time > 3.0:
+                # Dynamic config reload check (skip until on_ready completes)
+                if self._ready_initialized and current_time - last_mtime_check_time > CONFIG_RELOAD_CHECK_INTERVAL:
                     last_mtime_check_time = current_time
                     try:
                         if config.active_profile_path and os.path.exists(config.active_profile_path):
@@ -218,12 +252,12 @@ class DiscordClient(discord.Client):
                 # Stealth: Coffee Breaks
                 if bot_state.paused or bot_state.jailed:
                     if current_time > bot_state.next_break_time:
-                        bot_state.next_break_time = current_time + randint(3600, 7200)
+                        bot_state.next_break_time = current_time + randint(COFFEE_BREAK_INTERVAL_MIN, COFFEE_BREAK_INTERVAL_MAX)
                 elif (
                     current_time > bot_state.next_break_time
                     and not bot_state.is_on_coffee_break
                 ):
-                    break_duration = randint(300, 900)
+                    break_duration = randint(COFFEE_BREAK_DURATION_MIN, COFFEE_BREAK_DURATION_MAX)
                     bot_state.is_on_coffee_break = True
                     bot_state.coffee_break_end_time = time.time() + break_duration
                     
@@ -241,14 +275,14 @@ class DiscordClient(discord.Client):
                     
                     await asyncio.sleep(break_duration)
                     bot_state.is_on_coffee_break = False
-                    bot_state.next_break_time = time.time() + randint(3600, 7200)
+                    bot_state.next_break_time = time.time() + randint(COFFEE_BREAK_INTERVAL_MIN, COFFEE_BREAK_INTERVAL_MAX)
                     HUD.system("Fim da pausa. Retomando.")
 
                 # Watchdog: Emergency Pause
-                if bot_state.no_response_count >= 3:
+                if bot_state.no_response_count >= WATCHDOG_NO_RESPONSE_LIMIT:
                     bot_state.paused = True
                     bot_state.no_response_count = 0
-                    cooldown_minutes = randint(45, 90)
+                    cooldown_minutes = randint(WATCHDOG_COOLDOWN_MIN, WATCHDOG_COOLDOWN_MAX)
                     bot_state.watchdog_paused_until = current_time + (cooldown_minutes * 60)
                     highPriorityQueue.clear()
                     highPriorityQueueSet.clear()
@@ -270,9 +304,9 @@ class DiscordClient(discord.Client):
                     if (
                         not highPriorityQueue
                         and not lowPriorityQueue
-                        and (current_time - bot_state.last_curiosity_time) > 300
+                        and (current_time - bot_state.last_curiosity_time) > CURIOSITY_COOLDOWN
                     ):
-                        if randint(1, 100) <= 5:
+                        if randint(1, 100) <= CURIOSITY_TRIGGER_PERCENT:
                             curiosity_cmd = ["rpg i", "rpg p", "rpg cd"][
                                 randint(0, 2)
                             ]
@@ -299,12 +333,12 @@ class DiscordClient(discord.Client):
                                     sessionData["command_data"]["work"] += 1
                         save_session_data(sessionData)
 
-                    if bot_state.duel_in_progress and bot_state.last_duel_time > 0 and current_time - bot_state.last_duel_time > 60:
+                    if bot_state.duel_in_progress and bot_state.last_duel_time > 0 and current_time - bot_state.last_duel_time > DUEL_TIMEOUT:
                         bot_state.duel_in_progress = False
                         bot_state.duel_step = None
                         bot_state.last_duel_time = 0
                         bot_state.duel_channel_id = 0
-                        HUD.system("Timeout do Duel (60s). Filas liberadas.")
+                        HUD.system(f"Timeout do Duel ({DUEL_TIMEOUT}s). Filas liberadas.")
 
                     # Resolve channel to send commands (respecting duel channel if in progress)
                     active_channel = channel
@@ -334,9 +368,9 @@ class DiscordClient(discord.Client):
                     elif bot_state.cardhand_in_progress:
                         # Card Hand active — only allow non-rpg HPQ commands (e.g. "pass")
                         # Safety timeout: reset after 120s
-                        if current_time - bot_state.cardhand_start_time > 120:
+                        if current_time - bot_state.cardhand_start_time > CARD_HAND_TIMEOUT:
                             bot_state.cardhand_in_progress = False
-                            HUD.system("Timeout do Card Hand (120s). Filas liberadas.")
+                            HUD.system(f"Timeout do Card Hand ({CARD_HAND_TIMEOUT}s). Filas liberadas.")
                         else:
                             for i, cmd in enumerate(highPriorityQueue):
                                 if not cmd.lower().startswith("rpg"):
@@ -355,7 +389,7 @@ class DiscordClient(discord.Client):
                                 cmd_to_send = highPriorityQueue.pop(i)
                                 highPriorityQueueSet.discard(cmd_to_send)
                                 bot_state.no_response_count += 1
-                                bot_state.response_pending_until = current_time + 5.0
+                                bot_state.response_pending_until = current_time + RESPONSE_PENDING_DURATION
                                 HUD.command(cmd_to_send, "HPQ-RP")
                                 await send_with_typo_chance(active_channel, cmd_to_send, "HPQ-RP")
                                 break
@@ -391,7 +425,7 @@ class DiscordClient(discord.Client):
                         
                         await human_delay(1.5, 2.0)
                         current_time = time.time()
-                        if cmd == bot_state.last_sent_command and (current_time - bot_state.last_sent_time) < 5.0 and not cmd.startswith("rpg cf") and not is_sleepet_command(cmd):
+                        if cmd == bot_state.last_sent_command and (current_time - bot_state.last_sent_time) < ANTI_SPAM_WINDOW and not cmd.startswith("rpg cf") and not is_sleepet_command(cmd):
                             HUD.system(f"Comando duplicado '{cmd}' ignorado (Anti-Spam).")
                         else:
                             # Set card hand lock BEFORE sending the command
@@ -405,7 +439,7 @@ class DiscordClient(discord.Client):
                             bot_state.last_sent_command = cmd
                             bot_state.last_sent_time = current_time
                             if cmd.lower().startswith("rpg"):
-                                bot_state.response_pending_until = current_time + 5.0
+                                bot_state.response_pending_until = current_time + RESPONSE_PENDING_DURATION
                             if is_sleepet_command(cmd):
                                 bot_state.last_sleepet_cmd_time = current_time
                             HUD.command(cmd, "HPQ")
@@ -415,7 +449,7 @@ class DiscordClient(discord.Client):
                         cmd = lowPriorityQueue.pop(0)
                         lowPriorityQueueSet.discard(cmd)
                         current_time = time.time()
-                        if cmd == bot_state.last_sent_command and (current_time - bot_state.last_sent_time) < 5.0 and not cmd.startswith("rpg cf") and not is_sleepet_command(cmd):
+                        if cmd == bot_state.last_sent_command and (current_time - bot_state.last_sent_time) < ANTI_SPAM_WINDOW and not cmd.startswith("rpg cf") and not is_sleepet_command(cmd):
                             HUD.system(f"Comando duplicado '{cmd}' ignorado (Anti-Spam).")
                         else:
                             # Set card hand lock BEFORE sending the command (if queued in LPQ too)
@@ -429,7 +463,7 @@ class DiscordClient(discord.Client):
                             bot_state.last_sent_command = cmd
                             bot_state.last_sent_time = current_time
                             if cmd.lower().startswith("rpg"):
-                                bot_state.response_pending_until = current_time + 5.0
+                                bot_state.response_pending_until = current_time + RESPONSE_PENDING_DURATION
                             if is_sleepet_command(cmd):
                                 bot_state.last_sleepet_cmd_time = current_time
                             HUD.command(cmd, "LPQ")
@@ -442,7 +476,7 @@ class DiscordClient(discord.Client):
                                 bot_state.last_sleepet_cmd_time = current_time
                                 add_to_high_priority_queue("rpg pet summary")
                                 HUD.system("[Sleepet] State machine started with summary command.")
-                            elif current_time - bot_state.last_sleepet_cmd_time > 20:
+                            elif current_time - bot_state.last_sleepet_cmd_time > SLEEPET_STATE_TIMEOUT:
                                 HUD.alert(f"[Sleepet] State '{bot_state.sleepet_state}' timed out! Re-syncing with pet summary...")
                                 bot_state.sleepet_state = "waiting_summary"
                                 bot_state.last_sleepet_cmd_time = current_time
@@ -453,14 +487,14 @@ class DiscordClient(discord.Client):
                                 bot_state.tc_end_time = 0
                                 HUD.system("Modo Time Cookie expirado.")
                                 await send_telegram_notification("⏳ Modo Time Cookie desativado automaticamente (tempo esgotado).")
-                            elif not highPriorityQueue and not lowPriorityQueue and current_time - bot_state.last_tc_use_time > 2:
+                            elif not highPriorityQueue and not lowPriorityQueue and current_time - bot_state.last_tc_use_time > TC_REUSE_INTERVAL:
                                 bot_state.last_tc_use_time = current_time
                                 add_to_high_priority_queue(f"rpg use tc {bot_state.tc_quantity}")
                                 add_to_low_priority_queue("rpg rd", suppress_log=True)
                                 HUD.tc(f"Ciclo: use tc {bot_state.tc_quantity} -> rd")
 
                     # Dungeon State: timeout safety
-                    if bot_state.dungeon_in_progress and current_time - bot_state.last_dungeon_time > 60:
+                    if bot_state.dungeon_in_progress and current_time - bot_state.last_dungeon_time > DUNGEON_TIMEOUT:
                         bot_state.dungeon_in_progress = False
                         bot_state.dragon_alive = False
                         HUD.dungeon("Timeout do estado, resetando.")
@@ -486,12 +520,12 @@ class DiscordClient(discord.Client):
                         add_to_low_priority_queue("rpg pet summary")
                         HUD.system("Verificação periódica de pets: enviando rpg pet summary...")
 
-                    if current_time - last_check >= 120:
+                    if current_time - last_check >= RD_INTERVAL:
                         last_check = current_time
                         add_to_low_priority_queue("rpg rd", suppress_log=True)
                         logger.info("Command rpg rd queued")
 
-                    if current_time - bot_state.last_save_time >= 300:
+                    if current_time - bot_state.last_save_time >= SAVE_INTERVAL:
                         is_hourly = False
                         if current_time - getattr(bot_state, "last_snapshot_time", 0) >= 3600:
                             is_hourly = True
@@ -505,7 +539,7 @@ class DiscordClient(discord.Client):
                 logger.error(
                     f"Error in background task: {e}\n{traceback.format_exc()}"
                 )
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(MAIN_LOOP_SLEEP)
 
     async def on_message(self, message):
         # ─── 0. Manual Commands (sb prefix — always processed) ───
@@ -654,11 +688,11 @@ class DiscordClient(discord.Client):
                             try:
                                 file_size = os.path.getsize(log_path)
                                 # Discord file limit is 8MB
-                                if file_size <= 8 * 1024 * 1024:
+                                if file_size <= DISCORD_FILE_SIZE_LIMIT:
                                     await message.channel.send(file=discord.File(log_path))
                                 else:
                                     with open(log_path, "rb") as f:
-                                        f.seek(-5 * 1024 * 1024, os.SEEK_END)
+                                        f.seek(-TRUNCATED_LOG_SIZE, os.SEEK_END)
                                         log_data = f.read()
                                     stream = io.BytesIO(log_data)
                                     filename = os.path.basename(log_path)
@@ -753,16 +787,21 @@ class DiscordClient(discord.Client):
         content_to_log = combined_content.strip()
 
         # ─── 2. Channel Filter ───
-        is_duel_message = False
+        is_invite = False
         if message.author.id == config.EPIC_RPG_ID:
-            # Case A: Duel request received for us in any channel
-            if "will you accept" in combined_content and f"will you accept, {config.user_name_lower}" in combined_content:
-                is_duel_message = True
-            # Case B: Subsequent message for an active duel we are participating in
-            elif bot_state.duel_in_progress and getattr(bot_state, "duel_channel_id", 0) == message.channel.id:
-                is_duel_message = True
+            # Invite/challenge patterns that require cross-channel delivery
+            invite_keywords = ["will you accept", "do you want to join"]
+            has_invite = any(kw in combined_content for kw in invite_keywords)
+            has_my_name = config.user_name_lower in combined_content
 
-        if message.channel.id != config.channelID and not is_duel_message and not (
+            # Case A: New invite addressed to us
+            if has_invite and has_my_name:
+                is_invite = True
+            # Case B: Subsequent message for an active invite in the same channel
+            elif bot_state.duel_in_progress and getattr(bot_state, "duel_channel_id", 0) == message.channel.id:
+                is_invite = True
+
+        if message.channel.id != config.channelID and not is_invite and not (
             isinstance(message.channel, discord.DMChannel)
             and message.author.id in config.ADMIN_IDS
         ):
@@ -779,7 +818,7 @@ class DiscordClient(discord.Client):
                 if not bot_state.paused:
                     bot_state.paused = True
                     bot_state.no_response_count = 0
-                    maint_cooldown_minutes = randint(45, 90)
+                    maint_cooldown_minutes = randint(MAINTENANCE_COOLDOWN_MIN, MAINTENANCE_COOLDOWN_MAX)
                     bot_state.watchdog_paused_until = time.time() + (maint_cooldown_minutes * 60)
                     highPriorityQueue.clear()
                     highPriorityQueueSet.clear()
@@ -1015,7 +1054,7 @@ class DiscordClient(discord.Client):
                     add_to_high_priority_queue("rpg deposit all")
                     return
 
-                bot_state.lootbox_cooldown_until = time.time() + 1800
+                bot_state.lootbox_cooldown_until = time.time() + LOOTBOX_COOLDOWN
                 if "don't have a bank account" in combined_content:
                     bot_state.has_bank_account = False
                 HUD.alert(
@@ -1294,8 +1333,8 @@ class DiscordClient(discord.Client):
                 from bot.telegram import _get_session
                 session = _get_session()
                 url = f"https://api.telegram.org/bot{config.TelegramBotToken}/getUpdates"
-                params = {"offset": last_update_id + 1, "timeout": 10}
-                async with session.get(url, params=params, timeout=15) as resp:
+                params = {"offset": last_update_id + 1, "timeout": TELEGRAM_GETUPDATES_TIMEOUT}
+                async with session.get(url, params=params, timeout=TELEGRAM_HTTP_TIMEOUT) as resp:
                     data = await resp.json()
                     if data.get("ok") and data.get("result"):
                         for update in data["result"]:
@@ -1314,7 +1353,7 @@ class DiscordClient(discord.Client):
                                     cb_id = cb.get("id")
                                     ans_url = f"https://api.telegram.org/bot{config.TelegramBotToken}/answerCallbackQuery"
                                     try:
-                                        await session.post(ans_url, json={"callback_query_id": cb_id}, timeout=2)
+                                        await session.post(ans_url, json={"callback_query_id": cb_id}, timeout=TELEGRAM_CALLBACK_TIMEOUT)
                                     except Exception:
                                         pass
                                 continue
@@ -1331,7 +1370,7 @@ class DiscordClient(discord.Client):
             except Exception as e:
                 logger.error(f"Erro no loop de comandos do Telegram: {e}")
                 
-            await asyncio.sleep(3)
+            await asyncio.sleep(TELEGRAM_POLL_INTERVAL)
 
     async def handle_telegram_command(self, text):
         cmd = text.lower().strip()

@@ -241,11 +241,14 @@ async def rdCheckNavi(message):
                 elif cmd in ["pickup", "chop", "fish", "mine"] and config.do_work:
                     add_to_low_priority_queue(f"rpg {cmd}", suppress_log=True)
                     logger.info(f"Command 'rpg {cmd}' added to LPQ from Navi Lite.")
-                elif cmd == "duel" and config.do_duel and config.win_duel:
-                    partner_id = config.duel_partner_id
-                    if partner_id and not bot_state.duel_in_progress:
-                        add_to_low_priority_queue(f"rpg duel <@{partner_id}>")
-                        logger.info(f"Duel queued from Navi Lite: rpg duel <@{partner_id}>")
+                elif cmd == "duel" and config.do_duel:
+                    if bot_state.duel_fail_count >= 2:
+                        logger.info("Auto-duel blocked (2 consecutive failures).")
+                    else:
+                        partner_id = config.duel_partner_id
+                        if partner_id and not bot_state.duel_in_progress:
+                            add_to_low_priority_queue(f"rpg duel <@{partner_id}>")
+                            logger.info(f"Duel queued from Navi Lite: rpg duel <@{partner_id}>")
                 break
 
 
@@ -449,11 +452,14 @@ async def rdCheckEpicRPG(message):
                         add_to_high_priority_queue("rpg quest")
                         HUD.system("Quest pronta! Enfileirada na HPQ.")
 
-                    elif cmd_type == "duel" and config.do_duel and config.win_duel:
-                        partner_id = config.duel_partner_id
-                        if partner_id and not bot_state.duel_in_progress:
-                            add_to_low_priority_queue(f"rpg duel <@{partner_id}>")
-                            logger.info(f"Command 'rpg duel <@{partner_id}>' added to LPQ from Epic RPG rd.")
+                    elif cmd_type == "duel" and config.do_duel:
+                        if bot_state.duel_fail_count >= 2:
+                            logger.info("Auto-duel blocked from Epic RPG rd (2 consecutive failures).")
+                        else:
+                            partner_id = config.duel_partner_id
+                            if partner_id and not bot_state.duel_in_progress:
+                                add_to_low_priority_queue(f"rpg duel <@{partner_id}>")
+                                logger.info(f"Command 'rpg duel <@{partner_id}>' added to LPQ from Epic RPG rd.")
 
                     else:
                         cmd = f"rpg {cmd_type}"

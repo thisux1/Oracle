@@ -1,13 +1,14 @@
 import time
 import random
 import asyncio
+from typing import Optional
 from random import randint
 from bot.hud import logger
 import bot.config as config
 
 
 class CoinFlipFibonacci:
-    def __init__(self, bankroll, max_losses, initial_step=1):
+    def __init__(self, bankroll: int, max_losses: int, initial_step: int = 1):
         self.bankroll = bankroll
         self.max_losses = max_losses
         self.step = initial_step
@@ -16,7 +17,7 @@ class CoinFlipFibonacci:
         self.profit = 0
         self.consecutive_losses = 0
 
-    def generate_fib_sequence(self, n):
+    def generate_fib_sequence(self, n: int) -> list:
         if n <= 0:
             return []
         fib = [1, 1]
@@ -26,7 +27,7 @@ class CoinFlipFibonacci:
             fib.append(fib[i - 1] + fib[i - 2])
         return fib
 
-    def update_base_unit(self):
+    def update_base_unit(self) -> None:
         sum_fib = sum(self.fib_sequence)
         self.base_unit = self.bankroll // sum_fib if sum_fib > 0 else 0
         self.current_bet = (
@@ -35,7 +36,7 @@ class CoinFlipFibonacci:
             else 0
         )
 
-    def win(self):
+    def win(self) -> None:
         current_bet = self.current_bet
         if self.step <= 2:
             self.step = 1
@@ -45,7 +46,7 @@ class CoinFlipFibonacci:
         self.update_base_unit()
         self.profit += current_bet
 
-    def loss(self):
+    def loss(self) -> None:
         current_bet = self.current_bet
         if self.step < len(self.fib_sequence):
             self.step += 1
@@ -53,19 +54,19 @@ class CoinFlipFibonacci:
         self.update_base_unit()
         self.profit -= current_bet
 
-    def get_bet_command(self):
-        if self.current_bet >= 1_000_000:
-            return f"rpg cf h {self.current_bet // 1_000_000}m"
+    def get_bet_command(self) -> str:
+        if self.current_bet >= BET_FORMAT_MILLION:
+            return f"rpg cf h {self.current_bet // BET_FORMAT_MILLION}m"
         return f"rpg cf h {self.current_bet}"
 
-    def handle_insufficient_funds(self, current_balance):
+    def handle_insufficient_funds(self, current_balance: int) -> bool:
         if current_balance > 0:
             self.bankroll = current_balance
             self.update_base_unit()
             return True
         return False
 
-    def reset_state(self):
+    def reset_state(self) -> None:
         self.step = 1
         self.profit = 0
         self.consecutive_losses = 0
@@ -147,6 +148,8 @@ class BotState:
         self.duel_step = None  # None, "waiting_confirmation", "waiting_weapon", "finished"
         self.last_duel_time = 0
         self.duel_channel_id = 0
+        self.duel_weapon_chosen = False
+        self.duel_fail_count = 0
         # Auto Enchant
         self.auto_enchant_active = False
         self.auto_enchant_tier = ""
@@ -156,25 +159,25 @@ class BotState:
         self.auto_enchant_attempts = 0
 
     @property
-    def neon_updated_event(self):
+    def neon_updated_event(self) -> asyncio.Event:
         if not hasattr(self, '_neon_updated_event') or self._neon_updated_event is None:
             self._neon_updated_event = asyncio.Event()
         return self._neon_updated_event
 
     @property
-    def paused(self):
+    def paused(self) -> bool:
         return self._paused
 
     @paused.setter
-    def paused(self, value):
+    def paused(self, value: bool) -> None:
         self._paused = value
 
     @property
-    def gambling_paused(self):
+    def gambling_paused(self) -> bool:
         return self._gambling_paused
 
     @gambling_paused.setter
-    def gambling_paused(self, value):
+    def gambling_paused(self, value: bool) -> None:
         self._gambling_paused = value
         if value == True and coinflip_strategy is not None:
             coinflip_strategy.reset_state()
@@ -196,6 +199,12 @@ class BotState:
                 bot_state.coinflip_pending = True
                 logger.info(f"Gambling activated. First bet queued: {first_bet}")
 
+
+# ─── Constants ───
+BET_FORMAT_MILLION = 1_000_000
+CAPTCHA_SHORT_CMD_MAX_LEN = 8
+HUMAN_DELAY_BASE = 1.5
+HUMAN_DELAY_VARIANCE = 2.5
 
 # ─── Queues ───
 lowPriorityQueue = []
@@ -296,49 +305,40 @@ def is_sleepet_command(command: str) -> bool:
     if cmd_clean in ["protest", "rpg jail", "fight", "move", "cry"] or any(x in cmd_clean for x in ["jail", "protest"]):
         return True
     # Captcha answers (usually short non-rpg text)
-    if len(cmd_clean) <= 8 and not cmd_clean.startswith("rpg"):
+    if len(cmd_clean) <= CAPTCHA_SHORT_CMD_MAX_LEN and not cmd_clean.startswith("rpg"):
         return True
     return cmd_clean.startswith("rpg pet") or "sleepet" in cmd_clean or "rpg use sleepet" in cmd_clean
 
 
-def is_action_queued(command):
+def _get_base_action(command: str) -> Optional[str]:
     cmd = command.lower().strip()
     if cmd.startswith("rpg "):
         cmd = cmd[4:].strip()
-    parts = cmd.split()
-    if not parts:
+    return cmd.split()[0] if cmd.split() else None
+
+
+def _is_rpg_action(base_action: str) -> bool:
+    return base_action in {"hunt", "adv", "adventure", "fish", "chop", "mine", "pickup", "farm", "daily", "weekly", "lootbox", "quest", "training", "tr"}
+
+
+def is_action_queued(command: str) -> bool:
+    base_action = _get_base_action(command)
+    if not base_action:
         return False
-    base_action = parts[0]
     
-    # Check HPQ
     for q_cmd in highPriorityQueue:
-        q_cmd_clean = q_cmd.lower().strip()
-        if q_cmd_clean.startswith("rpg "):
-            q_cmd_clean = q_cmd_clean[4:].strip()
-        q_parts = q_cmd_clean.split()
-        if q_parts and q_parts[0] == base_action:
+        if _get_base_action(q_cmd) == base_action:
             return True
-            
-    # Check LPQ
     for q_cmd in lowPriorityQueue:
-        q_cmd_clean = q_cmd.lower().strip()
-        if q_cmd_clean.startswith("rpg "):
-            q_cmd_clean = q_cmd_clean[4:].strip()
-        q_parts = q_cmd_clean.split()
-        if q_parts and q_parts[0] == base_action:
+        if _get_base_action(q_cmd) == base_action:
             return True
-            
     return False
 
 
-def remove_base_action_from_queue(base_action, queue, queue_set):
+def remove_base_action_from_queue(base_action: str, queue: list, queue_set: set) -> None:
     to_remove = []
     for cmd in queue:
-        cmd_clean = cmd.lower().strip()
-        if cmd_clean.startswith("rpg "):
-            cmd_clean = cmd_clean[4:].strip()
-        parts = cmd_clean.split()
-        if parts and parts[0] == base_action:
+        if _get_base_action(cmd) == base_action:
             to_remove.append(cmd)
     for cmd in to_remove:
         if cmd in queue:
@@ -346,23 +346,16 @@ def remove_base_action_from_queue(base_action, queue, queue_set):
         queue_set.discard(cmd)
 
 
-def add_to_low_priority_queue(command, suppress_log=False):
+def add_to_low_priority_queue(command: str, suppress_log: bool = False) -> None:
     if bot_state.sleepet_mode and not is_sleepet_command(command):
         return
     # Block low-priority rpg commands if duel or auto-enchant is active
     if (bot_state.duel_in_progress or bot_state.auto_enchant_active) and command.lower().strip().startswith("rpg"):
         return
     # Check if this action is already queued in either queue
-    cmd_clean = command.lower().strip()
-    if cmd_clean.startswith("rpg "):
-        cmd_clean = cmd_clean[4:].strip()
-    parts = cmd_clean.split()
-    if parts:
-        base_action = parts[0]
-        match_actions = {"hunt", "adv", "adventure", "fish", "chop", "mine", "pickup", "farm", "daily", "weekly", "lootbox", "quest", "training", "tr"}
-        if base_action in match_actions:
-            if is_action_queued(command):
-                return
+    base_action = _get_base_action(command)
+    if base_action and _is_rpg_action(base_action) and is_action_queued(command):
+        return
 
     if command not in lowPriorityQueueSet:
         lowPriorityQueue.append(command)
@@ -371,29 +364,16 @@ def add_to_low_priority_queue(command, suppress_log=False):
             logger.info(f"Command {command} added to LPQ.")
 
 
-def add_to_high_priority_queue(command):
+def add_to_high_priority_queue(command: str) -> None:
     if bot_state.sleepet_mode and not is_sleepet_command(command):
         return
     # Check if this action is already in HPQ
-    cmd_clean = command.lower().strip()
-    if cmd_clean.startswith("rpg "):
-        cmd_clean = cmd_clean[4:].strip()
-    parts = cmd_clean.split()
-    if parts:
-        base_action = parts[0]
-        match_actions = {"hunt", "adv", "adventure", "fish", "chop", "mine", "pickup", "farm", "daily", "weekly", "lootbox", "quest", "training", "tr"}
-        if base_action in match_actions:
-            # Check if it's already in HPQ
-            for q_cmd in highPriorityQueue:
-                q_cmd_clean = q_cmd.lower().strip()
-                if q_cmd_clean.startswith("rpg "):
-                    q_cmd_clean = q_cmd_clean[4:].strip()
-                q_parts = q_cmd_clean.split()
-                if q_parts and q_parts[0] == base_action:
-                    return # already in HPQ, skip
-            
-            # If it's in LPQ, remove it from LPQ to promote it to HPQ
-            remove_base_action_from_queue(base_action, lowPriorityQueue, lowPriorityQueueSet)
+    base_action = _get_base_action(command)
+    if base_action and _is_rpg_action(base_action):
+        for q_cmd in highPriorityQueue:
+            if _get_base_action(q_cmd) == base_action:
+                return
+        remove_base_action_from_queue(base_action, lowPriorityQueue, lowPriorityQueueSet)
 
     if command not in highPriorityQueueSet:
         highPriorityQueue.append(command)
@@ -423,7 +403,7 @@ except Exception as e:
     coinflip_strategy = None
 
 
-def reset_bot_state():
+def reset_bot_state() -> None:
     bot_state.paused = False
     bot_state.gambling_paused = True
     bot_state.jailed = False
@@ -470,7 +450,7 @@ def reset_bot_state():
     logger.info("Bot state reset to initial values.")
 
 
-async def queue_tc_commands():
+async def queue_tc_commands() -> None:
     """Enfileira comandos iniciais ao ativar TC mode para nao desperdicar cooldowns."""
     bot_state.last_tc_use_time = time.time()
     tc_qty = bot_state.tc_quantity
@@ -478,7 +458,7 @@ async def queue_tc_commands():
     add_to_low_priority_queue("rpg rd", suppress_log=True)
 
 
-async def human_delay(base=1.5, variance=2.5):
+async def human_delay(base: float = HUMAN_DELAY_BASE, variance: float = HUMAN_DELAY_VARIANCE) -> None:
     """Simulates human reaction time. Returns after a random delay.
     Default range: 1.5-4.0s. For longer 'thinking' actions, increase base."""
     delay = base + random.random() * variance

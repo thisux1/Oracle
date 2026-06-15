@@ -2,6 +2,7 @@ import re
 import time
 import asyncio
 import random
+from typing import Optional
 from bot.hud import HUD, logger
 import bot.config as config
 from bot.state import (
@@ -30,8 +31,22 @@ from bot.telegram import (
 from bot.captcha import save_and_crop_attachment
 from colorama import Fore, Style
 
+# ─── Constants ───
+NEON_STALE_THRESHOLD = 20.0
+NEON_RECENCY_WINDOW = 3.0
+NEON_WAIT_TIMEOUT = 8.0
+CARD_HAND_MAX_TURNS = 15
+CARD_HAND_FIRST_TURN_TIMEOUT = 15
+CARD_HAND_TURN_TIMEOUT = 5
+CARD_HAND_EDIT_MAX_ITERATIONS = 30
+CARD_HAND_EDIT_POLL_INTERVAL = 0.5
+RUNTIME_ERRORS_MAX_SIZE = 1000
+MINIGAME_PAUSE_DURATION = 16
+PET_TIMER_BUFFER_SECONDS = 30
+PET_COMMAND_RECENCY_WINDOW = 6.0
+NEON_HISTORY_LIMIT = 5
 
-async def handleCoinflipResponse(message):
+async def handleCoinflipResponse(message) -> bool:
     if not bot_state.coinflip_pending:
         return False
         
@@ -100,7 +115,7 @@ async def handleCoinflipResponse(message):
 active_card_hand_msg_id = None
 
 
-def clean_embed_text_for_telegram(embed_dict):
+def clean_embed_text_for_telegram(embed_dict: dict) -> str:
     desc = embed_dict.get("description", "")
     
     fields_text = ""
@@ -117,7 +132,7 @@ def clean_embed_text_for_telegram(embed_dict):
     return full_text
 
 
-def format_neon_for_telegram(emb):
+def format_neon_for_telegram(emb: dict) -> Optional[str]:
     """Format a Neon Bot Helper embed into a beautiful Telegram message.
     Uses plain text with emojis (sent via send_telegram_raw, no Markdown parsing)."""
     lines = []
@@ -168,19 +183,19 @@ def format_neon_for_telegram(emb):
     return "\n".join(lines)
 
 
-async def find_neon_recommendation(channel):
+async def find_neon_recommendation(channel) -> tuple:
     """Search channel history for Neon's card hand recommendation.
     Returns a tuple (optimal_card, formatted_telegram_text) or (None, None)."""
     try:
         import datetime
         # Search the most recent 5 messages in the channel to find Neon's helper recommendation
-        async for msg in channel.history(limit=5):
+        async for msg in channel.history(limit=NEON_HISTORY_LIMIT):
             if msg.author.id in config.NEON_BOT_IDS and msg.embeds:
                 # Security check: ignore messages older than 20 seconds to prevent reading stale cards from previous games
                 msg_time = msg.edited_at or msg.created_at
                 if msg_time:
                     age = (datetime.datetime.now(datetime.timezone.utc) - msg_time).total_seconds()
-                    if age > 20.0:
+                    if age > NEON_STALE_THRESHOLD:
                         continue
 
                 emb = msg.embeds[0].to_dict()
@@ -210,7 +225,7 @@ async def find_neon_recommendation(channel):
     return None, None
 
 
-async def check_and_forward_cardhand_image(message):
+async def check_and_forward_cardhand_image(message) -> None:
     """Downloads and forwards Card Hand images (cards2.png, cards3.png, etc.)
     to Telegram. Only acts when cardhand_in_progress is active and message is on the correct channel.
     """
@@ -254,12 +269,12 @@ async def check_and_forward_cardhand_image(message):
                     logger.error(f"Erro ao baixar/enviar imagem do Card Hand: {img_err}")
 
 
-async def interactive_card_hand_loop(message):
+async def interactive_card_hand_loop(message) -> None:
     global active_card_hand_msg_id
     HUD.system("Iniciando loop de Card Hand interativo-automático...")
     
     try:
-        for turn in range(15):  # Max 15 interactions
+        for turn in range(CARD_HAND_MAX_TURNS):
             if not bot_state.cardhand_in_progress:
                 break
                 
@@ -304,13 +319,13 @@ async def interactive_card_hand_loop(message):
             # Check if there is already a very fresh recommendation (within last 3 seconds)
             if bot_state.latest_neon_recommendation:
                 rec_val, form_val, ts = bot_state.latest_neon_recommendation
-                if time.time() - ts < 3.0:
+                if time.time() - ts < NEON_RECENCY_WINDOW:
                     rec = rec_val
                     neon_formatted = form_val
 
             if not rec and bot_state.cardhand_in_progress:
                 try:
-                    await asyncio.wait_for(bot_state.neon_updated_event.wait(), timeout=8.0)
+                    await asyncio.wait_for(bot_state.neon_updated_event.wait(), timeout=NEON_WAIT_TIMEOUT)
                     if bot_state.latest_neon_recommendation:
                         rec, neon_formatted = bot_state.latest_neon_recommendation[0], bot_state.latest_neon_recommendation[1]
                 except asyncio.TimeoutError:
@@ -327,7 +342,7 @@ async def interactive_card_hand_loop(message):
                     logger.error(f"Erro ao enviar análise Neon ao Telegram: {neon_err}")
                 
             # Determine timeout
-            timeout = 15 if bot_state.cardhand_turn_count == 1 else 5
+            timeout = CARD_HAND_FIRST_TURN_TIMEOUT if bot_state.cardhand_turn_count == 1 else CARD_HAND_TURN_TIMEOUT
             rec_display = rec.upper() if rec else "PASS"
             
             clean_txt = clean_embed_text_for_telegram(embed_dict)
@@ -398,8 +413,8 @@ async def interactive_card_hand_loop(message):
             # even if the embed text is nearly identical after "pass")
             pre_edit_time = message.edited_at
             updated = False
-            for _ in range(30):
-                await asyncio.sleep(0.5)
+            for _ in range(CARD_HAND_EDIT_MAX_ITERATIONS):
+                await asyncio.sleep(CARD_HAND_EDIT_POLL_INTERVAL)
                 if not bot_state.cardhand_in_progress:
                     break
                 try:
@@ -424,7 +439,7 @@ async def interactive_card_hand_loop(message):
         active_card_hand_msg_id = None
 
 
-def check_user_matches(embed_dict, target_username, target_userid):
+def check_user_matches(embed_dict: dict, target_username: str, target_userid: Optional[int]) -> bool:
     if not embed_dict:
         return False
     title = (embed_dict.get("title", "") or "").lower()
@@ -448,7 +463,7 @@ def check_user_matches(embed_dict, target_username, target_userid):
     return False
 
 
-async def handle_sleepet_summary(embed_dict, embed_text):
+async def handle_sleepet_summary(embed_dict: dict, embed_text: str) -> None:
     if bot_state.sleepet_state != "waiting_summary":
         return
     if not check_user_matches(embed_dict, config.user_name_lower, config.userID):
@@ -496,7 +511,7 @@ async def handle_sleepet_summary(embed_dict, embed_text):
         HUD.system("[Sleepet] Queued use sleepet potion.")
 
 
-async def handle_sleepet_claim(embed_dict, embed_text):
+async def handle_sleepet_claim(embed_dict: dict, embed_text: str) -> None:
     if bot_state.sleepet_state != "waiting_claim":
         return
     if not check_user_matches(embed_dict, config.user_name_lower, config.userID):
@@ -517,7 +532,7 @@ async def handle_sleepet_claim(embed_dict, embed_text):
     add_to_high_priority_queue(config.pet_adventure_command)
 
 
-async def handle_sleepet_adv(message, msg):
+async def handle_sleepet_adv(message, msg) -> None:
     if bot_state.sleepet_state != "waiting_adventure":
         return
     # Verify that it is for the user
@@ -537,12 +552,12 @@ async def handle_sleepet_adv(message, msg):
     is_recent_our_command = False
     if bot_state.last_sent_command:
         last_cmd = bot_state.last_sent_command.lower()
-        if "pet" in last_cmd and ("adv" in last_cmd or "adventure" in last_cmd) and time_since_last_cmd < 6.0:
+        if "pet" in last_cmd and ("adv" in last_cmd or "adventure" in last_cmd) and time_since_last_cmd < PET_COMMAND_RECENCY_WINDOW:
             is_recent_our_command = True
             
     if is_recent_our_command:
         is_for_us = True
-    elif bot_state.sleepet_mode and bot_state.sleepet_state == "waiting_adventure" and time_since_last_cmd < 6.0:
+    elif bot_state.sleepet_mode and bot_state.sleepet_state == "waiting_adventure" and time_since_last_cmd < PET_COMMAND_RECENCY_WINDOW:
         is_for_us = True
 
     if not is_for_us:
@@ -563,7 +578,7 @@ async def handle_sleepet_adv(message, msg):
     add_to_high_priority_queue("rpg use sleepet potion")
 
 
-async def responseResolver(message):
+async def responseResolver(message) -> None:
     msg = message.content.lower()
 
     if message.author.id == config.EPIC_RPG_ID and config.is_married:
@@ -792,7 +807,7 @@ async def responseResolver(message):
                     "%Y/%m/%d %H:%M:%S - unexpected helper response " + _temp
                 )
             )
-            if len(runtimeErrors) > 1000:
+            if len(runtimeErrors) > RUNTIME_ERRORS_MAX_SIZE:
                 runtimeErrors.pop(0)
             logger.error(f"Unexpected helper response: {_temp}")
         
@@ -828,8 +843,9 @@ async def responseResolver(message):
             # Or if we sent a pet command recently (within 6 seconds)
             if bot_state.last_sent_command:
                 last_cmd = bot_state.last_sent_command.lower()
-                if "pet" in last_cmd and (current_time - bot_state.last_sent_time) < 6.0:
+                if "pet" in last_cmd and (current_time - bot_state.last_sent_time) < PET_COMMAND_RECENCY_WINDOW:
                     is_our_error = True
+
                     
             if is_our_error:
                 if bot_state.sleepet_mode:
@@ -865,7 +881,7 @@ async def responseResolver(message):
             is_recent_our_pet_command = False
             if bot_state.last_sent_command:
                 last_cmd = bot_state.last_sent_command.lower()
-                if "pet" in last_cmd and (current_time - bot_state.last_sent_time) < 6.0:
+                if "pet" in last_cmd and (current_time - bot_state.last_sent_time) < PET_COMMAND_RECENCY_WINDOW:
                     is_recent_our_pet_command = True
 
             is_our_pet_command = is_reference_ours or is_recent_our_pet_command
@@ -911,7 +927,7 @@ async def responseResolver(message):
                     is_our_error = True
                 if bot_state.last_sent_command:
                     last_cmd = bot_state.last_sent_command.lower()
-                    if "sleepet" in last_cmd and (time.time() - bot_state.last_sent_time) < 6.0:
+                    if "sleepet" in last_cmd and (time.time() - bot_state.last_sent_time) < PET_COMMAND_RECENCY_WINDOW:
                         is_our_error = True
                 if is_our_error:
                     bot_state.sleepet_mode = False
@@ -947,8 +963,8 @@ async def responseResolver(message):
         await rdCheckEpicRPG(message)
 
         if "you have " in msg and " seconds!" in msg:
-            bot_state.minigame_pending_until = time.time() + 16
-            logger.info("Minigame detected. All queues paused for 16 seconds.")
+            bot_state.minigame_pending_until = time.time() + MINIGAME_PAUSE_DURATION
+            logger.info(f"Minigame detected. All queues paused for {MINIGAME_PAUSE_DURATION} seconds.")
             
         if any(w in msg for w in ["better luck next time", "you got it", "you passed", "well done", "nope! it was"]):
             if bot_state.minigame_pending_until > 0:
@@ -1057,53 +1073,39 @@ async def responseResolver(message):
 
                         if challenger_name:
                             guild = message.guild
-                            challenger_member = None
                             if guild:
-                                challenger_member = guild.get_member_named(challenger_name)
-                                if not challenger_member:
-                                    for m in guild.members:
-                                        if (m.name.lower() == challenger_name or 
+                                # Check configured admins by fetching each and comparing names
+                                for admin_id in config.ADMIN_IDS:
+                                    try:
+                                        m = await guild.fetch_member(admin_id)
+                                        if m and (
+                                            m.name.lower() == challenger_name or
                                             (m.nick and m.nick.lower() == challenger_name) or
-                                            (getattr(m, "global_name", None) and m.global_name.lower() == challenger_name)):
-                                            challenger_member = m
+                                            (getattr(m, "global_name", None) and m.global_name.lower() == challenger_name) or
+                                            (getattr(m, "display_name", None) and m.display_name.lower() == challenger_name)
+                                        ):
+                                            can_accept = True
                                             break
-                                            
-                                # If not found in cache, fall back to fetching configured partner and admins to check display/global names
-                                if not challenger_member:
-                                    candidate_ids = []
-                                    if config.duel_partner_id:
-                                        try:
-                                            candidate_ids.append(int(config.duel_partner_id))
-                                        except ValueError:
-                                            pass
-                                    for admin_id in config.ADMIN_IDS:
-                                        if admin_id not in candidate_ids:
-                                            candidate_ids.append(admin_id)
-                                            
-                                    for cid in candidate_ids:
-                                        try:
-                                            m = await guild.fetch_member(cid)
-                                            if m and (
-                                                m.name.lower() == challenger_name or 
-                                                (m.nick and m.nick.lower() == challenger_name) or 
-                                                (getattr(m, "global_name", None) and m.global_name.lower() == challenger_name) or
-                                                (getattr(m, "display_name", None) and m.display_name.lower() == challenger_name)
-                                            ):
-                                                challenger_member = m
-                                                break
-                                        except Exception:
-                                            pass
-                            
-                            if challenger_member:
-                                challenger_id = challenger_member.id
-                                if challenger_id in config.ADMIN_IDS:
-                                    can_accept = True
-                                elif config.do_duel:
-                                    if config.duel_partner_id and str(challenger_id) == config.duel_partner_id:
-                                        can_accept = True
+                                    except Exception:
+                                        pass
+
+                                # Check duel partner by name (if not already accepted as admin)
+                                if not can_accept and config.duel_partner_id:
+                                    try:
+                                        partner_id = int(config.duel_partner_id)
+                                        m = await guild.fetch_member(partner_id)
+                                        if m and (
+                                            m.name.lower() == challenger_name or
+                                            (m.nick and m.nick.lower() == challenger_name) or
+                                            (getattr(m, "global_name", None) and m.global_name.lower() == challenger_name) or
+                                            (getattr(m, "display_name", None) and m.display_name.lower() == challenger_name)
+                                        ):
+                                            can_accept = True
+                                    except (ValueError, Exception):
+                                        pass
 
                             # Fallback check against partner name
-                            if not can_accept and config.do_duel and config.partner_name:
+                            if not can_accept and config.partner_name:
                                 if challenger_name == config.partner_name.lower():
                                     can_accept = True
 
@@ -1128,14 +1130,17 @@ async def responseResolver(message):
                         bot_state.duel_step = "waiting_confirmation"
                         bot_state.last_duel_time = time.time()
                         bot_state.duel_channel_id = message.channel.id
+                        bot_state.duel_fail_count = 0
                         HUD.system(f"Duelo enviado! Aguardando resposta do parceiro no canal {message.channel.id}. LPQ limpa.")
                         return
 
                 if bot_state.duel_in_progress:
                     # Escolha de Arma
                     if "choose the weapon that better fits" in embed_text:
-                        if config.user_name_lower in embed_text:
-                            if config.win_duel:
+                        if config.user_name_lower in embed_text and not bot_state.duel_weapon_chosen:
+                            bot_state.duel_weapon_chosen = True
+                            bot_state.duel_fail_count = 0
+                            if config.do_duel and config.win_duel:
                                 choice = random.choice(["a", "b", "c"])
                                 add_to_high_priority_queue(choice)
                                 bot_state.duel_step = "finished"
@@ -1151,8 +1156,10 @@ async def responseResolver(message):
                         if config.user_name_lower in embed_text:
                             bot_state.duel_in_progress = False
                             bot_state.duel_step = None
+                            bot_state.duel_weapon_chosen = False
                             bot_state.last_duel_time = 0
                             bot_state.duel_channel_id = 0
+                            bot_state.duel_fail_count = 0
                             HUD.system("Duelo concluído. Filas liberadas!")
                             return
                     
@@ -1160,9 +1167,21 @@ async def responseResolver(message):
                     elif any(x in embed_text for x in ["refused to duel", "duel cancelled", "you cannot duel", "already in a duel"]):
                         bot_state.duel_in_progress = False
                         bot_state.duel_step = None
+                        bot_state.duel_weapon_chosen = False
                         bot_state.last_duel_time = 0
                         bot_state.duel_channel_id = 0
-                        HUD.system("Duelo cancelado/recusado. Filas liberadas.")
+                        bot_state.duel_fail_count += 1
+                        if bot_state.duel_fail_count == 1:
+                            await send_telegram_notification(
+                                "⚠️ Duelo cancelado — parceiro não respondeu. "
+                                "Auto-duel será suspenso após 2 falhas consecutivas."
+                            )
+                        elif bot_state.duel_fail_count >= 2:
+                            await send_telegram_notification(
+                                "🛑 Auto-duel suspenso: 2 falhas consecutivas. "
+                                "Reative manualmente com sb duel reset ou aguarde o reset automático."
+                            )
+                        HUD.system(f"Duelo cancelado/recusado. (fail_count={bot_state.duel_fail_count})")
                         return
 
             # ─── Quest Completion Detection ───
@@ -1357,7 +1376,8 @@ async def responseResolver(message):
                         process_pet_claim_drops(embed_dict, embed_text, player_name)
 
                     if "purrency" in embed_text:
-                        HUD.alert("Purrency recebida — inventário de pets cheio!")
+                        HUD.alert("Purrency recebida — inventário de pets cheio! Não reenviando para aventura.")
+                        return
 
                     bot_state.pet_adventure_return_time = 0
                     add_to_low_priority_queue(config.pet_adventure_command)
@@ -1384,7 +1404,7 @@ async def responseResolver(message):
                     h = int(timer_match.group(1) or 0)
                     m = int(timer_match.group(2) or 0)
                     s = int(timer_match.group(3) or 0)
-                    total_seconds = h * 3600 + m * 60 + s + 30
+                    total_seconds = h * 3600 + m * 60 + s + PET_TIMER_BUFFER_SECONDS
                     bot_state.pet_adventure_return_time = time.time() + total_seconds
                     HUD.system(f"Pet em aventura - retorna em {h}h {m}m {s}s")
                 elif "back from adventure" in embed_text:
@@ -1484,7 +1504,7 @@ async def responseResolver(message):
                         h = int(timer_match.group(1) or 0)
                         m = int(timer_match.group(2) or 0)
                         s = int(timer_match.group(3) or 0)
-                        total_seconds = h * 3600 + m * 60 + s + 30  # +30s buffer
+                        total_seconds = h * 3600 + m * 60 + s + PET_TIMER_BUFFER_SECONDS
                         bot_state.pet_adventure_return_time = time.time() + total_seconds
                         HUD.system(
                             f"Aventura do pet iniciada - {h}h {m}m {s}s para retornar"
