@@ -183,7 +183,7 @@ def process_drops(lines, player_name, loot_data):
 async def rdCheckNavi(message):
     commands = [
         "hunt", "adventure", "farm", "training", "work",
-        "daily", "weekly", "lootbox", "pickup", "chop", "fish", "mine", "duel",
+        "daily", "weekly", "lootbox", "pickup", "chop", "fish", "mine", "duel", "quest",
     ]
     msg_lines = (
         message.strip().splitlines()
@@ -264,6 +264,9 @@ async def rdCheckNavi(message):
                         if partner_id and not bot_state.duel_in_progress:
                             add_to_low_priority_queue(f"rpg duel <@{partner_id}>")
                             logger.info(f"Duel queued from Navi Lite: rpg duel <@{partner_id}>")
+                elif cmd == "quest" and config.do_quest:
+                    add_to_high_priority_queue("rpg quest", suppress_log=True)
+                    logger.info("Command 'rpg quest' added to HPQ from Navi Lite.")
                 break
 
 

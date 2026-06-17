@@ -727,7 +727,7 @@ async def responseResolver(message) -> None:
             return
 
         slash_match = re.search(
-            r'</(hunt|adventure|fish|chop|mine|pickup|tr|farm|training|pets claim|pets):[0-9]+>',
+            r'</(hunt|adventure|fish|chop|mine|pickup|tr|farm|training|pets claim|pets|quest start|quest|lootbox|daily|weekly):[0-9]+>',
             _temp,
         )
         if slash_match:
@@ -744,6 +744,11 @@ async def responseResolver(message) -> None:
                 "pickup": config.do_work,
                 "pets claim": config.do_pet,
                 "pets": config.do_pet,
+                "quest start": config.do_quest,
+                "quest": config.do_quest,
+                "lootbox": config.do_lootbox,
+                "daily": config.do_daily,
+                "weekly": config.do_weekly,
             }
             if not cmd_flag_map.get(cmd_name, True):
                 logger.debug("Navi slash command '%s' skipped (disabled via config)", cmd_name)
@@ -777,6 +782,28 @@ async def responseResolver(message) -> None:
                 add_to_high_priority_queue(final_cmd)
             elif cmd_name in ("pets claim", "pets"):
                 final_cmd = "rpg pet claim"
+                add_to_low_priority_queue(final_cmd)
+            elif cmd_name in ("quest start", "quest"):
+                final_cmd = "rpg quest"
+                add_to_high_priority_queue(final_cmd)
+            elif cmd_name == "lootbox":
+                lootbox_type = config.userOptions.get("lootbox_type", "none")
+                if (
+                    lootbox_type != "none"
+                    and time.time() > bot_state.lootbox_cooldown_until
+                ):
+                    add_to_low_priority_queue(f"rpg buy {lootbox_type}")
+                    bot_state.pending_lootbox_buy = lootbox_type
+                    bot_state.lootbox_fallback_triggered = False
+                    final_cmd = f"rpg buy {lootbox_type}"
+                elif time.time() < bot_state.lootbox_cooldown_until:
+                    HUD.system("Compra de lootbox pulada (Cooldown Financeiro).")
+                    return
+                else:
+                    final_cmd = "rpg lootbox"
+                    add_to_low_priority_queue(final_cmd)
+            elif cmd_name in ("daily", "weekly"):
+                final_cmd = f"rpg {cmd_name}"
                 add_to_low_priority_queue(final_cmd)
             else:
                 final_cmd = f"rpg {cmd_name}"
@@ -842,7 +869,7 @@ async def responseResolver(message) -> None:
             for line in msg_clean_for_check.splitlines()
             for cmd in [
                 "hunt", "adventure", "farm", "training", "work",
-                "daily", "weekly", "lootbox", "pickup", "chop", "fish", "mine",
+                "daily", "weekly", "lootbox", "pickup", "chop", "fish", "mine", "quest",
             ]
         ):
             await rdCheckNavi(msg)
