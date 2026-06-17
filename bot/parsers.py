@@ -18,9 +18,11 @@ def process_drops(lines, player_name, loot_data):
     mob_drops = loot_data["mob_drops"]
     lootbox_drops = loot_data["lootbox_drops"]
     work_drops = loot_data["work_drops"]
+    player_clean = player_name.lower().replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+    target_clean = config.user_name_lower.lower().replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
     misc = (
         loot_data.get("misc", sessionData["misc"])
-        if player_name == config.user_name_lower
+        if player_clean == target_clean
         else sessionData["partner_loot_data"]["misc"]
     )
     misc_drops = misc["misc"]
@@ -275,8 +277,11 @@ async def rdCheckEpicRPG(message):
             ready_match = re.match(r"(.+?) — ready", author_name)
             if ready_match:
                 mentioned_user = ready_match.group(1).lower().strip()
+                mentioned_user_clean = mentioned_user.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+                target_name_clean = target_name.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
                 if (
                     mentioned_user == target_name
+                    or (target_name_clean and mentioned_user_clean == target_name_clean)
                     or str(config.userID) in str(embed_dict).lower()
                 ):
                     ready_for_user = True
@@ -568,7 +573,9 @@ def format_session_data(data, title="Dados da Sessão"):
 
 
 def process_pet_claim_drops(embed_dict, embed_text, player_name):
-    if player_name == config.user_name_lower:
+    player_clean = player_name.lower().replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+    target_clean = config.user_name_lower.lower().replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+    if player_clean == target_clean:
         loot_data = sessionData["loot_data"]
         progress_data = sessionData["progress_data"]
         misc = sessionData["misc"]

@@ -473,6 +473,10 @@ def check_user_matches(embed_dict: dict, target_username: str, target_userid: Op
             p_clean = part.lower().strip()
             if p_clean == t_clean or t_clean in p_clean or p_clean in t_clean:
                 return True
+            t_norm = t_clean.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+            p_norm = p_clean.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+            if t_norm and p_norm and (p_norm == t_norm or t_norm in p_norm or p_norm in t_norm):
+                return True
             
     return False
 
@@ -706,10 +710,15 @@ async def responseResolver(message) -> None:
     # ─── Navi Lite ───
     elif message.author.id == config.NAVI_LITE_ID:
         # Se a mensagem não menciona nosso usuário, ignoramos para não pegar respostas dos outros
-        if str(config.userID) not in msg and config.user_name_lower not in msg:
+        user_name_clean = config.user_name_lower.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+        msg_clean = msg.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+        if str(config.userID) not in msg and config.user_name_lower not in msg and (not user_name_clean or user_name_clean not in msg_clean):
             return
 
-        _temp = msg.replace(f"<@{config.userID}>", "").replace(f"<@!{config.userID}>", "").replace(config.user_name_lower, "").replace("`", "").strip()
+        _temp = msg.replace(f"<@{config.userID}>", "").replace(f"<@!{config.userID}>", "").replace(config.user_name_lower, "")
+        if user_name_clean:
+            _temp = _temp.replace(user_name_clean, "")
+        _temp = _temp.replace("`", "").strip()
 
         if "heal" in _temp:
             add_to_high_priority_queue("rpg heal")
@@ -917,8 +926,10 @@ async def responseResolver(message) -> None:
 
         # ─── Sleepet Potion Detection ───
         if bot_state.sleepet_mode:
+            user_name_clean = config.user_name_lower.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+            msg_clean = msg.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
             if "sleepet potion" in msg or "sleepet_potion" in msg:
-                if config.user_name_lower in msg and bot_state.sleepet_state == "waiting_potion":
+                if (config.user_name_lower in msg or (user_name_clean and user_name_clean in msg_clean)) and bot_state.sleepet_state == "waiting_potion":
                     if any(err in msg for err in ["don't have", "do not have", "not have"]):
                         bot_state.sleepet_mode = False
                         bot_state.sleepet_state = None
@@ -937,7 +948,7 @@ async def responseResolver(message) -> None:
                     ref = message.reference.resolved
                     if hasattr(ref, "author") and ref.author.id == config.userID:
                         is_our_error = True
-                if config.user_name_lower in msg or str(config.userID) in msg:
+                if config.user_name_lower in msg or str(config.userID) in msg or (user_name_clean and user_name_clean in msg_clean):
                     is_our_error = True
                 if bot_state.last_sent_command:
                     last_cmd = bot_state.last_sent_command.lower()
@@ -952,13 +963,16 @@ async def responseResolver(message) -> None:
                     return
 
         is_pet_message = False
-        if "is approaching" in msg and config.user_name_lower in msg:
+        user_name_clean = config.user_name_lower.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+        msg_clean = msg.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+        if "is approaching" in msg and (config.user_name_lower in msg or (user_name_clean and user_name_clean in msg_clean)):
             is_pet_message = True
         elif message.embeds:
             embed_dict = message.embeds[0].to_dict()
             embed_text = str(embed_dict).lower()
             logger.debug("Full embed: %s", embed_dict)
-            if "is approaching" in embed_text and config.user_name_lower in embed_text:
+            embed_text_clean = embed_text.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+            if "is approaching" in embed_text and (config.user_name_lower in embed_text or (user_name_clean and user_name_clean in embed_text_clean)):
                 is_pet_message = True
                 logger.debug("Pet message found in embed: %s...", embed_text[:100])
 
@@ -1073,8 +1087,11 @@ async def responseResolver(message) -> None:
 
             # ─── Duel State Machine ───
             if config.do_duel or bot_state.duel_in_progress or "will you accept" in embed_text:
+                user_name_clean = config.user_name_lower.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+                embed_text_clean = embed_text.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+
                 if "will you accept" in embed_text:
-                    if f"will you accept, {config.user_name_lower}" in embed_text:
+                    if f"will you accept, {config.user_name_lower}" in embed_text or (user_name_clean and f"willyouaccept,{user_name_clean}" in embed_text_clean.replace(" ", "")):
                         from bot.state import lowPriorityQueue, lowPriorityQueueSet
                         can_accept = False
                         
@@ -1136,7 +1153,7 @@ async def responseResolver(message) -> None:
                         else:
                             HUD.system("Duelo ignorado (desafiante não autorizado).")
                             return
-                    elif config.user_name_lower in embed_text:
+                    elif config.user_name_lower in embed_text or (user_name_clean and user_name_clean in embed_text_clean):
                         from bot.state import lowPriorityQueue, lowPriorityQueueSet
                         lowPriorityQueue.clear()
                         lowPriorityQueueSet.clear()
@@ -1151,7 +1168,7 @@ async def responseResolver(message) -> None:
                 if bot_state.duel_in_progress:
                     # Escolha de Arma
                     if "choose the weapon that better fits" in embed_text:
-                        if config.user_name_lower in embed_text and not bot_state.duel_weapon_chosen:
+                        if (config.user_name_lower in embed_text or (user_name_clean and user_name_clean in embed_text_clean)) and not bot_state.duel_weapon_chosen:
                             bot_state.duel_weapon_chosen = True
                             bot_state.duel_fail_count = 0
                             if config.do_duel and config.win_duel:
@@ -1167,7 +1184,7 @@ async def responseResolver(message) -> None:
 
                     # Finalização
                     if any(x in embed_text for x in ["won!", "lost!", "it's a draw"]):
-                        if config.user_name_lower in embed_text:
+                        if config.user_name_lower in embed_text or (user_name_clean and user_name_clean in embed_text_clean):
                             bot_state.duel_in_progress = False
                             bot_state.duel_step = None
                             bot_state.duel_weapon_chosen = False
@@ -1439,7 +1456,16 @@ async def responseResolver(message) -> None:
                 return
 
             if "— lootbox" in embed_text and "lootbox opened!" in embed_text:
-                if not (config.user_name_lower and f"{config.user_name_lower} — lootbox" in embed_text):
+                user_name_clean = config.user_name_lower.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+                embed_text_clean = embed_text.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+                
+                is_our_lootbox = False
+                if config.user_name_lower and f"{config.user_name_lower} — lootbox" in embed_text:
+                    is_our_lootbox = True
+                elif user_name_clean and f"{user_name_clean}—lootbox" in embed_text_clean.replace(" ", ""):
+                    is_our_lootbox = True
+
+                if not is_our_lootbox:
                     logger.debug("Lootbox opened by another user, ignoring.")
                     return
                 all_lines = []
@@ -1454,11 +1480,18 @@ async def responseResolver(message) -> None:
                                 field["value"].lower().splitlines()
                             )
 
-                if (
-                    config.is_married
-                    and f"{config.user_name_lower} and {config.partner_name.lower()} are hunting together"
-                    in embed_text
-                ):
+                is_together = False
+                if config.is_married and config.partner_name:
+                    p_name = config.partner_name.lower()
+                    p_clean = p_name.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+                    user_name_clean = config.user_name_lower.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+                    partner_clean = config.partner_name.lower().replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip() if config.partner_name else ""
+                    phrase1 = f"{config.user_name_lower} and {p_name} are hunting together"
+                    phrase2 = f"{user_name_clean}and{p_clean}arehuntingtogether"
+                    if phrase1 in embed_text or (user_name_clean and p_clean and phrase2 in embed_text_clean.replace(" ", "")):
+                        is_together = True
+
+                if is_together:
                     logger.info(
                         "Lootbox message detected in married mode. "
                         "Processing for both players."
@@ -1466,26 +1499,47 @@ async def responseResolver(message) -> None:
                     current_player = None
                     player_lines = []
                     for line in all_lines:
+                        line_clean = line.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+                        is_user_line = False
+                        is_partner_line = False
                         if line.startswith(f"**{config.user_name_lower}**:"):
+                            is_user_line = True
+                        elif user_name_clean and line_clean.startswith(f"{user_name_clean}:"):
+                            is_user_line = True
+
+                        if config.partner_name:
+                            p_lower = config.partner_name.lower()
+                            if line.startswith(f"**{p_lower}**:"):
+                                is_partner_line = True
+                            elif partner_clean and line_clean.startswith(f"{partner_clean}:"):
+                                is_partner_line = True
+
+                        if is_user_line:
                             if player_lines and current_player:
+                                is_partner = False
+                                if config.partner_name:
+                                    if current_player.lower() == config.partner_name.lower() or (partner_clean and current_player.lower().replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip() == partner_clean):
+                                        is_partner = True
                                 process_drops(
                                     player_lines,
                                     current_player,
                                     sessionData["partner_loot_data"]
-                                    if current_player == config.partner_name
+                                    if is_partner
                                     else sessionData["loot_data"],
                                 )
                             current_player = config.user_name_lower
                             player_lines = []
-                        elif line.startswith(
-                            f"**{config.partner_name.lower()}**:"
-                        ):
+                        elif is_partner_line:
                             if player_lines and current_player:
+                                is_partner = False
+                                if config.partner_name:
+                                    if current_player.lower() == config.partner_name.lower() or (partner_clean and current_player.lower().replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip() == partner_clean):
+                                        is_partner = True
                                 process_drops(
                                     player_lines,
                                     current_player,
                                     sessionData["partner_loot_data"]
-                                    if current_player == config.partner_name
+                                    if is_partner
                                     else sessionData["loot_data"],
                                 )
                             current_player = config.partner_name.lower()
@@ -1493,11 +1547,15 @@ async def responseResolver(message) -> None:
                         elif line.startswith(">") and current_player:
                             player_lines.append(line[1:].strip())
                     if player_lines and current_player:
+                        is_partner = False
+                        if config.partner_name:
+                            if current_player.lower() == config.partner_name.lower() or (partner_clean and current_player.lower().replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip() == partner_clean):
+                                is_partner = True
                         process_drops(
                             player_lines,
                             current_player,
                             sessionData["partner_loot_data"]
-                            if current_player == config.partner_name
+                            if is_partner
                             else sessionData["loot_data"],
                         )
                 else:

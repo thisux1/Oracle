@@ -820,7 +820,9 @@ class DiscordClient(discord.Client):
             # Invite/challenge patterns that require cross-channel delivery
             invite_keywords = ["will you accept", "do you want to join"]
             has_invite = any(kw in combined_content for kw in invite_keywords)
-            has_my_name = config.user_name_lower in combined_content
+            user_name_clean = config.user_name_lower.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+            content_clean = combined_content.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+            has_my_name = (config.user_name_lower in combined_content) or (user_name_clean and user_name_clean in content_clean)
 
             # Case A: New invite addressed to us
             if has_invite and has_my_name:
@@ -933,8 +935,12 @@ class DiscordClient(discord.Client):
             if not is_for_us:
                 from bot.handlers import check_user_matches
                 embed_dict = message.embeds[0].to_dict() if message.embeds else None
+                user_name_clean = config.user_name_lower.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+                content_clean = combined_content.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+                
                 is_for_us = check_user_matches(embed_dict, config.user_name_lower, config.userID) or \
-                            config.user_name_lower in combined_content or \
+                            (config.user_name_lower and config.user_name_lower in combined_content) or \
+                            (user_name_clean and user_name_clean in content_clean) or \
                             str(config.userID) in combined_content
 
             if is_for_us:
@@ -1027,10 +1033,13 @@ class DiscordClient(discord.Client):
                 return
 
             # Jail Detection
+            user_name_clean = config.user_name_lower.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+            content_clean = combined_content.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+
             if (
                 ("is now in the jail" in combined_content
                  or "is now in the adventure jail" in combined_content)
-                and (config.user_name_lower and config.user_name_lower in combined_content)
+                and (config.user_name_lower and (config.user_name_lower in combined_content or (user_name_clean and user_name_clean in content_clean)))
             ):
                 bot_state.jailed = True
                 bot_state.paused = True
@@ -1051,7 +1060,7 @@ class DiscordClient(discord.Client):
                     "everything seems fine",
                     "everything looks fine",
                 ]
-            ) and (config.user_name_lower and config.user_name_lower in combined_content):
+            ) and (config.user_name_lower and (config.user_name_lower in combined_content or (user_name_clean and user_name_clean in content_clean))):
                 bot_state.jailed = False
                 bot_state.paused = False
                 bot_state.captcha_pending = False
@@ -1059,9 +1068,11 @@ class DiscordClient(discord.Client):
                 return
 
             # Profile detection (update bankroll)
-            profile_check = f"{config.user_name_lower} — profile"
-            profile_check_bold = f"**{config.user_name_lower}** — profile"
-            if profile_check in combined_content or profile_check_bold in combined_content:
+            is_profile = False
+            if "— profile" in combined_content:
+                if (config.user_name_lower and config.user_name_lower in combined_content) or (user_name_clean and user_name_clean in content_clean):
+                    is_profile = True
+            if is_profile:
                 clean_content_for_profile = re.sub(r'<:[a-zA-Z0-9_]+:\d+>', '', combined_content)
                 coins_match = re.search(r"coins:\s*([\d,]+)", clean_content_for_profile)
                 bank_match = re.search(r"bank:\s*([\d,]+)", clean_content_for_profile)

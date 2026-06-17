@@ -1,0 +1,78 @@
+{
+    "start_time": 1780633301.7260406,
+    "command_data": {
+        "hunt": 0,
+        "adventure": 0,
+        "farm": 0,
+        "training": 0,
+        "work": 0,
+        "quest": 0,
+        "daily": 0,
+        "weekly": 0,
+        "lootbox": 0
+    },
+    "progress_data": {
+        "coins": 0,
+        "xp": 0,
+        "levels": 0
+    },
+    "loot_data": {
+        "mob_drops": {
+            "wolf skin": 0,
+            "zombie eye": 0,
+            "unicorn horn": 0,
+            "mermaid hair": 0,
+            "chip": 0,
+            "dragon scale": 0,
+            "dark energy": 0
+        },
+        "lootbox_drops": {
+            "common": 0,
+            "uncommon": 0,
+            "rare": 0,
+            "epic": 0,
+            "edgy": 0,
+            "void": 0,
+            "eternal": 0,
+            "galaxy": 0
+        },
+        "work_drops": {
+            "banana": 0,
+            "apple": 0,
+            "ruby": 0,
+            "normie fish": 0,
+            "golden fish": 0,
+            "epic fish": 0,
+            "super fish": 0,
+            "wooden log": 0,
+            "epic log": 0,
+            "super log": 0,
+            "mega log": 0,
+            "hyper log": 0,
+            "ultra log": 0,
+            "ultimate log": 0
+        },
+        "farm_drops": {
+            "carrot": 0,
+            "potato": 0,
+            "bread": 0
+        }
+    },
+    "misc": {
+        "cards": {
+            "common": 0,
+            "uncommon": 0,
+            "epic": 0,
+            "omega": 0,
+            "godly": 0,
+            "eternal": 0
+        },
+        "coolness": 0,
+        "arena_cookies": 0,
+        "guard_events": 0,
+        "personal_events": 0,
+        "pets": 0,
+        "misc": {}
+    },
+    "partner_loot_data": {}
+}

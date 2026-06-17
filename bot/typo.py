@@ -102,6 +102,7 @@ async def send_with_typo_chance(channel, command, priority_label=""):
             async with channel.typing():
                 await asyncio.sleep(0.1 + random.random() * 0.3)
             await channel.send(typo_text)
+                
             HUD.system(
                 f"🫢 Typo! Enviado '{typo_text}' "
                 f"('{orig}'→'{repl}' na pos {pos})"
@@ -120,6 +121,7 @@ async def send_with_typo_chance(channel, command, priority_label=""):
             async with channel.typing():
                 await asyncio.sleep(0.1 + random.random() * 0.3)
             await channel.send(command)
+                
             HUD.system(f"Corrigido -> '{command}'")
             return True
 
