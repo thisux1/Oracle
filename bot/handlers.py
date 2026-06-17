@@ -273,20 +273,51 @@ async def interactive_card_hand_loop(message) -> None:
     global active_card_hand_msg_id
     HUD.system("Iniciando loop de Card Hand interativo-automático...")
     
+    bot_state.cardhand_message = message
+    if hasattr(bot_state, '_cardhand_updated_event') and bot_state._cardhand_updated_event is not None:
+        bot_state._cardhand_updated_event.set()
+    
     try:
-        for turn in range(CARD_HAND_MAX_TURNS):
-            if not bot_state.cardhand_in_progress:
-                break
-                
+        while bot_state.cardhand_in_progress:
             try:
-                # Reload message to get latest state
-                message = await message.channel.fetch_message(message.id)
-            except Exception as e:
-                logger.error(f"Erro ao obter mensagem do Card Hand: {e}")
+                # Wait for up to 20 seconds for the next turn message or edit event
+                await asyncio.wait_for(bot_state.cardhand_updated_event.wait(), timeout=20.0)
+            except asyncio.TimeoutError:
+                logger.warning("Mensagem de Card Hand não foi atualizada no tempo limite.")
+                if bot_state.cardhand_message:
+                    try:
+                        bot_state.cardhand_message = await bot_state.cardhand_message.channel.fetch_message(bot_state.cardhand_message.id)
+                    except Exception:
+                        break
+                else:
+                    break
+            
+            if hasattr(bot_state, '_cardhand_updated_event') and bot_state._cardhand_updated_event is not None:
+                bot_state._cardhand_updated_event.clear()
+            
+            message = bot_state.cardhand_message
+            if not message:
                 break
                 
+            # If the Epic RPG message doesn't have embeds yet, wait for the edit that adds it
             if not message.embeds:
-                break
+                continue
+
+            # Re-fetch from API to guarantee attachments are populated
+            # (on_message often delivers attachments empty for selfbots)
+            try:
+                fresh = await message.channel.fetch_message(message.id)
+                if fresh:
+                    message = fresh
+                    bot_state.cardhand_message = fresh
+            except Exception:
+                pass
+
+            # Ensure the image is forwarded for this turn
+            try:
+                await check_and_forward_cardhand_image(message)
+            except Exception as e:
+                logger.error(f"Erro ao verificar/encaminhar imagem no loop do Card Hand: {e}")
                 
             embed_dict = message.embeds[0].to_dict()
             embed_text = str(embed_dict).lower()
@@ -307,7 +338,7 @@ async def interactive_card_hand_loop(message) -> None:
                 active_card_hand_msg_id = None
                 break
                 
-            # Re-check game state — responseResolver may have cleared it
+            # Re-check game state
             if not bot_state.cardhand_in_progress:
                 break
             
@@ -329,7 +360,6 @@ async def interactive_card_hand_loop(message) -> None:
                     if bot_state.latest_neon_recommendation:
                         rec, neon_formatted = bot_state.latest_neon_recommendation[0], bot_state.latest_neon_recommendation[1]
                 except asyncio.TimeoutError:
-                    # Fallback to history lookup if event didn't fire (e.g. startup or missed update)
                     if bot_state.cardhand_in_progress:
                         rec, neon_formatted = await find_neon_recommendation(message.channel)
             
@@ -358,22 +388,19 @@ async def interactive_card_hand_loop(message) -> None:
             else:
                 await edit_telegram_message(active_card_hand_msg_id, msg_text, None, parse_mode=None)
             
-            # Clear any stale user choice before polling
             bot_state.cardhand_user_choice = None
-            
             user_choice = None
             
             # Poll for the duration of the timeout, checking centralized state
             for t_left in range(timeout, 0, -1):
                 if not bot_state.cardhand_in_progress:
                     break
-                # Check for user override via Telegram (set by telegram_listener_loop)
                 if bot_state.cardhand_user_choice:
                     user_choice = bot_state.cardhand_user_choice.strip().lower()
                     bot_state.cardhand_user_choice = None
                     break
                 
-                # Edit countdown to keep it visually alive (limit requests to avoid Telegram rate limiting)
+                # Edit countdown to keep it visually alive
                 if t_left in [10, 5, 2] and active_card_hand_msg_id:
                     msg_text = (
                         f"🃏 CARD HAND ATIVO (Turno {bot_state.cardhand_turn_count})\n\n"
@@ -383,6 +410,9 @@ async def interactive_card_hand_loop(message) -> None:
                     )
                     await edit_telegram_message(active_card_hand_msg_id, msg_text, None, parse_mode=None)
                 await asyncio.sleep(1)
+                
+            if not bot_state.cardhand_in_progress:
+                break
                 
             final_choice = None
             is_auto = False
@@ -409,25 +439,6 @@ async def interactive_card_hand_loop(message) -> None:
             # Reset Neon recommendation to avoid using stale data on the next turn
             bot_state.latest_neon_recommendation = None
             
-            # Wait for message to be edited (use edited_at timestamp to detect ANY edit,
-            # even if the embed text is nearly identical after "pass")
-            pre_edit_time = message.edited_at
-            updated = False
-            for _ in range(CARD_HAND_EDIT_MAX_ITERATIONS):
-                await asyncio.sleep(CARD_HAND_EDIT_POLL_INTERVAL)
-                if not bot_state.cardhand_in_progress:
-                    break
-                try:
-                    new_msg = await message.channel.fetch_message(message.id)
-                    # Detect edit by timestamp change (works even when text is similar after pass)
-                    if new_msg.edited_at and new_msg.edited_at != pre_edit_time:
-                        updated = True
-                        break
-                except Exception:
-                    pass
-            if not updated:
-                logger.warning("Mensagem de Card Hand não foi atualizada no tempo limite.")
-            
     except Exception as e:
         logger.error(f"Erro no loop interativo de Card Hand: {e}")
     finally:
@@ -436,6 +447,9 @@ async def interactive_card_hand_loop(message) -> None:
         bot_state.cardhand_turn_count = 1
         bot_state.last_sent_cardhand_image = None
         bot_state.cardhand_user_choice = None
+        bot_state.cardhand_message = None
+        if hasattr(bot_state, '_cardhand_updated_event') and bot_state._cardhand_updated_event is not None:
+            bot_state._cardhand_updated_event.clear()
         active_card_hand_msg_id = None
 
 
@@ -1335,19 +1349,27 @@ async def responseResolver(message) -> None:
                     bot_state.cardhand_in_progress = False
                     bot_state.cardhand_first_pass_done = False
                     bot_state.cardhand_turn_count = 1
+                    bot_state.cardhand_message = None
+                    if hasattr(bot_state, '_cardhand_updated_event') and bot_state._cardhand_updated_event is not None:
+                        bot_state._cardhand_updated_event.clear()
                     HUD.system("Card Hand concluído! Filas liberadas.")
+                else:
+                    bot_state.cardhand_message = message
+                    bot_state.cardhand_updated_event.set()
                 return
 
             if (
                 target_name in embed_text
                 and "card hand" in embed_text
-                and "try to get the best possible hand" in embed_text
                 and bot_state.cardhand_in_progress
             ):
                 if config.card_hand_action == "auto":
                     if not bot_state.cardhand_first_pass_done:
                         bot_state.cardhand_first_pass_done = True
                         asyncio.create_task(interactive_card_hand_loop(message))
+                    else:
+                        bot_state.cardhand_message = message
+                        bot_state.cardhand_updated_event.set()
                     return
 
             # ─── Pet Embeds (Summary / Reward / Status) ───

@@ -855,7 +855,8 @@ class DiscordClient(discord.Client):
                 # Auto Enchant Check
                 if bot_state.auto_enchant_active:
                     header_check = f"{config.user_name_lower} — {bot_state.auto_enchant_tier}"
-                    if header_check in combined_content.lower():
+                    header_check_bold = f"**{config.user_name_lower}** — {bot_state.auto_enchant_tier}"
+                    if header_check in combined_content.lower() or header_check_bold in combined_content.lower():
                         match = re.search(r'~-~>\s*([a-zA-Z0-9\s\-]+)\s*<~-~', combined_content)
                         if match:
                             rolled_name = match.group(1).strip()
@@ -955,7 +956,9 @@ class DiscordClient(discord.Client):
                 return
 
             # Profile detection (update bankroll)
-            if f"{config.user_name_lower} — profile" in combined_content:
+            profile_check = f"{config.user_name_lower} — profile"
+            profile_check_bold = f"**{config.user_name_lower}** — profile"
+            if profile_check in combined_content or profile_check_bold in combined_content:
                 clean_content_for_profile = re.sub(r'<:[a-zA-Z0-9_]+:\d+>', '', combined_content)
                 coins_match = re.search(r"coins:\s*([\d,]+)", clean_content_for_profile)
                 bank_match = re.search(r"bank:\s*([\d,]+)", clean_content_for_profile)
@@ -1228,13 +1231,15 @@ class DiscordClient(discord.Client):
             save_session_data(sessionData)
             # Track this message as processed to prevent on_message_edit
             # from re-processing it (Epic RPG often edits embeds after sending)
-            # EXCEPT for pet/sleepet messages because they might be loaded dynamically.
             is_pet_message = False
+            is_cardhand_message = False
             if message.embeds:
                 msg_text = str(message.embeds[0].to_dict()).lower()
                 if "— pets" in msg_text or "pet adventure rewards" in msg_text:
                     is_pet_message = True
-            if message.author.id == config.EPIC_RPG_ID and message.embeds and not is_pet_message:
+                if "card hand" in msg_text:
+                    is_cardhand_message = True
+            if message.author.id == config.EPIC_RPG_ID and message.embeds and not is_pet_message and not is_cardhand_message:
                 self._track_processed_message(message.id)
         except Exception as e:
             logger.error(
@@ -1252,11 +1257,17 @@ class DiscordClient(discord.Client):
         from bot.handlers import check_and_forward_cardhand_image
         await check_and_forward_cardhand_image(after)
 
+        is_cardhand_message = False
+        if after.embeds:
+            embed_text = str(after.embeds[0].to_dict()).lower()
+            if "card hand" in embed_text:
+                is_cardhand_message = True
+
         if bot_state.paused:
             return
         if not after.embeds:
             return
-        if before.embeds == after.embeds:
+        if before.embeds == after.embeds and not is_cardhand_message:
             return
 
         if after.author.id == config.EPIC_RPG_ID:
@@ -1264,19 +1275,22 @@ class DiscordClient(discord.Client):
             # (Epic RPG frequently edits embeds after sending, causing duplicate processing)
             # EXCEPT for pet/sleepet messages because they might be loaded dynamically.
             is_pet_edit = False
+            is_cardhand_edit = False
             if after.embeds:
                 after_text = str(after.embeds[0].to_dict()).lower()
                 if "— pets" in after_text or "pet adventure rewards" in after_text:
                     is_pet_edit = True
+                if "card hand" in after_text:
+                    is_cardhand_edit = True
 
-            if after.id in self._processed_msg_ids and not is_pet_edit:
+            if after.id in self._processed_msg_ids and not is_pet_edit and not is_cardhand_edit:
                 logger.debug(f"Skipping already-processed Epic RPG edit: {after.id}")
                 return
             try:
                 await responseResolver(after)
                 save_session_data(sessionData)
-                # Track it now so further edits are also skipped (except if it's still a pet message edit)
-                if after.embeds and not is_pet_edit:
+                # Track it now so further edits are also skipped (except if it's still a pet/cardhand message edit)
+                if after.embeds and not is_pet_edit and not is_cardhand_edit:
                     self._track_processed_message(after.id)
             except Exception as e:
                 logger.error(f"Error processing edited message: {e}\n{traceback.format_exc()}")

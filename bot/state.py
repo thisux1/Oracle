@@ -125,6 +125,7 @@ class BotState:
         self.last_sent_time = 0
         self.last_sent_cardhand_image = None
         self.cardhand_user_choice = None
+        self.cardhand_message = None
         # Pet Adventure
         self.pet_adventure_return_time = 0
         self.next_pet_summary_check = time.time() + randint(5400, 10800)
@@ -163,6 +164,12 @@ class BotState:
         if not hasattr(self, '_neon_updated_event') or self._neon_updated_event is None:
             self._neon_updated_event = asyncio.Event()
         return self._neon_updated_event
+
+    @property
+    def cardhand_updated_event(self) -> asyncio.Event:
+        if not hasattr(self, '_cardhand_updated_event') or self._cardhand_updated_event is None:
+            self._cardhand_updated_event = asyncio.Event()
+        return self._cardhand_updated_event
 
     @property
     def paused(self) -> bool:
@@ -419,6 +426,9 @@ def reset_bot_state() -> None:
     bot_state.cardhand_turn_count = 1
     bot_state.last_sent_cardhand_image = None
     bot_state.cardhand_user_choice = None
+    bot_state.cardhand_message = None
+    if hasattr(bot_state, '_cardhand_updated_event') and bot_state._cardhand_updated_event is not None:
+        bot_state._cardhand_updated_event.clear()
     bot_state.dungeon_waiting_confirmation = False
     bot_state.dungeon_in_progress = False
     bot_state.dragon_alive = False
