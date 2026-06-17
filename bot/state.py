@@ -159,6 +159,9 @@ class BotState:
         self.auto_enchant_target_value = ""
         self.auto_enchant_channel_id = 0
         self.auto_enchant_attempts = 0
+        self.last_auto_enchant_time = 0.0
+        self.auto_enchant_withdrawn = False
+
 
     @property
     def neon_updated_event(self) -> asyncio.Event:
@@ -467,6 +470,8 @@ def reset_bot_state() -> None:
     bot_state.auto_enchant_target_value = ""
     bot_state.auto_enchant_channel_id = 0
     bot_state.auto_enchant_attempts = 0
+    bot_state.last_auto_enchant_time = 0.0
+    bot_state.auto_enchant_withdrawn = False
     lowPriorityQueue.clear()
     lowPriorityQueueSet.clear()
     logger.info("Bot state reset to initial values.")

@@ -49,6 +49,7 @@ ANTI_SPAM_WINDOW = 5.0
 SLEEPET_STATE_TIMEOUT = 20
 TC_REUSE_INTERVAL = 2
 DUNGEON_TIMEOUT = 60
+AUTO_ENCHANT_TIMEOUT = 60
 MAIN_LOOP_SLEEP = 0.5
 DISCORD_FILE_SIZE_LIMIT = 8 * 1024 * 1024
 TRUNCATED_LOG_SIZE = 5 * 1024 * 1024
@@ -441,6 +442,8 @@ class DiscordClient(discord.Client):
                             bot_state.last_sent_time = current_time
                             if cmd.lower().startswith("rpg cf"):
                                 bot_state.last_coinflip_time = current_time
+                            if bot_state.auto_enchant_active and (any(x in cmd.lower() for x in ["enchant", "refine", "transmute", "transcend"]) or "withdraw" in cmd.lower()):
+                                bot_state.last_auto_enchant_time = current_time
                             if cmd.lower().startswith("rpg"):
                                 bot_state.response_pending_until = current_time + RESPONSE_PENDING_DURATION
                             if is_sleepet_command(cmd):
@@ -509,6 +512,18 @@ class DiscordClient(discord.Client):
                         bot_state.dungeon_in_progress = False
                         bot_state.dragon_alive = False
                         HUD.dungeon("Timeout do estado, resetando.")
+
+                    # Auto Enchant: timeout safety
+                    if bot_state.auto_enchant_active and current_time - bot_state.last_auto_enchant_time > AUTO_ENCHANT_TIMEOUT:
+                        bot_state.auto_enchant_active = False
+                        HUD.alert("Timeout do auto-enchant (1 min sem resposta). Resgatando estado normal e liberando filas.")
+                        await send_telegram_notification("⚠️ *Timeout do Auto-Enchant:* Sem resposta por 1 minuto. Auto-enchant desativado e filas liberadas.")
+                        channel = self.get_channel(bot_state.auto_enchant_channel_id)
+                        if channel:
+                            await channel.send("⚠️ **Auto-Enchant Cancelado:** Sem resposta por 1 minuto.")
+                        highPriorityQueue[:] = [c for c in highPriorityQueue if not any(x in c.lower() for x in ["enchant", "refine", "transmute", "transcend", "withdraw"])]
+                        highPriorityQueueSet.clear()
+                        highPriorityQueueSet.update(highPriorityQueue)
 
                     # Pet Adventure: auto-claim when timer expires
                     if (
@@ -628,6 +643,8 @@ class DiscordClient(discord.Client):
                         bot_state.auto_enchant_target_value = target_val
                         bot_state.auto_enchant_channel_id = message.channel.id
                         bot_state.auto_enchant_attempts = 0
+                        bot_state.last_auto_enchant_time = time.time()
+                        bot_state.auto_enchant_withdrawn = False
                         
                         lowPriorityQueue.clear()
                         lowPriorityQueueSet.clear()
@@ -824,6 +841,71 @@ class DiscordClient(discord.Client):
 
         # ─── 3. Status Detection (bypasses pause) ───
         if message.author.id == config.EPIC_RPG_ID:
+            # Plain text errors for Auto Enchant
+            if bot_state.auto_enchant_active and message.channel.id == bot_state.auto_enchant_channel_id:
+                if "don't have enough money" in combined_content.lower() or "don't have enough coin" in combined_content.lower():
+                    bot_state.no_response_count = 0
+                    bot_state.response_pending_until = 0
+                    if not bot_state.auto_enchant_withdrawn:
+                        bot_state.auto_enchant_withdrawn = True
+                        HUD.system("Auto-Enchant: Sem dinheiro suficiente. Tentando sacar...")
+                        highPriorityQueue[:] = [c for c in highPriorityQueue if not any(x in c.lower() for x in ["enchant", "refine", "transmute", "transcend", "withdraw"])]
+                        add_to_high_priority_queue("rpg withdraw all")
+                        add_to_high_priority_queue(f"rpg {bot_state.auto_enchant_tier} {bot_state.auto_enchant_target}")
+                        highPriorityQueueSet.clear()
+                        highPriorityQueueSet.update(highPriorityQueue)
+                        bot_state.last_auto_enchant_time = time.time()
+                    else:
+                        bot_state.auto_enchant_active = False
+                        HUD.alert("Auto-Enchant CANCELADO: Sem dinheiro suficiente mesmo após 'rpg withdraw all'!")
+                        await send_telegram_notification("⚠️ *Auto-Enchant Cancelado:* Sem dinheiro suficiente (falha no saque).")
+                        channel = self.get_channel(bot_state.auto_enchant_channel_id)
+                        if channel:
+                            await channel.send("⚠️ **Auto-Enchant Cancelado:** Sem dinheiro suficiente.")
+                        highPriorityQueue[:] = [c for c in highPriorityQueue if not any(x in c.lower() for x in ["enchant", "refine", "transmute", "transcend", "withdraw"])]
+                        highPriorityQueueSet.clear()
+                        highPriorityQueueSet.update(highPriorityQueue)
+                    return
+                elif "unlocked in the" in combined_content.lower() or "is unlocked in" in combined_content.lower() or "unlocked in" in combined_content.lower():
+                    bot_state.no_response_count = 0
+                    bot_state.response_pending_until = 0
+                    tiers = ["enchant", "refine", "transmute", "transcend"]
+                    if bot_state.auto_enchant_tier in tiers:
+                        current_idx = tiers.index(bot_state.auto_enchant_tier)
+                        if current_idx > 0:
+                            new_tier = tiers[current_idx - 1]
+                            HUD.system(f"Auto-Enchant: Comando {bot_state.auto_enchant_tier.upper()} bloqueado. Voltando para {new_tier.upper()}...")
+                            bot_state.auto_enchant_tier = new_tier
+                            highPriorityQueue[:] = [c for c in highPriorityQueue if not any(x in c.lower() for x in ["enchant", "refine", "transmute", "transcend", "withdraw"])]
+                            add_to_high_priority_queue(f"rpg {bot_state.auto_enchant_tier} {bot_state.auto_enchant_target}")
+                            highPriorityQueueSet.clear()
+                            highPriorityQueueSet.update(highPriorityQueue)
+                            bot_state.last_auto_enchant_time = time.time()
+                        else:
+                            bot_state.auto_enchant_active = False
+                            HUD.alert("Auto-Enchant CANCELADO: Comando base 'enchant' bloqueado!")
+                            await send_telegram_notification("⚠️ *Auto-Enchant Cancelado:* Comando base 'enchant' bloqueado!")
+                            channel = self.get_channel(bot_state.auto_enchant_channel_id)
+                            if channel:
+                                await channel.send("⚠️ **Auto-Enchant Cancelado:** Comando base 'enchant' bloqueado.")
+                            highPriorityQueue[:] = [c for c in highPriorityQueue if not any(x in c.lower() for x in ["enchant", "refine", "transmute", "transcend", "withdraw"])]
+                            highPriorityQueueSet.clear()
+                            highPriorityQueueSet.update(highPriorityQueue)
+                    return
+                elif "don't have a bank account" in combined_content.lower():
+                    bot_state.no_response_count = 0
+                    bot_state.response_pending_until = 0
+                    bot_state.auto_enchant_active = False
+                    HUD.alert("Auto-Enchant CANCELADO: Conta bancária não encontrada!")
+                    await send_telegram_notification("⚠️ *Auto-Enchant Cancelado:* Sem conta bancária.")
+                    channel = self.get_channel(bot_state.auto_enchant_channel_id)
+                    if channel:
+                        await channel.send("⚠️ **Auto-Enchant Cancelado:** Sem conta bancária.")
+                    highPriorityQueue[:] = [c for c in highPriorityQueue if not any(x in c.lower() for x in ["enchant", "refine", "transmute", "transcend", "withdraw"])]
+                    highPriorityQueueSet.clear()
+                    highPriorityQueueSet.update(highPriorityQueue)
+                    return
+
             # Maintenance Detection
             if any(x in combined_content for x in ["maintenance", "manutenção"]):
                 if not bot_state.paused:
@@ -864,48 +946,58 @@ class DiscordClient(discord.Client):
                     bot_state.lootbox_fallback_triggered = False
 
                 # Auto Enchant Check
-                if bot_state.auto_enchant_active:
-                    header_check = f"{config.user_name_lower} — {bot_state.auto_enchant_tier}"
-                    header_check_bold = f"**{config.user_name_lower}** — {bot_state.auto_enchant_tier}"
-                    if header_check in combined_content.lower() or header_check_bold in combined_content.lower():
-                        match = re.search(r'~-~>\s*([a-zA-Z0-9\s\-]+)\s*<~-~', combined_content)
-                        if match:
-                            rolled_name = match.group(1).strip()
-                            rolled_normalized = rolled_name.lower().replace(" ", "").replace("-", "")
-                            
-                            rolled_idx = ENCHANT_TIERS_ORDER.index(rolled_normalized) if rolled_normalized in ENCHANT_TIERS_ORDER else -1
-                            target_idx = ENCHANT_TIERS_ORDER.index(bot_state.auto_enchant_target_value) if bot_state.auto_enchant_target_value in ENCHANT_TIERS_ORDER else -1
-                            
-                            if rolled_idx == -1 or target_idx == -1:
+                if bot_state.auto_enchant_active and message.channel.id == bot_state.auto_enchant_channel_id:
+                    match = re.search(r'~-~>\s*([a-zA-Z0-9\s\-]+)\s*<~-~', combined_content)
+                    if match:
+                        rolled_name = match.group(1).strip()
+                        rolled_normalized = rolled_name.lower().replace(" ", "").replace("-", "")
+                        
+                        rolled_idx = ENCHANT_TIERS_ORDER.index(rolled_normalized) if rolled_normalized in ENCHANT_TIERS_ORDER else -1
+                        target_idx = ENCHANT_TIERS_ORDER.index(bot_state.auto_enchant_target_value) if bot_state.auto_enchant_target_value in ENCHANT_TIERS_ORDER else -1
+                        
+                        if rolled_idx == -1 or target_idx == -1:
+                            bot_state.auto_enchant_active = False
+                            HUD.alert(f"Auto-Enchant CANCELADO: Encantamento inválido ou desconhecido detectado (rolado: {rolled_normalized}, alvo: {bot_state.auto_enchant_target_value})")
+                            await send_telegram_notification(f"⚠️ *Auto-Enchant Cancelado:* Encantamento desconhecido detectado (rolado: {rolled_name})")
+                            channel = self.get_channel(bot_state.auto_enchant_channel_id)
+                            if channel:
+                                await channel.send(f"⚠️ **Auto-Enchant Cancelado:** Encantamento desconhecido ({rolled_name}).")
+                            highPriorityQueue[:] = [c for c in highPriorityQueue if not any(x in c.lower() for x in ["enchant", "refine", "transmute", "transcend", "withdraw"])]
+                            highPriorityQueueSet.clear()
+                            highPriorityQueueSet.update(highPriorityQueue)
+                        elif rolled_idx >= target_idx:
+                            bot_state.auto_enchant_active = False
+                            HUD.system(f"Auto-Enchant SUCESSO! Rolado: {rolled_name.upper()} (Alvo era: {bot_state.auto_enchant_target_value.upper()})")
+                            await send_telegram_notification(
+                                f"✨ *Auto-Enchant SUCESSO!*\n"
+                                f"• Alvo: `{bot_state.auto_enchant_target_value.upper()}`\n"
+                                f"• Rolado: `{rolled_name.upper()}`\n"
+                                f"• Equipamento: `{'Espada' if bot_state.auto_enchant_target == 's' else 'Armadura'}`"
+                            )
+                            channel = self.get_channel(bot_state.auto_enchant_channel_id)
+                            if channel:
+                                await channel.send(f"🎉 **Auto-Enchant Sucesso!** Consegui **{rolled_name}**!")
+                            highPriorityQueue[:] = [c for c in highPriorityQueue if not any(x in c.lower() for x in ["enchant", "refine", "transmute", "transcend", "withdraw"])]
+                            highPriorityQueueSet.clear()
+                            highPriorityQueueSet.update(highPriorityQueue)
+                        else:
+                            bot_state.auto_enchant_attempts += 1
+                            if bot_state.auto_enchant_attempts >= AUTO_ENCHANT_MAX_ATTEMPTS:
                                 bot_state.auto_enchant_active = False
-                                HUD.alert(f"Auto-Enchant CANCELADO: Encantamento inválido ou desconhecido detectado (rolado: {rolled_normalized}, alvo: {bot_state.auto_enchant_target_value})")
-                                await send_telegram_notification(f"⚠️ *Auto-Enchant Cancelado:* Encantamento desconhecido detectado (rolado: {rolled_name})")
+                                HUD.alert(f"Auto-Enchant CANCELADO: Número máximo de tentativas ({AUTO_ENCHANT_MAX_ATTEMPTS}) atingido!")
+                                await send_telegram_notification(f"⚠️ *Auto-Enchant Cancelado:* Número máximo de tentativas ({AUTO_ENCHANT_MAX_ATTEMPTS}) atingido!")
                                 channel = self.get_channel(bot_state.auto_enchant_channel_id)
                                 if channel:
-                                    await channel.send(f"⚠️ **Auto-Enchant Cancelado:** Encantamento desconhecido ({rolled_name}).")
-                            elif rolled_idx >= target_idx:
-                                bot_state.auto_enchant_active = False
-                                HUD.system(f"Auto-Enchant SUCESSO! Rolado: {rolled_name.upper()} (Alvo era: {bot_state.auto_enchant_target_value.upper()})")
-                                await send_telegram_notification(
-                                    f"✨ *Auto-Enchant SUCESSO!*\n"
-                                    f"• Alvo: `{bot_state.auto_enchant_target_value.upper()}`\n"
-                                    f"• Rolado: `{rolled_name.upper()}`\n"
-                                    f"• Equipamento: `{'Espada' if bot_state.auto_enchant_target == 's' else 'Armadura'}`"
-                                )
-                                channel = self.get_channel(bot_state.auto_enchant_channel_id)
-                                if channel:
-                                    await channel.send(f"🎉 **Auto-Enchant Sucesso!** Consegui **{rolled_name}**!")
+                                    await channel.send(f"⚠️ **Auto-Enchant Cancelado:** Máximo de {AUTO_ENCHANT_MAX_ATTEMPTS} tentativas atingido.")
+                                highPriorityQueue[:] = [c for c in highPriorityQueue if not any(x in c.lower() for x in ["enchant", "refine", "transmute", "transcend", "withdraw"])]
+                                highPriorityQueueSet.clear()
+                                highPriorityQueueSet.update(highPriorityQueue)
                             else:
-                                bot_state.auto_enchant_attempts += 1
-                                if bot_state.auto_enchant_attempts >= AUTO_ENCHANT_MAX_ATTEMPTS:
-                                    bot_state.auto_enchant_active = False
-                                    HUD.alert(f"Auto-Enchant CANCELADO: Número máximo de tentativas ({AUTO_ENCHANT_MAX_ATTEMPTS}) atingido!")
-                                    await send_telegram_notification(f"⚠️ *Auto-Enchant Cancelado:* Número máximo de tentativas ({AUTO_ENCHANT_MAX_ATTEMPTS}) atingido!")
-                                    channel = self.get_channel(bot_state.auto_enchant_channel_id)
-                                    if channel:
-                                        await channel.send(f"⚠️ **Auto-Enchant Cancelado:** Máximo de {AUTO_ENCHANT_MAX_ATTEMPTS} tentativas atingido.")
-                                else:
-                                    add_to_high_priority_queue(f"rpg {bot_state.auto_enchant_tier} {bot_state.auto_enchant_target}")
+                                bot_state.last_auto_enchant_time = time.time()
+                                highPriorityQueue[:] = [c for c in highPriorityQueue if not any(x in c.lower() for x in ["enchant", "refine", "transmute", "transcend", "withdraw"])]
+                                add_to_high_priority_queue(f"rpg {bot_state.auto_enchant_tier} {bot_state.auto_enchant_target}")
+                                highPriorityQueueSet.clear()
+                                highPriorityQueueSet.update(highPriorityQueue)
 
 
             # Captcha Detection
@@ -1039,22 +1131,6 @@ class DiscordClient(discord.Client):
                 "don't have enough money" in combined_content
                 or "don't have a bank account" in combined_content
             ):
-                if bot_state.auto_enchant_active:
-                    bot_state.auto_enchant_active = False
-                    HUD.alert("Auto-Enchant CANCELADO por falta de dinheiro!")
-                    await send_telegram_notification("⚠️ *Auto-Enchant Cancelado:* Falta de dinheiro ou conta bancária inexistente!")
-                    channel = self.get_channel(bot_state.auto_enchant_channel_id)
-                    if channel:
-                        await channel.send("⚠️ **Auto-Enchant Cancelado!** Falta de dinheiro.")
-                    for cmd in list(highPriorityQueue):
-                        if any(x in cmd for x in ["enchant", "refine", "transmute", "transcend"]):
-                            highPriorityQueue.remove(cmd)
-                            highPriorityQueueSet.discard(cmd)
-                    for cmd in list(lowPriorityQueue):
-                        if any(x in cmd for x in ["enchant", "refine", "transmute", "transcend"]):
-                            lowPriorityQueue.remove(cmd)
-                            lowPriorityQueueSet.discard(cmd)
-                    return
 
                 if bot_state.pending_lootbox_buy and bot_state.has_bank_account and not bot_state.lootbox_fallback_triggered:
 
@@ -1546,6 +1622,8 @@ class DiscordClient(discord.Client):
                     bot_state.auto_enchant_target_value = target_val
                     bot_state.auto_enchant_channel_id = config.channelID
                     bot_state.auto_enchant_attempts = 0
+                    bot_state.last_auto_enchant_time = time.time()
+                    bot_state.auto_enchant_withdrawn = False
                     
                     lowPriorityQueue.clear()
                     lowPriorityQueueSet.clear()
