@@ -238,8 +238,21 @@ async def rdCheckNavi(message):
                     add_to_low_priority_queue("rpg weekly", suppress_log=True)
                     logger.info("Command 'rpg weekly' added to LPQ from Navi Lite.")
                 elif cmd == "lootbox" and config.do_lootbox:
-                    add_to_low_priority_queue("rpg lootbox", suppress_log=True)
-                    logger.info("Command 'rpg lootbox' added to LPQ from Navi Lite.")
+                    lootbox_type = config.userOptions.get("lootbox_type", "none")
+                    if (
+                        lootbox_type != "none"
+                        and time.time() > bot_state.lootbox_cooldown_until
+                    ):
+                        add_to_low_priority_queue(
+                            f"rpg buy {lootbox_type}", suppress_log=True
+                        )
+                        bot_state.pending_lootbox_buy = lootbox_type
+                        bot_state.lootbox_fallback_triggered = False
+                        HUD.system(
+                            f"Comando de compra de lootbox ({lootbox_type}) enfileirado a partir do Navi Lite."
+                        )
+                    elif time.time() < bot_state.lootbox_cooldown_until:
+                        HUD.system("Compra de lootbox pulada (Cooldown Financeiro).")
                 elif cmd in ["pickup", "chop", "fish", "mine"] and config.do_work:
                     add_to_low_priority_queue(f"rpg {cmd}", suppress_log=True)
                     logger.info(f"Command 'rpg {cmd}' added to LPQ from Navi Lite.")
