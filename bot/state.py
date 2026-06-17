@@ -127,6 +127,7 @@ class BotState:
         self.last_sent_cardhand_image = None
         self.cardhand_user_choice = None
         self.cardhand_message = None
+        self.cardhand_channel_id = 0
         # Pet Adventure
         self.pet_adventure_return_time = 0
         self.next_pet_summary_check = time.time() + randint(5400, 10800)
@@ -442,6 +443,7 @@ def reset_bot_state() -> None:
     bot_state.last_sent_cardhand_image = None
     bot_state.cardhand_user_choice = None
     bot_state.cardhand_message = None
+    bot_state.cardhand_channel_id = 0
     if hasattr(bot_state, '_cardhand_updated_event') and bot_state._cardhand_updated_event is not None:
         bot_state._cardhand_updated_event.clear()
     bot_state.dungeon_waiting_confirmation = False

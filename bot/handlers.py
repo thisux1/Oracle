@@ -231,7 +231,8 @@ async def check_and_forward_cardhand_image(message) -> None:
     """
     if not bot_state.cardhand_in_progress:
         return
-    if message.channel.id != config.channelID:
+    cardhand_chan_id = getattr(bot_state, "cardhand_channel_id", config.channelID)
+    if message.channel.id != cardhand_chan_id and message.channel.id != config.channelID:
         return
     if not message.attachments:
         return

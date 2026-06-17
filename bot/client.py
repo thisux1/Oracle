@@ -357,14 +357,16 @@ class DiscordClient(discord.Client):
                     if current_time <= bot_state.minigame_pending_until:
                         # During a minigame, only allow the answer through HPQ
                         # (answers are plain text like "3", "yes" — never start with "rpg")
-                        for i, cmd in enumerate(highPriorityQueue):
+                        for cmd in list(highPriorityQueue):
                             if not cmd.lower().startswith("rpg"):
+                                target_cmd = cmd
                                 await human_delay(1.5, 2.0)
-                                cmd_to_send = highPriorityQueue.pop(i)
-                                highPriorityQueueSet.discard(cmd_to_send)
-                                bot_state.no_response_count += 1
-                                HUD.command(cmd_to_send, "HPQ-MG")
-                                await send_with_typo_chance(active_channel, cmd_to_send, "HPQ-MG")
+                                if target_cmd in highPriorityQueue:
+                                    highPriorityQueue.remove(target_cmd)
+                                    highPriorityQueueSet.discard(target_cmd)
+                                    bot_state.no_response_count += 1
+                                    HUD.command(target_cmd, "HPQ-MG")
+                                    await send_with_typo_chance(active_channel, target_cmd, "HPQ-MG")
                                 break
                         # else: wait silently for minigame to resolve
                     elif bot_state.cardhand_in_progress:
@@ -374,38 +376,44 @@ class DiscordClient(discord.Client):
                             bot_state.cardhand_in_progress = False
                             HUD.system(f"Timeout do Card Hand ({CARD_HAND_TIMEOUT}s). Filas liberadas.")
                         else:
-                            for i, cmd in enumerate(highPriorityQueue):
+                            for cmd in list(highPriorityQueue):
                                 if not cmd.lower().startswith("rpg"):
+                                    target_cmd = cmd
                                     await human_delay(1.5, 2.0)
-                                    cmd_to_send = highPriorityQueue.pop(i)
-                                    highPriorityQueueSet.discard(cmd_to_send)
-                                    HUD.command(cmd_to_send, "HPQ-CH")
-                                    await send_with_typo_chance(active_channel, cmd_to_send, "HPQ-CH")
+                                    if target_cmd in highPriorityQueue:
+                                        highPriorityQueue.remove(target_cmd)
+                                        highPriorityQueueSet.discard(target_cmd)
+                                        HUD.command(target_cmd, "HPQ-CH")
+                                        await send_with_typo_chance(active_channel, target_cmd, "HPQ-CH")
                                     break
                     elif current_time < bot_state.response_pending_until:
                         # Waiting for Epic RPG to respond to previous rpg command.
                         # Only allow non-rpg answers through HPQ (e.g. training answers, event responses).
-                        for i, cmd in enumerate(highPriorityQueue):
+                        for cmd in list(highPriorityQueue):
                             if not cmd.lower().startswith("rpg"):
+                                target_cmd = cmd
                                 await human_delay(1.5, 2.0)
-                                cmd_to_send = highPriorityQueue.pop(i)
-                                highPriorityQueueSet.discard(cmd_to_send)
-                                bot_state.no_response_count += 1
-                                bot_state.response_pending_until = current_time + RESPONSE_PENDING_DURATION
-                                HUD.command(cmd_to_send, "HPQ-RP")
-                                await send_with_typo_chance(active_channel, cmd_to_send, "HPQ-RP")
+                                if target_cmd in highPriorityQueue:
+                                    highPriorityQueue.remove(target_cmd)
+                                    highPriorityQueueSet.discard(target_cmd)
+                                    bot_state.no_response_count += 1
+                                    bot_state.response_pending_until = time.time() + RESPONSE_PENDING_DURATION
+                                    HUD.command(target_cmd, "HPQ-RP")
+                                    await send_with_typo_chance(active_channel, target_cmd, "HPQ-RP")
                                 break
                         # else: wait for response before sending next rpg command
                     elif bot_state.duel_in_progress:
                         # Duel active — only allow non-rpg answers (yes, a/b/c) through HPQ
-                        for i, cmd in enumerate(highPriorityQueue):
+                        for cmd in list(highPriorityQueue):
                             if not cmd.lower().startswith("rpg"):
+                                target_cmd = cmd
                                 await human_delay(1.5, 2.0)
-                                cmd_to_send = highPriorityQueue.pop(i)
-                                highPriorityQueueSet.discard(cmd_to_send)
-                                bot_state.no_response_count += 1
-                                HUD.command(cmd_to_send, "HPQ-DL")
-                                await send_with_typo_chance(active_channel, cmd_to_send, "HPQ-DL")
+                                if target_cmd in highPriorityQueue:
+                                    highPriorityQueue.remove(target_cmd)
+                                    highPriorityQueueSet.discard(target_cmd)
+                                    bot_state.no_response_count += 1
+                                    HUD.command(target_cmd, "HPQ-DL")
+                                    await send_with_typo_chance(active_channel, target_cmd, "HPQ-DL")
                                 break
                         # else: wait for duel to finish
                     elif highPriorityQueue:
@@ -427,7 +435,7 @@ class DiscordClient(discord.Client):
                         
                         await human_delay(1.5, 2.0)
                         current_time = time.time()
-                        if cmd == bot_state.last_sent_command and (current_time - bot_state.last_sent_time) < ANTI_SPAM_WINDOW and not cmd.startswith("rpg cf") and not is_sleepet_command(cmd):
+                        if cmd == bot_state.last_sent_command and (current_time - bot_state.last_sent_time) < ANTI_SPAM_WINDOW and not cmd.startswith("rpg cf") and not is_sleepet_command(cmd) and not any(x in cmd.lower() for x in ["enchant", "refine", "transmute", "transcend"]):
                             HUD.system(f"Comando duplicado '{cmd}' ignorado (Anti-Spam).")
                         else:
                             # Set card hand lock BEFORE sending the command
@@ -452,10 +460,21 @@ class DiscordClient(discord.Client):
                             await send_with_typo_chance(active_channel, cmd, "HPQ")
                     elif lowPriorityQueue and bot_state.gambling_paused and not bot_state.duel_in_progress and not bot_state.auto_enchant_active:
                         await human_delay(1.5, 2.5)
+                        if (
+                            not lowPriorityQueue
+                            or highPriorityQueue
+                            or bot_state.paused
+                            or bot_state.jailed
+                            or bot_state.is_on_coffee_break
+                            or not bot_state.gambling_paused
+                            or bot_state.duel_in_progress
+                            or bot_state.auto_enchant_active
+                        ):
+                            continue
                         cmd = lowPriorityQueue.pop(0)
                         lowPriorityQueueSet.discard(cmd)
                         current_time = time.time()
-                        if cmd == bot_state.last_sent_command and (current_time - bot_state.last_sent_time) < ANTI_SPAM_WINDOW and not cmd.startswith("rpg cf") and not is_sleepet_command(cmd):
+                        if cmd == bot_state.last_sent_command and (current_time - bot_state.last_sent_time) < ANTI_SPAM_WINDOW and not cmd.startswith("rpg cf") and not is_sleepet_command(cmd) and not any(x in cmd.lower() for x in ["enchant", "refine", "transmute", "transcend"]):
                             HUD.system(f"Comando duplicado '{cmd}' ignorado (Anti-Spam).")
                         else:
                             # Set card hand lock BEFORE sending the command (if queued in LPQ too)
@@ -641,7 +660,7 @@ class DiscordClient(discord.Client):
                         bot_state.auto_enchant_tier = tier
                         bot_state.auto_enchant_target = target
                         bot_state.auto_enchant_target_value = target_val
-                        bot_state.auto_enchant_channel_id = message.channel.id
+                        bot_state.auto_enchant_channel_id = config.channelID
                         bot_state.auto_enchant_attempts = 0
                         bot_state.last_auto_enchant_time = time.time()
                         bot_state.auto_enchant_withdrawn = False
@@ -943,6 +962,10 @@ class DiscordClient(discord.Client):
                             (user_name_clean and user_name_clean in content_clean) or \
                             str(config.userID) in combined_content
 
+            # Debug logging for auto-enchant diagnosis
+            if bot_state.auto_enchant_active:
+                logger.info(f"[AE-DEBUG] is_for_us={is_for_us}, channel_match={message.channel.id == bot_state.auto_enchant_channel_id}, has_embeds={bool(message.embeds)}, content_preview={repr(combined_content[:200])}")
+
             if is_for_us:
                 bot_state.no_response_count = 0
                 bot_state.response_pending_until = 0
@@ -953,13 +976,15 @@ class DiscordClient(discord.Client):
 
                 # Auto Enchant Check
                 if bot_state.auto_enchant_active and message.channel.id == bot_state.auto_enchant_channel_id:
-                    match = re.search(r'~-~>\s*([a-zA-Z0-9\s\-]+)\s*<~-~', combined_content)
+                    match = re.search(r'~-~>\s*([^<]+?)\s*<~-~', combined_content)
+                    logger.info(f"[AE-DEBUG] Regex match={match}, combined_content_full={repr(combined_content)}")
                     if match:
-                        rolled_name = match.group(1).strip()
+                        rolled_name = match.group(1).replace("*", "").replace("_", "").strip()
                         rolled_normalized = rolled_name.lower().replace(" ", "").replace("-", "")
                         
                         rolled_idx = ENCHANT_TIERS_ORDER.index(rolled_normalized) if rolled_normalized in ENCHANT_TIERS_ORDER else -1
                         target_idx = ENCHANT_TIERS_ORDER.index(bot_state.auto_enchant_target_value) if bot_state.auto_enchant_target_value in ENCHANT_TIERS_ORDER else -1
+                        logger.info(f"[AE-DEBUG] rolled='{rolled_normalized}' idx={rolled_idx}, target='{bot_state.auto_enchant_target_value}' idx={target_idx}")
                         
                         if rolled_idx == -1 or target_idx == -1:
                             bot_state.auto_enchant_active = False
@@ -988,6 +1013,7 @@ class DiscordClient(discord.Client):
                             highPriorityQueueSet.update(highPriorityQueue)
                         else:
                             bot_state.auto_enchant_attempts += 1
+                            HUD.system(f"Auto-Enchant: Rolado {rolled_name.upper()}, tentativa #{bot_state.auto_enchant_attempts}. Tentando novamente...")
                             if bot_state.auto_enchant_attempts >= AUTO_ENCHANT_MAX_ATTEMPTS:
                                 bot_state.auto_enchant_active = False
                                 HUD.alert(f"Auto-Enchant CANCELADO: Número máximo de tentativas ({AUTO_ENCHANT_MAX_ATTEMPTS}) atingido!")
@@ -1004,6 +1030,7 @@ class DiscordClient(discord.Client):
                                 add_to_high_priority_queue(f"rpg {bot_state.auto_enchant_tier} {bot_state.auto_enchant_target}")
                                 highPriorityQueueSet.clear()
                                 highPriorityQueueSet.update(highPriorityQueue)
+                        return
 
 
             # Captcha Detection
