@@ -42,6 +42,7 @@ WATCHDOG_COOLDOWN_MAX = 90
 CURIOSITY_TRIGGER_PERCENT = 5
 CURIOSITY_COOLDOWN = 300
 DUEL_TIMEOUT = 60
+COINFLIP_TIMEOUT = 60
 CARD_HAND_TIMEOUT = 120
 RESPONSE_PENDING_DURATION = 5.0
 ANTI_SPAM_WINDOW = 5.0
@@ -438,6 +439,8 @@ class DiscordClient(discord.Client):
                             bot_state.no_response_count += 1
                             bot_state.last_sent_command = cmd
                             bot_state.last_sent_time = current_time
+                            if cmd.lower().startswith("rpg cf"):
+                                bot_state.last_coinflip_time = current_time
                             if cmd.lower().startswith("rpg"):
                                 bot_state.response_pending_until = current_time + RESPONSE_PENDING_DURATION
                             if is_sleepet_command(cmd):
@@ -462,6 +465,8 @@ class DiscordClient(discord.Client):
                             bot_state.no_response_count += 1
                             bot_state.last_sent_command = cmd
                             bot_state.last_sent_time = current_time
+                            if cmd.lower().startswith("rpg cf"):
+                                bot_state.last_coinflip_time = current_time
                             if cmd.lower().startswith("rpg"):
                                 bot_state.response_pending_until = current_time + RESPONSE_PENDING_DURATION
                             if is_sleepet_command(cmd):
@@ -492,6 +497,12 @@ class DiscordClient(discord.Client):
                                 add_to_high_priority_queue(f"rpg use tc {bot_state.tc_quantity}")
                                 add_to_low_priority_queue("rpg rd", suppress_log=True)
                                 HUD.tc(f"Ciclo: use tc {bot_state.tc_quantity} -> rd")
+
+                    # Coinflip State: timeout safety
+                    if bot_state.coinflip_pending and current_time - bot_state.last_coinflip_time > COINFLIP_TIMEOUT:
+                        bot_state.gambling_paused = True
+                        HUD.alert("Timeout do coinflip (1 min sem resposta). Resgatando estado normal e liberando filas.")
+                        await send_telegram_notification("⚠️ *Timeout do Coinflip:* Sem resposta por 1 minuto. Apostas pausadas e filas liberadas.")
 
                     # Dungeon State: timeout safety
                     if bot_state.dungeon_in_progress and current_time - bot_state.last_dungeon_time > DUNGEON_TIMEOUT:

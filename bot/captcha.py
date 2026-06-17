@@ -162,17 +162,18 @@ async def tentar_resolver_captcha(message):
 
         HUD.oracle(f"Melhor palpite da IA: {best_guess} ({confidence:.1%})")
 
-        # Telegram debug logging for model route and confidence values
+        # Telegram logging for model route and confidence values
+        img_type_pt = "preto e branco" if detected_gray else "colorida"
         if fallback_triggered:
-            model_info = f"Modelos: {primary_mode.upper()} ({primary_confidence:.1%}) & {alt_mode.upper()} ({alt_confidence:.1%})"
+            model_info = f"Imagem {img_type_pt} processada com {primary_confidence:.1%} (modelo {primary_mode.upper()}) e {alt_confidence:.1%} (modelo {alt_mode.upper()}) de certeza"
         else:
-            model_info = f"Modelo: {primary_mode.upper()} ({primary_confidence:.1%})"
+            model_info = f"Imagem {img_type_pt} processada com {confidence:.1%} de certeza (modelo {primary_mode.upper()})"
 
         # INSTANT NOTIFICATION WITH GUESS
         HUD.alert("CAPTCHA! Enviando para o Telegram...")
         await send_telegram_photo(
             img_path,
-            f"🚨 CAPTCHA DETECTADO!\nPalpite da IA: {best_guess} ({confidence:.1%})\n🤖 Debug: {model_info}\nDigite a resposta aqui para sobrescrever a IA.",
+            f"🚨 CAPTCHA DETECTADO!\nPalpite da IA: {best_guess} ({confidence:.1%})\n🔍 {model_info}\nDigite a resposta aqui para sobrescrever a IA.",
         )
 
         await human_delay(1.5, 2.0)  # 1.5-3.5s human "reading" delay

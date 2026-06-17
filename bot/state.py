@@ -87,7 +87,8 @@ class BotState:
     def __init__(self):
         self._paused = False
         self._gambling_paused = True
-        self.coinflip_pending = False
+        self._coinflip_pending = False
+        self.last_coinflip_time = 0.0
         self.jailed = False
         self.captcha_pending = False
         self.last_message_id = None
@@ -178,6 +179,16 @@ class BotState:
     @paused.setter
     def paused(self, value: bool) -> None:
         self._paused = value
+
+    @property
+    def coinflip_pending(self) -> bool:
+        return self._coinflip_pending
+
+    @coinflip_pending.setter
+    def coinflip_pending(self, value: bool) -> None:
+        self._coinflip_pending = value
+        if value:
+            self.last_coinflip_time = time.time()
 
     @property
     def gambling_paused(self) -> bool:
@@ -416,6 +427,7 @@ def reset_bot_state() -> None:
     bot_state.jailed = False
     bot_state.captcha_pending = False
     bot_state.coinflip_pending = False
+    bot_state.last_coinflip_time = 0.0
     bot_state.awaiting_withdraw = False
     if getattr(bot_state, "captcha_task", None) and not bot_state.captcha_task.done():
         bot_state.captcha_task.cancel()
