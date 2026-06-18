@@ -7,6 +7,7 @@ from textual.reactive import reactive
 from textual.widgets import Static
 
 import bot.config as config
+from bot.locales import t
 from bot.state import bot_state, highPriorityQueue, initialSessionData, lowPriorityQueue, sessionData
 from bot.tui_eye import CAT_FRAMES, CAT_FRAME_COLORS, EYE_FRAMES, IDLE_SEQ, CAT_SLEEP_SEQ
 from bot.tui_frames import separator_medium
@@ -173,12 +174,12 @@ class HeaderPane(Static):
         sec = theme_info["colors"][1]
         acc = theme_info["colors"][2]
         if is_sleep_time():
-            return "SONO", f"bold {sec}"
+            return t("header_sleep"), f"bold {sec}"
         if bot_state.paused:
-            return "PAUSADO", "bold #cc0000"
+            return t("header_paused"), "bold #cc0000"
         if bot_state.is_on_coffee_break:
-            return "OCIOSO", f"bold {acc}"
-        return "ONLINE", "bold #00f2ff"
+            return t("header_idle"), f"bold {acc}"
+        return t("header_online"), "bold #00f2ff"
 
     def render(self) -> Text:
         theme_info = next((t for t in ORACLE_THEMES if t["name"] == self.app.theme), ORACLE_THEMES[0])
@@ -311,13 +312,13 @@ class SidebarPane(Static):
         if is_sleep_time():
             sleep_art = SLEEP_ART if self.steam_idx % 2 == 0 else SLEEP_ART_B
             return (
-                f"{self._header('HIBERNAÇÃO', marker, w)}\n"
+                f"{self._header(t('sidebar_hibernation'), marker, w)}\n"
                 "\n"
                 f"{self._fit_art(sleep_art, w)}\n"
                 "\n"
-                f"{self._trunc(' Hibernando...', w)}\n"
-                f"{self._trunc(f' Acordar às: {config.wake_up_at}', w)}\n"
-                f"{self._trunc(' Auto-retomar: LIGADO', w)}\n"
+                f"{self._trunc(f' {t('sidebar_hibernating')}', w)}\n"
+                f"{self._trunc(f' {t('sidebar_wake_up', time=config.wake_up_at)}', w)}\n"
+                f"{self._trunc(f' {t('sidebar_auto_resume')}', w)}\n"
                 f"\n{separator_medium(w)}\n"
             )
 
@@ -326,17 +327,17 @@ class SidebarPane(Static):
                 remaining = max(0, int(bot_state.watchdog_paused_until - time.time()))
                 mm, ss = remaining // 60, remaining % 60
                 return (
-                    f"{self._header('PAUSADO (WD)', marker, w)}\n"
+                    f"{self._header(t('sidebar_paused_wd'), marker, w)}\n"
                     "\n"
-                    f"{self._trunc(' Cooldown do Watchdog ativo.', w)}\n"
-                    f"{self._trunc(f' Retomando em {mm:02d}:{ss:02d}', w)}\n"
+                    f"{self._trunc(f' {t('sidebar_wd_active')}', w)}\n"
+                    f"{self._trunc(f' {t('sidebar_resuming_in', time=f'{mm:02d}:{ss:02d}')}', w)}\n"
                     f"\n{separator_medium(w)}\n"
                 )
             return (
-                f"{self._header('PAUSADO', marker, w)}\n"
+                f"{self._header(t('sidebar_paused'), marker, w)}\n"
                 "\n"
-                f"{self._trunc(' O bot está pausado.', w)}\n"
-                f"{self._trunc(' Digite sb resume para acordar.', w)}\n"
+                f"{self._trunc(f' {t('sidebar_bot_paused')}', w)}\n"
+                f"{self._trunc(f' {t('sidebar_resume_hint')}', w)}\n"
                 f"\n{separator_medium(w)}\n"
             )
 
@@ -346,13 +347,13 @@ class SidebarPane(Static):
             coffee_art = COFFEE_ART if self.steam_idx % 2 == 0 else COFFEE_ART_B
 
             return (
-                f"{self._header('PAUSA PARA CAFÉ', marker, w)}\n"
+                f"{self._header(t('sidebar_coffee'), marker, w)}\n"
                 "\n"
                 f"{self._fit_art(coffee_art, w)}\n"
                 "\n"
-                f"{self._trunc(' Simulando pausa humana...', w)}\n"
+                f"{self._trunc(f' {t('sidebar_coffee_desc')}', w)}\n"
                 f"\n{separator_medium(w)}\n"
-                f"{self._trunc(f'  Retomando em {mm:02d}:{ss:02d}', w)}\n"
+                f"{self._trunc(f'  {t('sidebar_resuming_in', time=f'{mm:02d}:{ss:02d}')}', w)}\n"
             )
 
         hunts = sessionData["command_data"].get("hunt", 0) - initialSessionData["command_data"].get("hunt", 0)
@@ -374,7 +375,7 @@ class SidebarPane(Static):
         if drops:
             drops_str = "\n".join(self._trunc(d, w) for d in drops[:5])
         else:
-            drops_str = self._trunc(" · Sem drops ainda", w)
+            drops_str = self._trunc(f" · {t('sidebar_no_drops_yet')}", w)
 
         if w < 28:
             stats_lines = (
@@ -395,36 +396,36 @@ class SidebarPane(Static):
                 f" XP: +{xp:,}\n"
             )
 
-        state_str = "ATIVO"
+        state_str = t("sidebar_active")
         if bot_state.sleepet_mode:
-            state_str = f"SLEEPET ({bot_state.sleepet_state or 'init'})"
+            state_str = t("sidebar_state_sleepet", state=bot_state.sleepet_state or 'init')
         elif bot_state.cardhand_in_progress:
-            state_str = "CARD HAND"
+            state_str = t("sidebar_state_cardhand")
         elif bot_state.dungeon_in_progress:
-            state_str = "DUNGEON"
+            state_str = t("sidebar_state_dungeon")
         elif bot_state.duel_in_progress:
-            state_str = f"DUEL ({bot_state.duel_step or 'init'})"
+            state_str = t("sidebar_state_duel", step=bot_state.duel_step or 'init')
 
         tc_str = ""
         if bot_state.time_cookie_mode:
             if bot_state.tc_end_time > time.time():
                 tc_remaining = max(0, int(bot_state.tc_end_time - time.time()))
                 tcm, tcs = tc_remaining // 60, tc_remaining % 60
-                tc_str = f"{self._trunc(f' TC Restante: {tcm:02d}:{tcs:02d}', w)}\n"
+                tc_str = f"{self._trunc(f' {t('sidebar_tc_remaining', time=f'{tcm:02d}:{tcs:02d}')}', w)}\n"
             else:
-                tc_str = f"{self._trunc(f' TC Mode: {bot_state.tc_quantity}c (S/ Limite)', w)}\n"
+                tc_str = f"{self._trunc(f' {t('sidebar_tc_unlimited', qty=bot_state.tc_quantity)}', w)}\n"
 
         return (
-            f"{self._header('ESTADO', marker, w)}\n"
-            f"{self._trunc(f' Estado: {state_str}', w)}\n"
-            f"{self._trunc(f' Sono: {config.sleep_at}', w)}\n"
-            f"{self._trunc(f' Uptime: {self.uptime}', w)}\n"
+            f"{self._header(t('sidebar_estado'), marker, w)}\n"
+            f"{self._trunc(f' {t('sidebar_estado')}: {state_str}', w)}\n"
+            f"{self._trunc(f' {t('sidebar_sleep_time', time=config.sleep_at)}', w)}\n"
+            f"{self._trunc(f' {t('sidebar_uptime', time=self.uptime)}', w)}\n"
             f"{tc_str}"
             f"\n{separator_medium(w)}\n"
-            f" ESTATÍSTICAS DA SESSÃO\n"
+            f" {t('sidebar_session_stats')}\n"
             f"{stats_lines}"
             f"\n{separator_medium(w)}\n"
-            f" ÚLTIMOS DROPS\n"
+            f" {t('sidebar_latest_drops')}\n"
             f"{drops_str}\n"
         )
 
@@ -471,17 +472,17 @@ class StatusBar(Static):
     def _state(self) -> tuple[str, str]:
         theme_colors = self._theme_colors()
         if is_sleep_time():
-            return "SONO", f"dim {theme_colors['secondary']}"
+            return t("status_sleep"), f"dim {theme_colors['secondary']}"
         if bot_state.paused:
-            return "PAUSADO", f"bold {theme_colors['error']}"
+            return t("status_paused"), f"bold {theme_colors['error']}"
         if bot_state.is_on_coffee_break:
-            return "OCIOSO", f"bold {theme_colors['warning']}"
-        return "ONLINE", f"bold {theme_colors['accent']}"
+            return t("status_idle"), f"bold {theme_colors['warning']}"
+        return t("status_online"), f"bold {theme_colors['accent']}"
 
     def render(self) -> Text:
         theme_colors = self._theme_colors()
         state_text, state_style = self._state()
-        last = bot_state.last_sent_command or "Nenhum"
+        last = bot_state.last_sent_command or t("status_no_cmd")
         if len(last) > 32:
             last = last[:29] + "..."
 
@@ -493,7 +494,7 @@ class StatusBar(Static):
         line.append("  │  ", style="dim")
         line.append(f"LPQ: {len(lowPriorityQueue)}", style=f"bold {theme_colors['primary']}")
         line.append("  │  ", style="dim")
-        line.append(f"Último: {last}", style=theme_colors["foreground"])
+        line.append(t("status_last_cmd", cmd=last), style=theme_colors["foreground"])
         line.append("  │  ", style="dim")
         line.append(state_text, style=state_style)
         return line

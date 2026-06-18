@@ -13,6 +13,7 @@ import bot.config as config
 import options_resolver
 from bot.hud import HUD
 from bot.tui_themes import ORACLE_THEMES
+from bot.locales import t
 
 
 class HelpModal(ModalScreen):
@@ -32,83 +33,85 @@ class HelpModal(ModalScreen):
         )
 
         core_cmds = (
-            f"[bold {acc}]CONTROLES PRINCIPAIS[/]\n"
-            "[dim](prefixo 'sb ' é opcional)[/]\n"
+            f"[bold {acc}]{t('help_section_main')}[/]\n"
+            f"[dim]({t('help_prefix_optional')})[/]\n"
             f"[{acc}]──────────────────────────────[/]\n"
             f"[bold {acc}]start[/] [dim]│[/] [bold {acc}]resume[/]\n"
-            f"  [{fg}]Despausa o bot[/]\n"
+            f"  [{fg}]{t('help_despausa')}[/]\n"
             f"[bold {acc}]pause[/] [dim]│[/] [bold {acc}]stop[/]\n"
-            f"  [{fg}]Pausa o bot[/]\n"
-            f"[bold {acc}]say[/] [dim #6b5e4a]<texto>[/]\n"
-            f"  [{fg}]Envia comando para o canal[/]\n"
+            f"  [{fg}]{t('help_pausa')}[/]\n"
+            f"[bold {acc}]say[/] [dim #6b5e4a]<text>[/]\n"
+            f"  [{fg}]{t('help_envia_comando')}[/]\n"
             f"[bold {acc}]reset[/]\n"
-            f"  [{fg}]Limpa estado e filas[/]\n"
-            f"[bold {acc}]stats[/] [dim #6b5e4a][periodo][/]\n"
-            f"  [{fg}]Mostra estatísticas (ex: 1h, 30m)[/]\n"
+            f"  [{fg}]{t('help_limpa_estado')}[/]\n"
+            f"[bold {acc}]stats[/] [dim #6b5e4a][period][/]\n"
+            f"  [{fg}]{t('help_estatisticas')}[/]\n"
             f"[bold {acc}]queue[/]\n"
-            f"  [{fg}]Mostra filas de prioridade[/]\n"
+            f"  [{fg}]{t('help_filas')}[/]\n"
             f"[bold {acc}]theme[/]\n"
-            f"  [{fg}]Abre seletor de temas[/]\n"
+            f"  [{fg}]{t('help_temas')}[/]\n"
             f"[bold {acc}]exit[/] [dim]│[/] [bold {acc}]quit[/]\n"
-            f"  [{fg}]Encerramento seguro[/]"
+            f"  [{fg}]{t('help_encerramento')}[/]\n"
+            f"[bold {acc}]language[/] [dim #6b5e4a][pt|en][/]\n"
+            f"  [{fg}]{t('help_language')}[/]"
         )
 
         tc_cmds = (
-            f"[bold {acc}]COOKIE DE TEMPO[/]\n"
+            f"[bold {acc}]{t('help_section_tc')}[/]\n"
             f"[{acc}]──────────────────────────────[/]\n"
             f"[bold {acc}]tc start[/] [dim #6b5e4a][Xc] [Xm][/]\n"
-            f"  [{fg}]Ativa o modo TC[/]\n"
+            f"  [{fg}]{t('help_tc_activate')}[/]\n"
             f"[bold {acc}]tc stop[/]\n"
-            f"  [{fg}]Desativa o modo TC[/]"
+            f"  [{fg}]{t('help_tc_deactivate')}[/]"
         )
 
         sleepet_cmds = (
-            f"[bold {acc}]MODO SLEEPET (PETS)[/]\n"
+            f"[bold {acc}]{t('help_section_sleepet')}[/]\n"
             f"[{acc}]──────────────────────────────[/]\n"
             f"[bold {acc}]sleepet start[/]\n"
-            f"  [{fg}]Ativa o loop de pets automatizado[/]\n"
+            f"  [{fg}]{t('help_sleepet_activate')}[/]\n"
             f"[bold {acc}]sleepet stop[/]\n"
-            f"  [{fg}]Desativa o loop de pets[/]"
+            f"  [{fg}]{t('help_sleepet_deactivate')}[/]"
         )
 
         gambling_cmds = (
-            f"[bold {acc}]GAMBLING (COINFLIP)[/]\n"
+            f"[bold {acc}]{t('help_section_gambling')}[/]\n"
             f"[{acc}]──────────────────────────────[/]\n"
             f"[bold {acc}]g start[/]\n"
-            f"  [{fg}]Ativa o modo gambling (rpg cf)[/]\n"
+            f"  [{fg}]{t('help_gambling_activate')}[/]\n"
             f"[bold {acc}]g pause[/] [dim]│[/] [bold {acc}]g stop[/]\n"
-            f"  [{fg}]Pausa o modo gambling[/]"
+            f"  [{fg}]{t('help_gambling_deactivate')}[/]"
         )
 
         config_cmds = (
-            f"[bold {acc}]CONFIGURAÇÕES[/]\n"
+            f"[bold {acc}]{t('help_section_config')}[/]\n"
             f"[{acc}]──────────────────────────────[/]\n"
             f"[bold {acc}]config[/]\n"
-            f"  [{fg}]Abre o painel de configurações interativo[/]\n"
-            f"[bold {acc}]cfg[/] [dim #6b5e4a]<chave> <valor>[/]\n"
-            f"  [{fg}]Muda config rápida (ex: cfg do_hunt false)[/]"
+            f"  [{fg}]{t('help_config_open')}[/]\n"
+            f"[bold {acc}]cfg[/] [dim #6b5e4a]<key> <value>[/]\n"
+            f"  [{fg}]{t('help_config_quick')}[/]"
         )
 
         rpg_cmds = (
-            f"[bold {acc}]RPG DIRETO[/]\n"
+            f"[bold {acc}]{t('help_section_rpg')}[/]\n"
             f"[{acc}]──────────────────────────────[/]\n"
-            f"[bold {acc}]rpg[/] [dim #6b5e4a]<comando>[/]\n"
-            f"  [{fg}]Envia para a fila de alta prioridade (HPQ)[/]"
+            f"[bold {acc}]rpg[/] [dim #6b5e4a]<command>[/]\n"
+            f"  [{fg}]{t('help_rpg_send')}[/]"
         )
 
         shortcuts = (
-            f"[bold {acc}]ATALHOS[/]\n"
+            f"[bold {acc}]{t('help_section_shortcuts')}[/]\n"
             f"[{acc}]──────────────────────────────[/]\n"
-            f"[bold {fg}]↑ ↓[/]   [{fg}]Navegação do histórico[/]\n"
-            f"[bold {fg}]Tab[/]   [{fg}]Autocompletar comando[/]\n"
-            f"[bold {fg}]F1[/]    [{fg}]Abrir esta ajuda[/]\n"
-            f"[bold {fg}]F2[/]    [{fg}]Abrir configurações interativas[/]\n"
-            f"[bold {fg}]Esc[/]   [{fg}]Fechar sobreposição[/]"
+            f"[bold {fg}]↑ ↓[/]   [{fg}]{t('help_shortcuts_nav')}[/]\n"
+            f"[bold {fg}]Tab[/]   [{fg}]{t('help_shortcuts_tab')}[/]\n"
+            f"[bold {fg}]F1[/]    [{fg}]{t('help_shortcuts_f1')}[/]\n"
+            f"[bold {fg}]F2[/]    [{fg}]{t('help_shortcuts_f2')}[/]\n"
+            f"[bold {fg}]Esc[/]   [{fg}]{t('help_shortcuts_esc')}[/]"
         )
 
         footer = (
             "[dim]-----------------------[/]\n"
-            "[dim italic]Pressione [bold]Esc[/bold] para fechar[/]"
+            f"[dim italic]{t('help_press_esc')}[/]"
         )
 
         yield Container(
@@ -498,6 +501,7 @@ CONFIG_SCHEMA = [
     ("⚙️ Geral", [
         ("random_interval", "bool", "true"),
         ("typo_chance", "text", "0.05"),
+        ("language", "dropdown", "pt", ["pt", "en"]),
     ]),
     ("⚔️ Adventure", [
         ("life_boost_before_adv", "dropdown", "none", ["none", "a", "b", "c"]),

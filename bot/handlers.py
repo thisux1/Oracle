@@ -28,6 +28,7 @@ from bot.telegram import (
     edit_telegram_message,
     send_telegram_photo,
 )
+from bot.locales import t, set_language
 from bot.captcha import save_and_crop_attachment
 from colorama import Fore, Style
 
@@ -692,8 +693,17 @@ async def responseResolver(message) -> None:
                 "card_hand_action     : auto (play) or notify (Telegram only)\n"
                 "tc_quantity=N        : Default cookies per use\n"
                 "life_boost_before_adv: Buy life boost before adventure\n"
+                "sb language [pt|en] : Change bot language\n"
             )
             logger.info(help_text)
+            return
+        elif msg.startswith("sb language") or msg.startswith("sb lang"):
+            parts = msg.split()
+            if len(parts) >= 3:
+                new_lang = parts[2].lower().strip()
+                if new_lang in ("pt", "en"):
+                    set_language(new_lang)
+                    logger.info(t("telegram_language_changed", lang="pt" if new_lang == "pt" else "en"))
             return
         elif msg == "sb g pause":
             bot_state.gambling_paused = True

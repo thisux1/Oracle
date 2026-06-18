@@ -11,6 +11,7 @@ from bot.state import (
 )
 from bot.telegram import send_telegram_notification, make_channel_link
 from colorama import Fore, Style
+from bot.locales import t
 
 
 
@@ -511,36 +512,36 @@ def format_session_data(data, title="Dados da Sessão"):
     start_time = data.get("start_time", 0.0)
     if start_time > 0.0:
         formatted = time.strftime("%d/%m/%Y %H:%M:%S", time.localtime(start_time))
-        output.append(f"{Fore.LIGHTBLACK_EX}desde {formatted}{Style.RESET_ALL}")
+        output.append(f"{Fore.LIGHTBLACK_EX}{t('stat_since', time=formatted)}{Style.RESET_ALL}")
 
     command_data = filter_non_zero(data.get("command_data", {}))
     if command_data:
-        output.append(f"{Fore.GREEN}Comandos Executados:{Style.RESET_ALL}")
+        output.append(f"{Fore.GREEN}{t('stat_command_data')}:{Style.RESET_ALL}")
         for cmd, count in command_data.items():
             output.append(f"  {Fore.LIGHTCYAN_EX}{cmd.capitalize()}{Style.RESET_ALL}: {Fore.YELLOW}{count}{Style.RESET_ALL}")
 
     progress_data = filter_non_zero(data.get("progress_data", {}))
     if progress_data:
-        output.append(f"{Fore.GREEN}Progresso:{Style.RESET_ALL}")
+        output.append(f"{Fore.GREEN}{t('stat_progress_data')}:{Style.RESET_ALL}")
         for stat, value in progress_data.items():
             stat_name = {
-                "coins": "Moedas",
-                "xp": "XP",
-                "levels": "Níveis"
+                "coins": t("stat_coins"),
+                "xp": t("stat_xp"),
+                "levels": t("stat_levels")
             }.get(stat.lower(), stat.capitalize())
             output.append(f"  {Fore.LIGHTCYAN_EX}{stat_name}{Style.RESET_ALL}: {Fore.YELLOW}{value:,}{Style.RESET_ALL}")
 
     loot_data = data.get("loot_data", {})
     if loot_data:
-        output.append(f"{Fore.GREEN}Loot:{Style.RESET_ALL}")
+        output.append(f"{Fore.GREEN}{t('stat_loot_data')}:{Style.RESET_ALL}")
         for category, items in loot_data.items():
             non_zero_items = filter_non_zero(items)
             if non_zero_items:
                 cat_name = {
-                    "mob_drops": "Drops de Monstros",
-                    "lootbox_drops": "Drops de Lootbox",
-                    "work_drops": "Drops de Trabalho",
-                    "farm_drops": "Drops de Plantação",
+                    "mob_drops": t("stat_mob_drops"),
+                    "lootbox_drops": t("stat_lootbox_drops_sub"),
+                    "work_drops": t("stat_work_drops"),
+                    "farm_drops": t("stat_farm_drops"),
                 }.get(category.lower(), category.replace('_', ' ').title())
                 output.append(f"  {Fore.LIGHTMAGENTA_EX}{cat_name}:{Style.RESET_ALL}")
                 for item, qty in non_zero_items.items():
@@ -548,38 +549,38 @@ def format_session_data(data, title="Dados da Sessão"):
 
     misc_data = filter_non_zero(data.get("misc", {}))
     if misc_data:
-        output.append(f"{Fore.GREEN}Diversos:{Style.RESET_ALL}")
+        output.append(f"{Fore.GREEN}{t('stat_misc')}:{Style.RESET_ALL}")
         for key, value in misc_data.items():
             if isinstance(value, dict):
                 non_zero_items = filter_non_zero(value)
                 if non_zero_items:
                     key_name = {
-                        "cards": "Cartas",
+                        "cards": t("stat_cards"),
                     }.get(key.lower(), key.capitalize())
                     output.append(f"  {Fore.LIGHTMAGENTA_EX}{key_name}:{Style.RESET_ALL}")
                     for item, qty in non_zero_items.items():
                         output.append(f"    {Fore.WHITE}{item}{Style.RESET_ALL}: {Fore.YELLOW}{qty:,}{Style.RESET_ALL}")
             else:
                 key_name = {
-                    "coolness": "Estilo",
-                    "arena_cookies": "Cookies de Arena",
-                    "guard_events": "Eventos de Guarda",
-                    "personal_events": "Eventos Pessoais",
-                    "pets": "Pets",
+                    "coolness": t("stat_coolness"),
+                    "arena_cookies": t("stat_arena_cookies"),
+                    "guard_events": t("stat_guard_events"),
+                    "personal_events": t("stat_personal_events"),
+                    "pets": t("stat_pets"),
                 }.get(key.lower(), key.capitalize())
                 output.append(f"  {Fore.LIGHTCYAN_EX}{key_name}{Style.RESET_ALL}: {Fore.YELLOW}{value:,}{Style.RESET_ALL}")
 
     partner_loot_data = data.get("partner_loot_data", {})
     if partner_loot_data:
-        output.append(f"{Fore.GREEN}Loot do Parceiro:{Style.RESET_ALL}")
+        output.append(f"{Fore.GREEN}{t('stat_partner_loot')}:{Style.RESET_ALL}")
         for category, items in partner_loot_data.items():
             non_zero_items = filter_non_zero(items)
             if non_zero_items:
                 cat_name = {
-                    "mob_drops": "Drops de Monstros",
-                    "lootbox_drops": "Drops de Lootbox",
-                    "work_drops": "Drops de Trabalho",
-                    "farm_drops": "Drops de Plantação",
+                    "mob_drops": t("stat_mob_drops"),
+                    "lootbox_drops": t("stat_lootbox_drops_sub"),
+                    "work_drops": t("stat_work_drops"),
+                    "farm_drops": t("stat_farm_drops"),
                 }.get(category.lower(), category.replace('_', ' ').title())
                 output.append(f"  {Fore.LIGHTMAGENTA_EX}{cat_name}:{Style.RESET_ALL}")
                 for item, qty in non_zero_items.items():

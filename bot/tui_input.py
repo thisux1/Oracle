@@ -11,6 +11,7 @@ from textual.widgets import Input, Static
 import bot.config as config
 import options_resolver
 from bot.hud import HUD
+from bot.locales import t, set_language
 from bot.state import (
     add_to_high_priority_queue,
     bot_state,
@@ -41,6 +42,8 @@ COMMANDS = {
     "/theme": "Abre seletor de temas",
     "/config": "Abre o painel de configurações interativo",
     "/exit": "Encerramento seguro",
+    "/language": "Altera o idioma (pt ou en)",
+    "/lang": "Altera o idioma (pt ou en)",
 }
 
 CONFIG_METADATA = {
@@ -90,6 +93,7 @@ CONFIG_METADATA = {
     "theme": "Tema visual a ser utilizado na interface TUI",
     "pet_adventure_command": "Comando de aventura do pet (ex: 'find epic', 'learn a', 'rpg pet adv find epic')",
     "do_pet": "Habilitar a automação e coleta de aventuras de pets",
+    "language": "Idioma do bot (pt = português, en = english)",
 }
 
 
@@ -166,6 +170,13 @@ class AutocompleteDropdown(Static):
             if not desc and cmd.startswith("/cfg "):
                 cfg_key = cmd[5:].strip()
                 desc = CONFIG_METADATA.get(cfg_key, "")
+            # Try translation
+            if desc:
+                cmd_base = cmd.lstrip("/").split()[0]
+                t_key = f"cmd_{cmd_base}" if not cmd.startswith("/cfg ") else f"cfg_{cfg_key}"
+                translated = t(t_key)
+                if translated != t_key:
+                    desc = translated
             widget = AutocompleteItem(cmd, desc, idx, self)
             widget.classes = "autocomplete-item"
             container.mount(widget)
@@ -274,6 +285,8 @@ class CommandInput(Input):
             return len(parts) > 1 and parts[1].lower() in ["start", "stop", "pause"]
         if base == "sleepet":
             return len(parts) > 1 and parts[1].lower() in ["start", "stop"]
+        if base in ["language", "lang"]:
+            return len(parts) > 1 and parts[1].lower() in ["pt", "en"]
         if base == "g":
             return len(parts) > 1 and parts[1].lower() in ["start", "stop", "pause"]
         if base.startswith("rpg"):
@@ -430,9 +443,9 @@ class CommandInput(Input):
             if len(parts) > 1:
                 period_str = parts[1]
                 period_data = get_stats_for_period(sessionData, period_str)
-                summary = format_session_data(period_data, f"Dados da Sessão (Últimos {period_str})")
+                summary = format_session_data(period_data, f"{t('stat_session_title')} ({period_str})")
             else:
-                summary = format_session_data(sessionData, "Estatísticas da Sessão Ativa")
+                summary = format_session_data(sessionData, t("stat_session_title"))
             for line in summary.split("\n"):
                 HUD.oracle(line)
 
@@ -563,6 +576,14 @@ class CommandInput(Input):
         elif base in ["theme", "themes"]:
             self.app.push_screen(ThemeModal())
             self._notify_system("Seletor de temas aberto.", severity="information")
+
+        elif base in ["language", "lang"]:
+            if len(parts) > 1:
+                new_lang = parts[1].lower()
+                if new_lang in ("pt", "en"):
+                    set_language(new_lang)
+                    HUD.system(t("notify_language_changed", lang="pt" if new_lang == "pt" else "en"))
+                    self._notify_system(t("notify_language_changed", lang="pt" if new_lang == "pt" else "en"), severity="information")
 
         elif base in ["exit", "quit"]:
             HUD.oracle("Sequência de encerramento seguro iniciada...")

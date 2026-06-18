@@ -15,6 +15,7 @@ from textual.widgets import RichLog
 import bot.config as config
 from bot.client import recreate_user_bot
 from bot.hud import HUD
+from bot.locales import t
 from bot.tui_input import AutocompleteDropdown, CommandInput
 from bot.tui_modals import HelpModal, SplashScreen, ConfigModal
 from bot.tui_sidebar import EyeWidget, HeaderPane, SidebarPane, StatusBar
@@ -90,9 +91,9 @@ class OracleApp(App):
     # Disable default Tab focus navigation entirely.
     # Tab is repurposed for command autocomplete inside CommandInput.
     BINDINGS = [
-        ("f1", "toggle_help", "Ajuda"),
-        ("f2", "toggle_config", "Configurar"),
-        ("ctrl+shift+c", "copy_selection", "Copiar selecao"),
+        ("f1", "toggle_help", t("binding_help")),
+        ("f2", "toggle_config", t("binding_config")),
+        ("ctrl+shift+c", "copy_selection", t("binding_copy")),
     ]
 
     def __init__(self, *args, **kwargs):

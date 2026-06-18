@@ -15,6 +15,7 @@ NAVI_LITE_ID = 1213487623688167494
 NEON_BOT_IDS = [754276211302088704, 787861783143637032, 851436490415931422]
 # ─── Oracle Model ───
 img_height, img_width = 128, 128
+language = userOptions.get("language", "pt").lower().strip()
 model_path_color = os.path.join(options_resolver.BUNDLE_DIR, 'oracle_v2_color.h5')
 model_path_gray = os.path.join(options_resolver.BUNDLE_DIR, 'oracle_v2_gray.h5')
 tflite_path_color = os.path.join(options_resolver.BUNDLE_DIR, 'oracle_v2_color.tflite')

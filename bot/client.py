@@ -33,6 +33,7 @@ from bot.captcha import tentar_resolver_captcha, set_client
 from bot.handlers import responseResolver
 from bot.parsers import format_session_data
 from bot.persistence import save_session_data, get_stats_for_period
+from bot.locales import t, set_language
 
 # ─── Constants ───
 CONFIG_RELOAD_CHECK_INTERVAL = 3.0
@@ -1678,6 +1679,15 @@ class DiscordClient(discord.Client):
                     add_to_high_priority_queue(f"rpg {tier} {target}")
                     return
 
+        if cmd.startswith("language "):
+            parts = cmd.split()
+            if len(parts) > 1:
+                new_lang = parts[1].lower().strip()
+                if new_lang in ("pt", "en"):
+                    set_language(new_lang)
+                    HUD.system(f"📲 COMANDO TELEGRAM: Idioma alterado para {new_lang}.")
+                    await send_telegram_notification(t("telegram_language_changed", lang="pt" if new_lang == "pt" else "en"))
+
         if cmd == "/help" or cmd == "help":
             help_msg = (
                 "🎯 *COMANDOS DISPONÍVEIS NO TELEGRAM* 🎯\n\n"
@@ -1692,6 +1702,7 @@ class DiscordClient(discord.Client):
                 "• `enchant/refine/transmute/transcend <a/s> <enchant_name>` - Inicia Auto Enchant (ex: `/refine s godly`)\n"
                 "• `enchant/refine/transmute/transcend stop` - Para Auto Enchant\n"
                 "• `toggle [hunt/adv/farm/work/cf]` - Alterna configurações em tempo real (cf = coinflip/gambling)\n"
+                "• `language [pt/en]` ou `/language [pt/en]` - Altera o idioma do bot / Change bot language\n"
                 "• `help` ou `/help` - Exibe esta ajuda"
             )
 

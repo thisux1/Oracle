@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useOracleStore } from "../stores/useOracleStore";
+import { useTranslation } from "../hooks/useTranslation";
 import ConfigSection from "../components/ConfigSection";
 import ToggleSwitch from "../components/ToggleSwitch";
 import { Eye, EyeOff, Save, CheckCircle, AlertCircle } from "lucide-react";
@@ -129,6 +130,7 @@ export default function ConfigTab() {
   const configDirty = useOracleStore((s) => s.configDirty);
   const activeProfile = useOracleStore((s) => s.activeProfile);
 
+  const { t } = useTranslation();
   const [saveState, setSaveState] = useState(null); // null | "success" | "error"
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -321,6 +323,20 @@ export default function ConfigTab() {
             ]}
           />
         </div>
+      </ConfigSection>
+
+      {/* Language */}
+      <ConfigSection title={t("section_language")} icon="&#127758;">
+        <SelectField
+          label={t("field_language")}
+          field="language"
+          value={config.language}
+          onChange={handleChange}
+          options={[
+            { value: "pt", label: t("lang_pt") },
+            { value: "en", label: t("lang_en") },
+          ]}
+        />
       </ConfigSection>
 
       {/* Save bar */}
