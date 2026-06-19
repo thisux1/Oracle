@@ -229,7 +229,7 @@ do_card_hand = userOptions.get("do_card_hand", "true").lower() == "true"
 do_duel      = userOptions.get("do_duel", "false").lower() == "true"
 win_duel     = userOptions.get("win_duel", "true").lower() == "true"
 duel_partner_id = userOptions.get("duel_partner_id", "").strip()
-do_pet       = userOptions.get("do_pet", "true").lower() == "true"
+do_pet       = userOptions.get("do_pet", "false").lower() == "true"
 
 # ─── ULTR / Training ───
 do_ultr = userOptions.get("do_ultr", "false").lower() == "true"
@@ -364,7 +364,7 @@ def reload_config(profile_path: Optional[str] = None) -> None:
     do_duel      = userOptions.get("do_duel", "false").lower() == "true"
     win_duel     = userOptions.get("win_duel", "true").lower() == "true"
     duel_partner_id = userOptions.get("duel_partner_id", "").strip()
-    do_pet       = userOptions.get("do_pet", "true").lower() == "true"
+    do_pet       = userOptions.get("do_pet", "false").lower() == "true"
 
     do_ultr = userOptions.get("do_ultr", "false").lower() == "true"
     card_hand_action = userOptions.get("card_hand_action", "auto").lower()

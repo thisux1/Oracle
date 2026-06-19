@@ -374,6 +374,11 @@ def remove_base_action_from_queue(base_action: str, queue: list, queue_set: set)
 
 
 def add_to_low_priority_queue(command: str, suppress_log: bool = False) -> None:
+    if command.lower().strip().startswith("rpg area "):
+        parts = command.strip().split()
+        if len(parts) >= 3 and parts[2].lower() == "none":
+            return
+
     if bot_state.sleepet_mode and not is_sleepet_command(command):
         return
     # Block low-priority rpg commands if duel or auto-enchant is active
@@ -392,6 +397,11 @@ def add_to_low_priority_queue(command: str, suppress_log: bool = False) -> None:
 
 
 def add_to_high_priority_queue(command: str) -> None:
+    if command.lower().strip().startswith("rpg area "):
+        parts = command.strip().split()
+        if len(parts) >= 3 and parts[2].lower() == "none":
+            return
+
     if bot_state.sleepet_mode and not is_sleepet_command(command):
         return
     # Check if this action is already in HPQ
