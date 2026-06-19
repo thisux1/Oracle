@@ -138,12 +138,37 @@ export default function TerminalTab({ isActive }) {
     };
   }, [hasOpened]);
 
-  // Append new chunks from WebSocket
+  // Append new chunks from WebSocket with scroll position preservation
   useEffect(() => {
     if (lastBinaryChunk && termRef.current) {
-      termRef.current.write(lastBinaryChunk);
+      const term = termRef.current;
+      const buffer = term.buffer?.active;
+      if (buffer) {
+        const isScrolledUp = buffer.viewportY < buffer.baseY;
+        const scrollOffset = buffer.baseY - buffer.viewportY;
+        
+        term.write(lastBinaryChunk);
+        
+        if (isScrolledUp) {
+          requestAnimationFrame(() => {
+            if (termRef.current && termRef.current.buffer?.active) {
+              const newBaseY = termRef.current.buffer.active.baseY;
+              termRef.current.scrollToLine(newBaseY - scrollOffset);
+            }
+          });
+        }
+      } else {
+        term.write(lastBinaryChunk);
+      }
     }
   }, [lastBinaryChunk]);
+
+  // Reset terminal modes when disconnected (disable mouse tracking, exit alternate screen, show cursor)
+  useEffect(() => {
+    if (!connected && termRef.current) {
+      termRef.current.write("\x1b[?1000l\x1b[?1002l\x1b[?1003l\x1b[?1006l\x1b[?1049l\x1b[?25h");
+    }
+  }, [connected]);
 
   const handleClear = () => {
     if (termRef.current) {
