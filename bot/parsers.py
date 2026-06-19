@@ -230,8 +230,8 @@ async def rdCheckNavi(message):
                         add_to_low_priority_queue("rpg training", suppress_log=True)
                         logger.info("Command 'rpg training' added to LPQ from Navi Lite.")
                 elif cmd == "work" and config.do_work:
-                    add_to_low_priority_queue(f"rpg {config.userOptions['work_command']}", suppress_log=True)
-                    logger.info(f"Command 'rpg {config.userOptions['work_command']}' added to LPQ from Navi Lite.")
+                    add_to_low_priority_queue(f"rpg {config.work_command}", suppress_log=True)
+                    logger.info(f"Command 'rpg {config.work_command}' added to LPQ from Navi Lite.")
                 elif cmd == "daily" and config.do_daily:
                     add_to_low_priority_queue("rpg daily", suppress_log=True)
                     logger.info("Command 'rpg daily' added to LPQ from Navi Lite.")
@@ -418,7 +418,7 @@ async def rdCheckEpicRPG(message):
                         )
 
                     elif cmd_type == "work":
-                        cmd = f"rpg {config.userOptions['work_command']}"
+                        cmd = f"rpg {config.work_command}"
                         add_to_low_priority_queue(cmd, suppress_log=True)
                         logger.info(
                             f"Command '{cmd}' added to LPQ from Epic RPG rd."

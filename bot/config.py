@@ -186,6 +186,7 @@ is_married = userOptions.get("is_married", "false").lower() == "true"
 partner_name = userOptions.get("partner_name", "").lower() if is_married else None
 is_ascended = userOptions.get("is_ascended", "false").lower() == "true"
 farm_seed = userOptions.get("seed", "carrot").lower()
+work_command = userOptions.get("work_command", "chainsaw").lower()
 max_area = userOptions.get("max_area", "1")
 user_name_lower = userOptions.get("username", "").lower() # Fallback only, on_ready overwrites this
 TelegramBotToken = userOptions.get("telegram_bot_token", "")
@@ -322,6 +323,7 @@ def reload_config(profile_path: Optional[str] = None) -> None:
     partner_name = userOptions.get("partner_name", "").lower() if is_married else None
     is_ascended = userOptions.get("is_ascended", "false").lower() == "true"
     farm_seed = userOptions.get("seed", "carrot").lower()
+    work_command = userOptions.get("work_command", "chainsaw").lower()
     ini_username = userOptions.get("username", "").strip().lower()
     if ini_username:
         user_name_lower = ini_username

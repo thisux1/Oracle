@@ -513,7 +513,7 @@ CONFIG_SCHEMA = [
     ("🌾 Economy / Gambling", [
         ("lootbox_type", "dropdown", "ed lb", ["ed lb", "ep lb", "rare lb", "uncommon lb", "common lb"]),
         ("seed", "dropdown", "carrot", ["carrot", "potato", "bread"]),
-        ("work_command", "dropdown", "chainsaw", ["chainsaw", "pickaxe", "bigboat", "greenhouse", "axe", "net", "pickup"]),
+        ("work_command", "text", "chainsaw"),
         ("bankroll", "text", "1000000000000"),
         ("max_losses", "text", "20"),
         ("initial_step", "text", "1"),
