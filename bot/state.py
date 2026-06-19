@@ -92,6 +92,7 @@ class BotState:
         self.jailed = False
         self.captcha_pending = False
         self.last_message_id = None
+        self.sent_message_ids = []
         self.coinflip_step = 1
         self.coinflip_sequence = [1, 1]
         self.coinflip_base_unit = 0
@@ -100,6 +101,8 @@ class BotState:
         self.captcha_task = None
         self.no_response_count = 0
         self.watchdog_paused_until = 0
+        self.last_epic_rpg_channel_message_time = 0
+        self.quest_dialog_pending_until = 0
         self.is_on_coffee_break = False
         self.next_break_time = time.time() + randint(3600, 7200)
         self.coffee_break_end_time = 0
@@ -107,6 +110,8 @@ class BotState:
         self.lootbox_cooldown_until = 0
         self.pending_lootbox_buy = None
         self.lootbox_fallback_triggered = False
+        self.pending_life_boost_buy = None
+        self.life_boost_fallback_triggered = False
         self.has_bank_account = True
         self.quest_active = False
         self.gamble_quest_goal = 0
@@ -453,6 +458,8 @@ def reset_bot_state() -> None:
     bot_state.tc_quantity = config.tc_quantity
     bot_state.watchdog_paused_until = 0
     bot_state.no_response_count = 0
+    bot_state.last_epic_rpg_channel_message_time = 0
+    bot_state.quest_dialog_pending_until = 0
     bot_state.coffee_break_end_time = 0
     bot_state.sleepet_mode = False
     bot_state.sleepet_state = None
@@ -465,6 +472,9 @@ def reset_bot_state() -> None:
     bot_state.duel_channel_id = 0
     bot_state.pending_lootbox_buy = None
     bot_state.lootbox_fallback_triggered = False
+    bot_state.pending_life_boost_buy = None
+    bot_state.life_boost_fallback_triggered = False
+    bot_state.sent_message_ids = []
     bot_state.has_bank_account = True
     bot_state.auto_enchant_active = False
     bot_state.auto_enchant_tier = ""

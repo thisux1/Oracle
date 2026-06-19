@@ -316,9 +316,9 @@ class SidebarPane(Static):
                 "\n"
                 f"{self._fit_art(sleep_art, w)}\n"
                 "\n"
-                f"{self._trunc(f' {t('sidebar_hibernating')}', w)}\n"
-                f"{self._trunc(f' {t('sidebar_wake_up', time=config.wake_up_at)}', w)}\n"
-                f"{self._trunc(f' {t('sidebar_auto_resume')}', w)}\n"
+                f"{self._trunc(' ' + t('sidebar_hibernating'), w)}\n"
+                f"{self._trunc(' ' + t('sidebar_wake_up', time=config.wake_up_at), w)}\n"
+                f"{self._trunc(' ' + t('sidebar_auto_resume'), w)}\n"
                 f"\n{separator_medium(w)}\n"
             )
 
@@ -329,15 +329,15 @@ class SidebarPane(Static):
                 return (
                     f"{self._header(t('sidebar_paused_wd'), marker, w)}\n"
                     "\n"
-                    f"{self._trunc(f' {t('sidebar_wd_active')}', w)}\n"
-                    f"{self._trunc(f' {t('sidebar_resuming_in', time=f'{mm:02d}:{ss:02d}')}', w)}\n"
+                    f"{self._trunc(' ' + t('sidebar_wd_active'), w)}\n"
+                    f"{self._trunc(' ' + t('sidebar_resuming_in', time=f'{mm:02d}:{ss:02d}'), w)}\n"
                     f"\n{separator_medium(w)}\n"
                 )
             return (
                 f"{self._header(t('sidebar_paused'), marker, w)}\n"
                 "\n"
-                f"{self._trunc(f' {t('sidebar_bot_paused')}', w)}\n"
-                f"{self._trunc(f' {t('sidebar_resume_hint')}', w)}\n"
+                f"{self._trunc(' ' + t('sidebar_bot_paused'), w)}\n"
+                f"{self._trunc(' ' + t('sidebar_resume_hint'), w)}\n"
                 f"\n{separator_medium(w)}\n"
             )
 
@@ -351,9 +351,9 @@ class SidebarPane(Static):
                 "\n"
                 f"{self._fit_art(coffee_art, w)}\n"
                 "\n"
-                f"{self._trunc(f' {t('sidebar_coffee_desc')}', w)}\n"
+                f"{self._trunc(' ' + t('sidebar_coffee_desc'), w)}\n"
                 f"\n{separator_medium(w)}\n"
-                f"{self._trunc(f'  {t('sidebar_resuming_in', time=f'{mm:02d}:{ss:02d}')}', w)}\n"
+                f"{self._trunc('  ' + t('sidebar_resuming_in', time=f'{mm:02d}:{ss:02d}'), w)}\n"
             )
 
         hunts = sessionData["command_data"].get("hunt", 0) - initialSessionData["command_data"].get("hunt", 0)
@@ -411,15 +411,15 @@ class SidebarPane(Static):
             if bot_state.tc_end_time > time.time():
                 tc_remaining = max(0, int(bot_state.tc_end_time - time.time()))
                 tcm, tcs = tc_remaining // 60, tc_remaining % 60
-                tc_str = f"{self._trunc(f' {t('sidebar_tc_remaining', time=f'{tcm:02d}:{tcs:02d}')}', w)}\n"
+                tc_str = f"{self._trunc(' ' + t('sidebar_tc_remaining', time=f'{tcm:02d}:{tcs:02d}'), w)}\n"
             else:
-                tc_str = f"{self._trunc(f' {t('sidebar_tc_unlimited', qty=bot_state.tc_quantity)}', w)}\n"
+                tc_str = f"{self._trunc(' ' + t('sidebar_tc_unlimited', qty=bot_state.tc_quantity), w)}\n"
 
         return (
             f"{self._header(t('sidebar_estado'), marker, w)}\n"
-            f"{self._trunc(f' {t('sidebar_estado')}: {state_str}', w)}\n"
-            f"{self._trunc(f' {t('sidebar_sleep_time', time=config.sleep_at)}', w)}\n"
-            f"{self._trunc(f' {t('sidebar_uptime', time=self.uptime)}', w)}\n"
+            f"{self._trunc(' ' + t('sidebar_estado') + ': ' + state_str, w)}\n"
+            f"{self._trunc(' ' + t('sidebar_sleep_time', time=config.sleep_at), w)}\n"
+            f"{self._trunc(' ' + t('sidebar_uptime', time=self.uptime), w)}\n"
             f"{tc_str}"
             f"\n{separator_medium(w)}\n"
             f" {t('sidebar_session_stats')}\n"

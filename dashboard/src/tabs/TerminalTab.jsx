@@ -72,9 +72,27 @@ export default function TerminalTab({ isActive }) {
     };
   }, [fitTerminal]);
 
+  const [hasOpened, setHasOpened] = useState(false);
+
+  useEffect(() => {
+    if (isActive && !hasOpened) {
+      setHasOpened(true);
+    }
+  }, [isActive, hasOpened]);
+
+  // Trigger fitTerminal when tab becomes active
+  useEffect(() => {
+    if (isActive) {
+      const timer = setTimeout(() => {
+        fitTerminal();
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [isActive, fitTerminal]);
+
   // Initialize xterm
   useEffect(() => {
-    if (!containerRef.current || termRef.current) return;
+    if (!hasOpened || !containerRef.current || termRef.current) return;
 
     const term = new Terminal({
       scrollback: 5000,
@@ -97,6 +115,10 @@ export default function TerminalTab({ isActive }) {
     termRef.current = term;
     fitAddonRef.current = fitAddon;
 
+    // Expose for debugging
+    window.term = term;
+    window.fitAddon = fitAddon;
+
     // Replay historical binary chunks once during initialization
     const history = useOracleStore.getState().binaryHistory;
     history.forEach((chunk) => {
@@ -114,7 +136,7 @@ export default function TerminalTab({ isActive }) {
       termRef.current = null;
       fitAddonRef.current = null;
     };
-  }, []);
+  }, [hasOpened]);
 
   // Append new chunks from WebSocket
   useEffect(() => {

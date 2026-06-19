@@ -89,6 +89,8 @@ async def send_with_typo_chance(channel, command, priority_label=""):
     Returns:
         True if a typo was sent, False if the command was sent cleanly.
     """
+    from bot.state import bot_state
+
     if not channel:
         logger.error(f"Cannot send command '{command}' because channel is None.")
         HUD.system(f"⚠️ Erro: Canal do Discord indisponível. '{command}' não enviado.")
@@ -101,7 +103,10 @@ async def send_with_typo_chance(channel, command, priority_label=""):
             # Send the typo
             async with channel.typing():
                 await asyncio.sleep(0.1 + random.random() * 0.3)
-            await channel.send(typo_text)
+            typo_msg = await channel.send(typo_text)
+            bot_state.sent_message_ids.append(typo_msg.id)
+            if len(bot_state.sent_message_ids) > 20:
+                bot_state.sent_message_ids.pop(0)
                 
             HUD.system(
                 f"🫢 Typo! Enviado '{typo_text}' "
@@ -120,7 +125,10 @@ async def send_with_typo_chance(channel, command, priority_label=""):
             # Now send the correct command
             async with channel.typing():
                 await asyncio.sleep(0.1 + random.random() * 0.3)
-            await channel.send(command)
+            sent_msg = await channel.send(command)
+            bot_state.sent_message_ids.append(sent_msg.id)
+            if len(bot_state.sent_message_ids) > 20:
+                bot_state.sent_message_ids.pop(0)
                 
             HUD.system(f"Corrigido -> '{command}'")
             return True
@@ -128,5 +136,8 @@ async def send_with_typo_chance(channel, command, priority_label=""):
     # No typo — send normally
     async with channel.typing():
         await asyncio.sleep(0.1 + random.random() * 0.3)
-    await channel.send(command)
+    sent_msg = await channel.send(command)
+    bot_state.sent_message_ids.append(sent_msg.id)
+    if len(bot_state.sent_message_ids) > 20:
+        bot_state.sent_message_ids.pop(0)
     return False

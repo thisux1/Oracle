@@ -15,7 +15,7 @@ NAVI_LITE_ID = 1213487623688167494
 NEON_BOT_IDS = [754276211302088704, 787861783143637032, 851436490415931422]
 # ─── Oracle Model ───
 img_height, img_width = 128, 128
-language = userOptions.get("language", "pt").lower().strip()
+language = "pt"
 model_path_color = os.path.join(options_resolver.BUNDLE_DIR, 'oracle_v2_color.h5')
 model_path_gray = os.path.join(options_resolver.BUNDLE_DIR, 'oracle_v2_gray.h5')
 tflite_path_color = os.path.join(options_resolver.BUNDLE_DIR, 'oracle_v2_color.tflite')
@@ -168,6 +168,7 @@ except Exception as e:
     sys.exit(1)
 
 userToken = userOptions.get("user_token", "")
+language = userOptions.get("language", "pt").lower().strip()
 
 # Removed user_mention_text parsing as it is now determined dynamically in on_ready
 userID = 0
@@ -303,6 +304,7 @@ def reload_config(profile_path: Optional[str] = None) -> None:
     global training_command_sequence, is_eternal, life_boost_before_adv, adventure_area
     global current_area, ADMIN_IDS, ALLOWED_IDS, eternal_tier, pet_adventure_command
     global max_area, active_profile_path, do_duel, win_duel, duel_partner_id, do_pet
+    global language
 
     if profile_path is not None:
         active_profile_path = profile_path
@@ -310,6 +312,7 @@ def reload_config(profile_path: Optional[str] = None) -> None:
     userOptions = options_resolver.importData(filePath=active_profile_path)
 
     userToken = userOptions.get("user_token", "")
+    language = userOptions.get("language", "pt").lower().strip()
     try:
         channelID = int(userOptions.get("channel_id", "0"))
     except ValueError:

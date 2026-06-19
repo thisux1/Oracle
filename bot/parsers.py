@@ -206,10 +206,10 @@ async def rdCheckNavi(message):
                     adv_cmd = "rpg adv"
                     if config.is_ascended:
                         adv_cmd += " h"
-                    if config.life_boost_before_adv != "none":
-                        add_to_high_priority_queue("rpg withdraw all")
+                    if config.life_boost_before_adv in ["a", "b", "c"]:
                         add_to_high_priority_queue(f"rpg buy life boost {config.life_boost_before_adv}")
-                        add_to_high_priority_queue("rpg deposit all")
+                        bot_state.pending_life_boost_buy = config.life_boost_before_adv
+                        bot_state.life_boost_fallback_triggered = False
                     if config.adventure_area != "none":
                         add_to_low_priority_queue(f"rpg area {config.adventure_area}", suppress_log=True)
                         add_to_low_priority_queue(adv_cmd, suppress_log=True)
@@ -458,10 +458,10 @@ async def rdCheckEpicRPG(message):
                         adv_cmd = "rpg adv"
                         if config.is_ascended:
                             adv_cmd += " h"
-                        if config.life_boost_before_adv != "none":
-                            add_to_high_priority_queue("rpg withdraw all")
+                        if config.life_boost_before_adv in ["a", "b", "c"]:
                             add_to_high_priority_queue(f"rpg buy life boost {config.life_boost_before_adv}")
-                            add_to_high_priority_queue("rpg deposit all")
+                            bot_state.pending_life_boost_buy = config.life_boost_before_adv
+                            bot_state.life_boost_fallback_triggered = False
                         if config.adventure_area != "none":
                             add_to_low_priority_queue(f"rpg area {config.adventure_area}", suppress_log=True)
                             add_to_low_priority_queue(adv_cmd, suppress_log=True)

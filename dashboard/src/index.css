@@ -502,4 +502,24 @@ body::before {
   }
 }
 
+/* ---- Xterm Viewport Scrollbar ---- */
+.xterm-viewport::-webkit-scrollbar {
+  width: 10px !important;
+  height: 10px !important;
+}
+
+.xterm-viewport::-webkit-scrollbar-track {
+  background: rgba(6, 6, 10, 0.5) !important;
+}
+
+.xterm-viewport::-webkit-scrollbar-thumb {
+  background: var(--text-dim) !important;
+  border-radius: 4px !important;
+}
+
+.xterm-viewport::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-cyan) !important;
+}
+
+
 

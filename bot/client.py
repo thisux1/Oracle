@@ -281,6 +281,16 @@ class DiscordClient(discord.Client):
                     bot_state.next_break_time = time.time() + randint(COFFEE_BREAK_INTERVAL_MIN, COFFEE_BREAK_INTERVAL_MAX)
                     HUD.system("Fim da pausa. Retomando.")
 
+                # Watchdog: Detect expired response_pending (command sent, no Epic RPG reply at all)
+                if (
+                    bot_state.response_pending_until > 0
+                    and current_time > bot_state.response_pending_until
+                    and bot_state.last_epic_rpg_channel_message_time < bot_state.last_sent_time
+                ):
+                    bot_state.no_response_count += 1
+                    bot_state.response_pending_until = 0
+                    HUD.system(f"Watchdog: Sem resposta do Epic RPG para '{bot_state.last_sent_command}' ({bot_state.no_response_count}/{WATCHDOG_NO_RESPONSE_LIMIT})")
+
                 # Watchdog: Emergency Pause
                 if bot_state.no_response_count >= WATCHDOG_NO_RESPONSE_LIMIT:
                     bot_state.paused = True
@@ -355,8 +365,8 @@ class DiscordClient(discord.Client):
                         if duel_chan:
                             active_channel = duel_chan
 
-                    if current_time <= bot_state.minigame_pending_until:
-                        # During a minigame, only allow the answer through HPQ
+                    if current_time <= bot_state.minigame_pending_until or current_time <= bot_state.quest_dialog_pending_until:
+                        # During a minigame/quest dialog, only allow the answer through HPQ
                         # (answers are plain text like "3", "yes" — never start with "rpg")
                         for cmd in list(highPriorityQueue):
                             if not cmd.lower().startswith("rpg"):
@@ -365,7 +375,6 @@ class DiscordClient(discord.Client):
                                 if target_cmd in highPriorityQueue:
                                     highPriorityQueue.remove(target_cmd)
                                     highPriorityQueueSet.discard(target_cmd)
-                                    bot_state.no_response_count += 1
                                     HUD.command(target_cmd, "HPQ-MG")
                                     await send_with_typo_chance(active_channel, target_cmd, "HPQ-MG")
                                 break
@@ -397,7 +406,6 @@ class DiscordClient(discord.Client):
                                 if target_cmd in highPriorityQueue:
                                     highPriorityQueue.remove(target_cmd)
                                     highPriorityQueueSet.discard(target_cmd)
-                                    bot_state.no_response_count += 1
                                     bot_state.response_pending_until = time.time() + RESPONSE_PENDING_DURATION
                                     HUD.command(target_cmd, "HPQ-RP")
                                     await send_with_typo_chance(active_channel, target_cmd, "HPQ-RP")
@@ -412,7 +420,6 @@ class DiscordClient(discord.Client):
                                 if target_cmd in highPriorityQueue:
                                     highPriorityQueue.remove(target_cmd)
                                     highPriorityQueueSet.discard(target_cmd)
-                                    bot_state.no_response_count += 1
                                     HUD.command(target_cmd, "HPQ-DL")
                                     await send_with_typo_chance(active_channel, target_cmd, "HPQ-DL")
                                 break
@@ -446,7 +453,6 @@ class DiscordClient(discord.Client):
                                 bot_state.cardhand_start_time = current_time
                                 HUD.system("Card Hand iniciado! Filas bloqueadas.")
                             track_command(cmd)
-                            bot_state.no_response_count += 1
                             bot_state.last_sent_command = cmd
                             bot_state.last_sent_time = current_time
                             if cmd.lower().startswith("rpg cf"):
@@ -485,7 +491,6 @@ class DiscordClient(discord.Client):
                                 bot_state.cardhand_start_time = current_time
                                 HUD.system("Card Hand iniciado! Filas bloqueadas.")
                             track_command(cmd)
-                            bot_state.no_response_count += 1
                             bot_state.last_sent_command = cmd
                             bot_state.last_sent_time = current_time
                             if cmd.lower().startswith("rpg cf"):
@@ -863,6 +868,10 @@ class DiscordClient(discord.Client):
 
         # ─── 3. Status Detection (bypasses pause) ───
         if message.author.id == config.EPIC_RPG_ID:
+            # Any Epic RPG message in our channel resets watchdog timers
+            if message.channel.id == config.channelID:
+                bot_state.last_epic_rpg_channel_message_time = time.time()
+                bot_state.response_pending_until = 0
             # Plain text errors for Auto Enchant
             if bot_state.auto_enchant_active and message.channel.id == bot_state.auto_enchant_channel_id:
                 if "don't have enough money" in combined_content.lower() or "don't have enough coin" in combined_content.lower():
@@ -947,9 +956,12 @@ class DiscordClient(discord.Client):
 
             # Verify if this message is for us to reset watchdog/pending timers
             is_for_us = False
-            if message.reference and message.reference.resolved:
-                ref = message.reference.resolved
-                if hasattr(ref, "author") and ref.author.id == config.userID:
+            if message.reference:
+                if message.reference.resolved:
+                    ref = message.reference.resolved
+                    if hasattr(ref, "author") and ref.author.id == config.userID:
+                        is_for_us = True
+                if not is_for_us and message.reference.message_id in bot_state.sent_message_ids:
                     is_for_us = True
             
             if not is_for_us:
@@ -974,6 +986,17 @@ class DiscordClient(discord.Client):
                     HUD.system(f"Lootbox ({bot_state.pending_lootbox_buy}) comprada com sucesso!")
                     bot_state.pending_lootbox_buy = None
                     bot_state.lootbox_fallback_triggered = False
+
+                if bot_state.pending_life_boost_buy and (
+                    ("successfully bought" in combined_content and "life boost" in combined_content)
+                    or "already have a life boost" in combined_content
+                ):
+                    if "already have a life boost" in combined_content:
+                        HUD.system(f"Life Boost ({bot_state.pending_life_boost_buy}) já ativo!")
+                    else:
+                        HUD.system(f"Life Boost ({bot_state.pending_life_boost_buy}) comprado com sucesso!")
+                    bot_state.pending_life_boost_buy = None
+                    bot_state.life_boost_fallback_triggered = False
 
                 # Auto Enchant Check
                 if bot_state.auto_enchant_active and message.channel.id == bot_state.auto_enchant_channel_id:
@@ -1183,6 +1206,18 @@ class DiscordClient(discord.Client):
                     add_to_high_priority_queue("rpg deposit all")
                     return
 
+                if bot_state.pending_life_boost_buy and bot_state.has_bank_account and not bot_state.life_boost_fallback_triggered:
+
+                    bot_state.life_boost_fallback_triggered = True
+                    HUD.system(
+                        f"Falta de dinheiro detectada ao comprar life boost ({bot_state.pending_life_boost_buy}). "
+                        f"Tentando fallback: withdraw all..."
+                    )
+                    add_to_high_priority_queue("rpg withdraw all")
+                    add_to_high_priority_queue(f"rpg buy life boost {bot_state.pending_life_boost_buy}")
+                    add_to_high_priority_queue("rpg deposit all")
+                    return
+
                 bot_state.lootbox_cooldown_until = time.time() + LOOTBOX_COOLDOWN
                 if "don't have a bank account" in combined_content:
                     bot_state.has_bank_account = False
@@ -1191,6 +1226,8 @@ class DiscordClient(discord.Client):
                 )
                 bot_state.pending_lootbox_buy = None
                 bot_state.lootbox_fallback_triggered = False
+                bot_state.pending_life_boost_buy = None
+                bot_state.life_boost_fallback_triggered = False
                 for cmd in list(highPriorityQueue):
                     if any(x in cmd for x in ["buy", "withdraw", "deposit"]):
                         highPriorityQueue.remove(cmd)
@@ -1242,6 +1279,7 @@ class DiscordClient(discord.Client):
                 return
 
             HUD.system("Diálogo de NPC detectado. Analisando quest...")
+            bot_state.quest_dialog_pending_until = time.time() + 15
             if any(
                 x in combined_content
                 for x in ["arena", "miniboss", "guild raid"]
