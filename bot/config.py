@@ -156,6 +156,26 @@ def normalize_pet_adventure_command(val: str | None) -> str:
         
     return f"rpg pet adv {action}"
 
+def get_full_lootbox_name(lootbox_type: str) -> str:
+    if not lootbox_type:
+        return "none"
+    lootbox_type = lootbox_type.strip().lower()
+    mapping = {
+        "common lb": "common lootbox",
+        "uncommon lb": "uncommon lootbox",
+        "rare lb": "rare lootbox",
+        "ep lb": "epic lootbox",
+        "ed lb": "edgy lootbox",
+        "common": "common lootbox",
+        "uncommon": "uncommon lootbox",
+        "rare": "rare lootbox",
+        "epic": "epic lootbox",
+        "ep": "epic lootbox",
+        "edgy": "edgy lootbox",
+        "ed": "edgy lootbox"
+    }
+    return mapping.get(lootbox_type, lootbox_type)
+
 # ─── User Options ───
 try:
     userOptions = options_resolver.importData()
@@ -187,6 +207,7 @@ partner_name = userOptions.get("partner_name", "").lower() if is_married else No
 is_ascended = userOptions.get("is_ascended", "false").lower() == "true"
 farm_seed = userOptions.get("seed", "carrot").lower()
 work_command = userOptions.get("work_command", "chainsaw").lower()
+lootbox_type = get_full_lootbox_name(userOptions.get("lootbox_type", "none"))
 max_area = userOptions.get("max_area", "1")
 user_name_lower = userOptions.get("username", "").lower() # Fallback only, on_ready overwrites this
 TelegramBotToken = userOptions.get("telegram_bot_token", "")
@@ -324,6 +345,7 @@ def reload_config(profile_path: Optional[str] = None) -> None:
     is_ascended = userOptions.get("is_ascended", "false").lower() == "true"
     farm_seed = userOptions.get("seed", "carrot").lower()
     work_command = userOptions.get("work_command", "chainsaw").lower()
+    lootbox_type = get_full_lootbox_name(userOptions.get("lootbox_type", "none"))
     ini_username = userOptions.get("username", "").strip().lower()
     if ini_username:
         user_name_lower = ini_username

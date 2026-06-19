@@ -239,7 +239,7 @@ async def rdCheckNavi(message):
                     add_to_low_priority_queue("rpg weekly", suppress_log=True)
                     logger.info("Command 'rpg weekly' added to LPQ from Navi Lite.")
                 elif cmd == "lootbox" and config.do_lootbox:
-                    lootbox_type = config.userOptions.get("lootbox_type", "none")
+                    lootbox_type = config.lootbox_type
                     if (
                         lootbox_type != "none"
                         and time.time() > bot_state.lootbox_cooldown_until
@@ -425,7 +425,7 @@ async def rdCheckEpicRPG(message):
                         )
 
                     elif cmd_type == "lootbox":
-                        lootbox_type = config.userOptions.get("lootbox_type", "none")
+                        lootbox_type = config.lootbox_type
                         if (
                             lootbox_type != "none"
                             and time.time() > bot_state.lootbox_cooldown_until

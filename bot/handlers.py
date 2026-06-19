@@ -797,7 +797,7 @@ async def responseResolver(message) -> None:
                 final_cmd = "rpg quest"
                 add_to_high_priority_queue(final_cmd)
             elif cmd_name == "lootbox":
-                lootbox_type = config.userOptions.get("lootbox_type", "none")
+                lootbox_type = config.lootbox_type
                 if (
                     lootbox_type != "none"
                     and time.time() > bot_state.lootbox_cooldown_until
