@@ -187,8 +187,21 @@ except Exception as e:
     print("\033[1;31m" + "="*80 + "\033[0m\n", file=sys.stderr)
     sys.exit(1)
 
-userToken = userOptions.get("user_token", "")
-language = userOptions.get("language", "pt").lower().strip()
+def get_opt(key: str, default: str) -> str:
+    val = userOptions.get(key)
+    if val is None:
+        return default
+    val_stripped = val.strip()
+    if not val_stripped:
+        return default
+    return val_stripped
+
+def get_opt_bool(key: str, default: bool) -> bool:
+    default_str = "true" if default else "false"
+    return get_opt(key, default_str).lower() == "true"
+
+userToken = get_opt("user_token", "")
+language = get_opt("language", "pt").lower()
 
 # Removed user_mention_text parsing as it is now determined dynamically in on_ready
 userID = 0
@@ -197,36 +210,36 @@ userMentionText = ""
 active_profile_path = options_resolver.optionsFilePath
 
 try:
-    channelID = int(userOptions.get("channel_id", "0"))
+    channelID = int(get_opt("channel_id", "0"))
 except ValueError:
     channelID = 0
 
-randomIntervals = userOptions.get("random_interval", "false").lower() == "true"
-is_married = userOptions.get("is_married", "false").lower() == "true"
-partner_name = userOptions.get("partner_name", "").lower() if is_married else None
-is_ascended = userOptions.get("is_ascended", "false").lower() == "true"
-farm_seed = userOptions.get("seed", "carrot").lower()
-work_command = userOptions.get("work_command", "chainsaw").lower()
-lootbox_type = get_full_lootbox_name(userOptions.get("lootbox_type", "none"))
-max_area = userOptions.get("max_area", "1")
-user_name_lower = userOptions.get("username", "").lower() # Fallback only, on_ready overwrites this
-TelegramBotToken = userOptions.get("telegram_bot_token", "")
-TelegramChatID = userOptions.get("telegram_chat_id", "")
+randomIntervals = get_opt_bool("random_interval", False)
+is_married = get_opt_bool("is_married", False)
+partner_name = get_opt("partner_name", "").lower() if is_married else None
+is_ascended = get_opt_bool("is_ascended", False)
+farm_seed = get_opt("seed", "carrot").lower()
+work_command = get_opt("work_command", "chainsaw").lower()
+lootbox_type = get_full_lootbox_name(get_opt("lootbox_type", "none"))
+max_area = get_opt("max_area", "1")
+user_name_lower = get_opt("username", "").lower() # Fallback only, on_ready overwrites this
+TelegramBotToken = get_opt("telegram_bot_token", "")
+TelegramChatID = get_opt("telegram_chat_id", "")
 try:
-    typo_chance = float(userOptions.get("typo_chance", "0.05"))
+    typo_chance = float(get_opt("typo_chance", "0.05"))
 except ValueError:
     typo_chance = 0.05
 
 try:
-    GUILD_ID = int(userOptions.get("guild_id", "0"))
+    GUILD_ID = int(get_opt("guild_id", "0"))
 except ValueError:
     GUILD_ID = 0
 
 startTime = time.time()
-tc_stop_conditions = [x.strip().lower() for x in userOptions.get("tc_stop_on", "dungeon,miniboss").split(",") if x.strip()]
-sleep_at = userOptions.get("sleep_at", "")
-wake_up_at = userOptions.get("wake_up_at", "")
-theme_raw = userOptions.get("theme", "cathedral").lower().strip()
+tc_stop_conditions = [x.strip().lower() for x in get_opt("tc_stop_on", "dungeon,miniboss").split(",") if x.strip()]
+sleep_at = get_opt("sleep_at", "")
+wake_up_at = get_opt("wake_up_at", "")
+theme_raw = get_opt("theme", "cathedral").lower()
 theme_map = {
     "tokyo night": "tokyonight",
     "rosé pine": "rosepine",
@@ -234,37 +247,40 @@ theme_map = {
     "monokai pro": "monokai",
 }
 theme = theme_map.get(theme_raw, theme_raw)
-pet_adventure_command = normalize_pet_adventure_command(userOptions.get("pet_adventure_command", "rpg pet adv learn a"))
+pet_adventure_command = normalize_pet_adventure_command(get_opt("pet_adventure_command", "rpg pet adv learn a"))
 
 # ─── Togglable Command Flags ───
-do_hunt     = userOptions.get("do_hunt", "true").lower() == "true"
-do_adv      = userOptions.get("do_adv", "true").lower() == "true"
-do_farm     = userOptions.get("do_farm", "true").lower() == "true"
-do_work     = userOptions.get("do_work", "true").lower() == "true"
-do_training = userOptions.get("do_training", "true").lower() == "true"
-do_daily    = userOptions.get("do_daily", "true").lower() == "true"
-do_weekly   = userOptions.get("do_weekly", "true").lower() == "true"
-do_quest    = userOptions.get("do_quest", "true").lower() == "true"
-do_lootbox  = userOptions.get("do_lootbox", "true").lower() == "true"
-do_dungeon  = userOptions.get("do_dungeon", "true").lower() == "true"
-do_card_hand = userOptions.get("do_card_hand", "true").lower() == "true"
-do_duel      = userOptions.get("do_duel", "false").lower() == "true"
-win_duel     = userOptions.get("win_duel", "true").lower() == "true"
-duel_partner_id = userOptions.get("duel_partner_id", "").strip()
-do_pet       = userOptions.get("do_pet", "false").lower() == "true"
+do_hunt     = get_opt_bool("do_hunt", True)
+do_adv      = get_opt_bool("do_adv", True)
+do_farm     = get_opt_bool("do_farm", True)
+do_work     = get_opt_bool("do_work", True)
+do_training = get_opt_bool("do_training", True)
+do_daily    = get_opt_bool("do_daily", True)
+do_weekly   = get_opt_bool("do_weekly", True)
+do_quest    = get_opt_bool("do_quest", True)
+do_lootbox  = get_opt_bool("do_lootbox", True)
+do_dungeon  = get_opt_bool("do_dungeon", True)
+do_card_hand = get_opt_bool("do_card_hand", True)
+do_duel      = get_opt_bool("do_duel", False)
+win_duel     = get_opt_bool("win_duel", True)
+duel_partner_id = get_opt("duel_partner_id", "")
+do_pet       = get_opt_bool("do_pet", False)
 
 # ─── ULTR / Training ───
-do_ultr = userOptions.get("do_ultr", "false").lower() == "true"
+do_ultr = get_opt_bool("do_ultr", False)
 
 # ─── Card Hand Action ───
-card_hand_action = userOptions.get("card_hand_action", "auto").lower()
+card_hand_action = get_opt("card_hand_action", "auto").lower()
 
 # ─── TC Quantity ───
-tc_quantity = int(userOptions.get("tc_quantity", "1"))
+try:
+    tc_quantity = int(get_opt("tc_quantity", "1"))
+except ValueError:
+    tc_quantity = 1
 
 # ─── Dungeon ───
-is_eternal = userOptions.get("is_eternal", "false").lower() == "true"
-eternal_tier = userOptions.get("eternal_tier", "t1").lower()
+is_eternal = get_opt_bool("is_eternal", False)
+eternal_tier = get_opt("eternal_tier", "t1").lower()
 
 # ─── ULTR overrides training. If ultr active, training is ignored. ───
 if do_ultr:
@@ -278,12 +294,12 @@ else:
     training_command_sequence = []
 
 # ─── Adventure Optimization ───
-life_boost_before_adv = userOptions.get("life_boost_before_adv", "none").lower()
-adventure_area = userOptions.get("adventure_area", "none").lower()
-current_area = userOptions.get("current_area", "none").lower()
+life_boost_before_adv = get_opt("life_boost_before_adv", "none").lower()
+adventure_area = get_opt("adventure_area", "none").lower()
+current_area = get_opt("current_area", "none").lower()
 
 # Parse extra authorized admins
-admin_ids_str = userOptions.get("admin_ids", "")
+admin_ids_str = get_opt("admin_ids", "")
 ADMIN_IDS = [int(x.strip()) for x in admin_ids_str.split(",") if x.strip().isdigit()]
 # userID is 0 at module load; on_ready dynamically appends the real ID
 
@@ -333,38 +349,38 @@ def reload_config(profile_path: Optional[str] = None) -> None:
 
     userOptions = options_resolver.importData(filePath=active_profile_path)
 
-    userToken = userOptions.get("user_token", "")
-    language = userOptions.get("language", "pt").lower().strip()
+    userToken = get_opt("user_token", "")
+    language = get_opt("language", "pt").lower()
     try:
-        channelID = int(userOptions.get("channel_id", "0"))
+        channelID = int(get_opt("channel_id", "0"))
     except ValueError:
         channelID = 0
-    randomIntervals = userOptions.get("random_interval", "false").lower() == "true"
-    is_married = userOptions.get("is_married", "false").lower() == "true"
-    partner_name = userOptions.get("partner_name", "").lower() if is_married else None
-    is_ascended = userOptions.get("is_ascended", "false").lower() == "true"
-    farm_seed = userOptions.get("seed", "carrot").lower()
-    work_command = userOptions.get("work_command", "chainsaw").lower()
-    lootbox_type = get_full_lootbox_name(userOptions.get("lootbox_type", "none"))
-    ini_username = userOptions.get("username", "").strip().lower()
+    randomIntervals = get_opt_bool("random_interval", False)
+    is_married = get_opt_bool("is_married", False)
+    partner_name = get_opt("partner_name", "").lower() if is_married else None
+    is_ascended = get_opt_bool("is_ascended", False)
+    farm_seed = get_opt("seed", "carrot").lower()
+    work_command = get_opt("work_command", "chainsaw").lower()
+    lootbox_type = get_full_lootbox_name(get_opt("lootbox_type", "none"))
+    ini_username = get_opt("username", "").lower()
     if ini_username:
         user_name_lower = ini_username
     elif not user_name_lower:
         user_name_lower = ""
-    TelegramBotToken = userOptions.get("telegram_bot_token", "")
-    TelegramChatID = userOptions.get("telegram_chat_id", "")
+    TelegramBotToken = get_opt("telegram_bot_token", "")
+    TelegramChatID = get_opt("telegram_chat_id", "")
     try:
-        typo_chance = float(userOptions.get("typo_chance", "0.05"))
+        typo_chance = float(get_opt("typo_chance", "0.05"))
     except ValueError:
         typo_chance = 0.05
     try:
-        GUILD_ID = int(userOptions.get("guild_id", "0"))
+        GUILD_ID = int(get_opt("guild_id", "0"))
     except ValueError:
         GUILD_ID = 0
-    tc_stop_conditions = [x.strip().lower() for x in userOptions.get("tc_stop_on", "dungeon,miniboss").split(",") if x.strip()]
-    sleep_at = userOptions.get("sleep_at", "")
-    wake_up_at = userOptions.get("wake_up_at", "")
-    theme_raw = userOptions.get("theme", "cathedral").lower().strip()
+    tc_stop_conditions = [x.strip().lower() for x in get_opt("tc_stop_on", "dungeon,miniboss").split(",") if x.strip()]
+    sleep_at = get_opt("sleep_at", "")
+    wake_up_at = get_opt("wake_up_at", "")
+    theme_raw = get_opt("theme", "cathedral").lower()
     theme_map = {
         "tokyo night": "tokyonight",
         "rosé pine": "rosepine",
@@ -372,33 +388,33 @@ def reload_config(profile_path: Optional[str] = None) -> None:
         "monokai pro": "monokai",
     }
     theme = theme_map.get(theme_raw, theme_raw)
-    pet_adventure_command = normalize_pet_adventure_command(userOptions.get("pet_adventure_command", "rpg pet adv learn a"))
+    pet_adventure_command = normalize_pet_adventure_command(get_opt("pet_adventure_command", "rpg pet adv learn a"))
 
-    do_hunt     = userOptions.get("do_hunt", "true").lower() == "true"
-    do_adv      = userOptions.get("do_adv", "true").lower() == "true"
-    do_farm     = userOptions.get("do_farm", "true").lower() == "true"
-    do_work     = userOptions.get("do_work", "true").lower() == "true"
-    do_training = userOptions.get("do_training", "true").lower() == "true"
-    do_daily    = userOptions.get("do_daily", "true").lower() == "true"
-    do_weekly   = userOptions.get("do_weekly", "true").lower() == "true"
-    do_quest    = userOptions.get("do_quest", "true").lower() == "true"
-    do_lootbox  = userOptions.get("do_lootbox", "true").lower() == "true"
-    do_dungeon  = userOptions.get("do_dungeon", "true").lower() == "true"
-    do_card_hand = userOptions.get("do_card_hand", "true").lower() == "true"
-    do_duel      = userOptions.get("do_duel", "false").lower() == "true"
-    win_duel     = userOptions.get("win_duel", "true").lower() == "true"
-    duel_partner_id = userOptions.get("duel_partner_id", "").strip()
-    do_pet       = userOptions.get("do_pet", "false").lower() == "true"
+    do_hunt     = get_opt_bool("do_hunt", True)
+    do_adv      = get_opt_bool("do_adv", True)
+    do_farm     = get_opt_bool("do_farm", True)
+    do_work     = get_opt_bool("do_work", True)
+    do_training = get_opt_bool("do_training", True)
+    do_daily    = get_opt_bool("do_daily", True)
+    do_weekly   = get_opt_bool("do_weekly", True)
+    do_quest    = get_opt_bool("do_quest", True)
+    do_lootbox  = get_opt_bool("do_lootbox", True)
+    do_dungeon  = get_opt_bool("do_dungeon", True)
+    do_card_hand = get_opt_bool("do_card_hand", True)
+    do_duel      = get_opt_bool("do_duel", False)
+    win_duel     = get_opt_bool("win_duel", True)
+    duel_partner_id = get_opt("duel_partner_id", "")
+    do_pet       = get_opt_bool("do_pet", False)
 
-    do_ultr = userOptions.get("do_ultr", "false").lower() == "true"
-    card_hand_action = userOptions.get("card_hand_action", "auto").lower()
+    do_ultr = get_opt_bool("do_ultr", False)
+    card_hand_action = get_opt("card_hand_action", "auto").lower()
     try:
-        tc_quantity = int(userOptions.get("tc_quantity", "1"))
+        tc_quantity = int(get_opt("tc_quantity", "1"))
     except ValueError:
         tc_quantity = 1
 
-    is_eternal = userOptions.get("is_eternal", "false").lower() == "true"
-    eternal_tier = userOptions.get("eternal_tier", "t1").lower()
+    is_eternal = get_opt_bool("is_eternal", False)
+    eternal_tier = get_opt("eternal_tier", "t1").lower()
 
     if do_ultr:
         if is_eternal:
@@ -410,14 +426,14 @@ def reload_config(profile_path: Optional[str] = None) -> None:
     else:
         training_command_sequence = []
 
-    life_boost_before_adv = userOptions.get("life_boost_before_adv", "none").lower()
-    adventure_area = userOptions.get("adventure_area", "none").lower()
-    current_area = userOptions.get("current_area", "none").lower()
+    life_boost_before_adv = get_opt("life_boost_before_adv", "none").lower()
+    adventure_area = get_opt("adventure_area", "none").lower()
+    current_area = get_opt("current_area", "none").lower()
 
-    admin_ids_str = userOptions.get("admin_ids", "")
+    admin_ids_str = get_opt("admin_ids", "")
     ADMIN_IDS = [int(x.strip()) for x in admin_ids_str.split(",") if x.strip().isdigit()]
     ALLOWED_IDS = [EPIC_RPG_ID, NAVI_LITE_ID] + ADMIN_IDS
-    max_area = userOptions.get("max_area", "1")
+    max_area = get_opt("max_area", "1")
 
 
 def update_max_area(new_val):

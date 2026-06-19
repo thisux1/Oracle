@@ -833,7 +833,11 @@ async def create_profile(payload: ProfileCreatePayload):
             api_error(404, "source_not_found", f"Source profile '{source_name}' not found", {"name": source_name})
         shutil.copy2(str(source), str(target))
     else:
-        target.write_text("# Oracle profile\n", encoding="utf-8")
+        example_src = os.path.join(options_resolver.BUNDLE_DIR, "options_example.ini")
+        if os.path.exists(example_src):
+            shutil.copy2(example_src, str(target))
+        else:
+            target.write_text("# Oracle profile\n", encoding="utf-8")
 
     return {"status": "ok", "name": name}
 
