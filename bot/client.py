@@ -543,9 +543,6 @@ class DiscordClient(discord.Client):
                         bot_state.auto_enchant_active = False
                         HUD.alert("Timeout do auto-enchant (1 min sem resposta). Resgatando estado normal e liberando filas.")
                         await send_telegram_notification("⚠️ *Timeout do Auto-Enchant:* Sem resposta por 1 minuto. Auto-enchant desativado e filas liberadas.")
-                        channel = self.get_channel(bot_state.auto_enchant_channel_id)
-                        if channel:
-                            await channel.send("⚠️ **Auto-Enchant Cancelado:** Sem resposta por 1 minuto.")
                         highPriorityQueue[:] = [c for c in highPriorityQueue if not any(x in c.lower() for x in ["enchant", "refine", "transmute", "transcend", "withdraw"])]
                         highPriorityQueueSet.clear()
                         highPriorityQueueSet.update(highPriorityQueue)
@@ -890,9 +887,6 @@ class DiscordClient(discord.Client):
                         bot_state.auto_enchant_active = False
                         HUD.alert("Auto-Enchant CANCELADO: Sem dinheiro suficiente mesmo após 'rpg withdraw all'!")
                         await send_telegram_notification("⚠️ *Auto-Enchant Cancelado:* Sem dinheiro suficiente (falha no saque).")
-                        channel = self.get_channel(bot_state.auto_enchant_channel_id)
-                        if channel:
-                            await channel.send("⚠️ **Auto-Enchant Cancelado:** Sem dinheiro suficiente.")
                         highPriorityQueue[:] = [c for c in highPriorityQueue if not any(x in c.lower() for x in ["enchant", "refine", "transmute", "transcend", "withdraw"])]
                         highPriorityQueueSet.clear()
                         highPriorityQueueSet.update(highPriorityQueue)
@@ -916,9 +910,6 @@ class DiscordClient(discord.Client):
                             bot_state.auto_enchant_active = False
                             HUD.alert("Auto-Enchant CANCELADO: Comando base 'enchant' bloqueado!")
                             await send_telegram_notification("⚠️ *Auto-Enchant Cancelado:* Comando base 'enchant' bloqueado!")
-                            channel = self.get_channel(bot_state.auto_enchant_channel_id)
-                            if channel:
-                                await channel.send("⚠️ **Auto-Enchant Cancelado:** Comando base 'enchant' bloqueado.")
                             highPriorityQueue[:] = [c for c in highPriorityQueue if not any(x in c.lower() for x in ["enchant", "refine", "transmute", "transcend", "withdraw"])]
                             highPriorityQueueSet.clear()
                             highPriorityQueueSet.update(highPriorityQueue)
@@ -929,9 +920,6 @@ class DiscordClient(discord.Client):
                     bot_state.auto_enchant_active = False
                     HUD.alert("Auto-Enchant CANCELADO: Conta bancária não encontrada!")
                     await send_telegram_notification("⚠️ *Auto-Enchant Cancelado:* Sem conta bancária.")
-                    channel = self.get_channel(bot_state.auto_enchant_channel_id)
-                    if channel:
-                        await channel.send("⚠️ **Auto-Enchant Cancelado:** Sem conta bancária.")
                     highPriorityQueue[:] = [c for c in highPriorityQueue if not any(x in c.lower() for x in ["enchant", "refine", "transmute", "transcend", "withdraw"])]
                     highPriorityQueueSet.clear()
                     highPriorityQueueSet.update(highPriorityQueue)
@@ -1014,9 +1002,6 @@ class DiscordClient(discord.Client):
                             bot_state.auto_enchant_active = False
                             HUD.alert(f"Auto-Enchant CANCELADO: Encantamento inválido ou desconhecido detectado (rolado: {rolled_normalized}, alvo: {bot_state.auto_enchant_target_value})")
                             await send_telegram_notification(f"⚠️ *Auto-Enchant Cancelado:* Encantamento desconhecido detectado (rolado: {rolled_name})")
-                            channel = self.get_channel(bot_state.auto_enchant_channel_id)
-                            if channel:
-                                await channel.send(f"⚠️ **Auto-Enchant Cancelado:** Encantamento desconhecido ({rolled_name}).")
                             highPriorityQueue[:] = [c for c in highPriorityQueue if not any(x in c.lower() for x in ["enchant", "refine", "transmute", "transcend", "withdraw"])]
                             highPriorityQueueSet.clear()
                             highPriorityQueueSet.update(highPriorityQueue)
@@ -1039,9 +1024,6 @@ class DiscordClient(discord.Client):
                                 bot_state.auto_enchant_active = False
                                 HUD.alert(f"Auto-Enchant CANCELADO: Número máximo de tentativas ({AUTO_ENCHANT_MAX_ATTEMPTS}) atingido!")
                                 await send_telegram_notification(f"⚠️ *Auto-Enchant Cancelado:* Número máximo de tentativas ({AUTO_ENCHANT_MAX_ATTEMPTS}) atingido!")
-                                channel = self.get_channel(bot_state.auto_enchant_channel_id)
-                                if channel:
-                                    await channel.send(f"⚠️ **Auto-Enchant Cancelado:** Máximo de {AUTO_ENCHANT_MAX_ATTEMPTS} tentativas atingido.")
                                 highPriorityQueue[:] = [c for c in highPriorityQueue if not any(x in c.lower() for x in ["enchant", "refine", "transmute", "transcend", "withdraw"])]
                                 highPriorityQueueSet.clear()
                                 highPriorityQueueSet.update(highPriorityQueue)
