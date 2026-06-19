@@ -1,25 +1,25 @@
 {
     "start_time": 1780631356.617309,
     "command_data": {
-        "hunt": 2930,
-        "adventure": 70,
-        "farm": 0,
+        "hunt": 5444,
+        "adventure": 124,
+        "farm": 1,
         "training": 97,
-        "work": 683,
-        "quest": 11,
-        "daily": 4,
+        "work": 1264,
+        "quest": 13,
+        "daily": 6,
         "weekly": 1,
-        "lootbox": 8
+        "lootbox": 12
     },
     "progress_data": {
-        "coins": 405554,
-        "xp": 624761,
-        "levels": 31
+        "coins": 573390,
+        "xp": 930999,
+        "levels": 38
     },
     "loot_data": {
         "mob_drops": {
-            "wolf skin": 25,
-            "zombie eye": 152,
+            "wolf skin": 121,
+            "zombie eye": 154,
             "unicorn horn": 0,
             "mermaid hair": 0,
             "chip": 0,
@@ -27,10 +27,10 @@
             "dark energy": 0
         },
         "lootbox_drops": {
-            "common": 83,
-            "uncommon": 23,
-            "rare": 11,
-            "epic": 12,
+            "common": 153,
+            "uncommon": 43,
+            "rare": 19,
+            "epic": 20,
             "edgy": 1,
             "void": 0,
             "eternal": 0,
@@ -40,9 +40,9 @@
             "banana": 1,
             "apple": 0,
             "ruby": 0,
-            "normie fish": 1278,
-            "golden fish": 198,
-            "epic fish": 1,
+            "normie fish": 2191,
+            "golden fish": 361,
+            "epic fish": 2,
             "super fish": 0,
             "wooden log": 20,
             "epic log": 0,
@@ -54,14 +54,14 @@
         },
         "farm_drops": {
             "carrot": 0,
-            "potato": 0,
+            "potato": 2,
             "bread": 0
         }
     },
     "misc": {
         "cards": {
-            "common": 8,
-            "uncommon": 0,
+            "common": 11,
+            "uncommon": 1,
             "epic": 0,
             "omega": 0,
             "godly": 0,
@@ -69,8 +69,8 @@
         },
         "coolness": 0,
         "arena_cookies": 0,
-        "guard_events": 15,
-        "personal_events": 10,
+        "guard_events": 31,
+        "personal_events": 18,
         "pets": 0,
         "misc": {}
     },

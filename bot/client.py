@@ -1029,9 +1029,6 @@ class DiscordClient(discord.Client):
                                 f"• Rolado: `{rolled_name.upper()}`\n"
                                 f"• Equipamento: `{'Espada' if bot_state.auto_enchant_target == 's' else 'Armadura'}`"
                             )
-                            channel = self.get_channel(bot_state.auto_enchant_channel_id)
-                            if channel:
-                                await channel.send(f"🎉 **Auto-Enchant Sucesso!** Consegui **{rolled_name}**!")
                             highPriorityQueue[:] = [c for c in highPriorityQueue if not any(x in c.lower() for x in ["enchant", "refine", "transmute", "transcend", "withdraw"])]
                             highPriorityQueueSet.clear()
                             highPriorityQueueSet.update(highPriorityQueue)
