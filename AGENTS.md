@@ -8,34 +8,46 @@ Guia de referência para agentes de código trabalhando neste repositório.
 
 ```
 Oracle-V2/
-├── bot/                    # Core do bot (Python)
-│   ├── client.py           # WebSocket do Discord, filtro de canais, loop principal
-│   ├── handlers.py         # Processamento de mensagens, machine states, sb commands
-│   ├── parsers.py          # Detecção de eventos Epic RPG (drops, ready, duel, etc.)
-│   ├── config.py           # Carregamento do options.ini, constantes, tipos
-│   ├── state.py            # Estado global do bot (filas, flags, contadores)
-│   ├── telegram.py         # Notificações via Telegram
-│   ├── hud.py              # Output formatado (logs, display)
-│   ├── tui.py              # Interface TUI (Textual)
-│   ├── tui_input.py        # CLI com autocomplete da TUI
-│   ├── tui_modals.py       # Modais de configuração da TUI
-│   ├── tui_sidebar.py      # Sidebar de telemetria da TUI
-│   ├── captcha.py          # Resolução de captchas com IA
-│   ├── persistence.py      # Save/load de session data e stats
-│   ├── typo.py             # Simulação de erros de digitação
-│   └── utils.py            # Utilitários gerais
-├── dashboard/              # Web Dashboard (React + FastAPI)
+├── bot/                        # Core do bot (Python)
+│   ├── client.py               # WebSocket do Discord, filtro de canais, loop principal
+│   ├── handlers.py             # Processamento de mensagens, machine states, sb commands
+│   ├── parsers.py              # Detecção de eventos Epic RPG (drops, ready, duel, etc.)
+│   ├── config.py               # Carregamento do options.ini, constantes, tipos
+│   ├── state.py                # Estado global do bot (filas, flags, contadores)
+│   ├── telegram.py             # Notificações via Telegram
+│   ├── hud.py                  # Output formatado (logs, display)
+│   ├── tui.py                  # Interface TUI (Textual)
+│   ├── tui_input.py            # CLI com autocomplete da TUI
+│   ├── tui_modals.py           # Modais de configuração da TUI
+│   ├── tui_sidebar.py          # Sidebar de telemetria da TUI
+│   ├── captcha.py              # Resolução de captchas com IA
+│   ├── persistence.py          # Save/load de session data e stats
+│   ├── typo.py                 # Simulação de erros de digitação
+│   └── utils.py                # Utilitários gerais
+├── dashboard/                  # Web Dashboard (React + FastAPI)
 │   ├── src/
-│   │   ├── tabs/           # OverviewTab, ConfigTab, StatsTab, TerminalTab
-│   │   ├── components/     # Componentes React reutilizáveis
-│   │   ├── stores/         # Zustand stores (useOracleStore)
-│   │   └── lib/            # Utilitários do frontend
-│   └── dist/               # Build de produção
-├── dashboard_server.py     # Backend FastAPI do dashboard
-├── launch_dashboard.py     # Launcher do dashboard (pywebview)
-├── main.py                 # Entry point
-├── options_resolver.py     # Parser do options.ini
-└── options.ini             # Configuração do usuário
+│   │   ├── tabs/               # OverviewTab, ConfigTab, StatsTab, TerminalTab
+│   │   ├── components/         # Componentes React reutilizáveis
+│   │   ├── stores/             # Zustand stores (useOracleStore)
+│   │   └── lib/                # Utilitários do frontend
+│   └── dist/                   # Build de produção
+├── .github/workflows/
+│   └── build-windows.yml       # CI/CD: build .exe + release a cada tag v*
+├── oracle_v2_color.h5          # Modelo CNN colorido (21 MB)
+├── oracle_v2_gray.h5           # Modelo CNN grayscale (21 MB)
+├── oracle_v2_color.tflite      # Modelo TFLite colorido (9.2 MB)
+├── oracle_v2_gray.tflite       # Modelo TFLite grayscale (9.2 MB)
+├── setup.iss                   # Script Inno Setup para instalador Windows
+├── build_windows.py            # Pipeline de build: frontend → PyInstaller → Inno Setup
+├── dashboard_server.py         # Backend FastAPI do dashboard
+├── launch_dashboard.py         # Launcher do dashboard (pywebview)
+├── main.py                     # Entry point
+├── options_resolver.py         # Parser do options.ini
+├── options.ini                 # Configuração do usuário
+├── options_example.ini         # Template documentado de configuração
+├── classes.txt                 # 16 labels das classes do captcha
+├── setup.sh                    # Instalador de atalho CLI (Linux/macOS)
+└── requirements.txt            # Dependências Python
 ```
 
 ---
@@ -54,6 +66,9 @@ Feature novo **deve** ser refletido em todas as interfaces aplicáveis. Siga est
 | **Telegram**     | `telegram.py` + chamada em `handlers.py` ou `parsers.py`                    | Notificação relevante             |
 | **README**       | `README.md` (tabela de comandos, seção de features)                         | Documentação pública              |
 | **Help (todas)** | `sb help` no Discord, `/help` na TUI, `README.md`                           | Descrição do feature              |
+| **Dashboard API**| `dashboard_server.py` (endpoints FastAPI) + WebSocket no `/ws/terminal`     | Novo endpoint ou evento WS        |
+| **Modelo IA**    | `captcha.py` (lógica de inferência) + `config.py` (constantes do modelo)    | Nova rota de modelo ou classe     |
+| **Build/CI**     | `build_windows.py` + `.github/workflows/build-windows.yml`                  | Etapa nova no pipeline            |
 
 ---
 
@@ -72,6 +87,9 @@ Feature novo **deve** ser refletido em todas as interfaces aplicáveis. Siga est
 - [ ] Verificar tipos: `config.ADMIN_IDS` é `list[int]`, `duel_partner_id` é `str`, `partner_name` é `str | None`
 - [ ] Tratar exceções em chamadas de API do Discord (`fetch_member`, `send_message`)
 - [ ] Não quebrar fluxo existente — feature novo não altera comportamento de features antigos
+- [ ] Se mexeu no modelo: verificar predição com ambas as rotas (color + gray) e fallback
+- [ ] Se mexeu no dashboard API: testar com `curl` ou Swagger em `/docs`
+- [ ] Se mexeu no build: rodar `python build_windows.py --frontend` e verificar `dashboard/dist/`
 
 ### 3.3 Após o deploy
 
@@ -293,6 +311,13 @@ config.channelID          # int — ID do canal principal
 | Dashboard não mostra config             | Falta campo no `ConfigTab.jsx`                     | Adicionar `<TextField>` ou `<ToggleSwitch>` |
 | Feature quebra outro feature            | Alteração em fluxo compartilhado                   | Verificar impacto em todos os caminhos      |
 | HUD não aparece na TUI                  | Usou `print()` em vez de `HUD.*()`                 | Substituir por método HUD adequado          |
+| Modelo não carrega                      | `.h5` ou `.tflite` ausente ou corrompido           | Verificar `config.captcha_model_color/gray` |
+| Captcha sempre falha                    | Modelo errado para o tipo de imagem                | `captcha.py` faz fallback automático (color↔gray) |
+| Dashboard não inicia                    | `dashboard/dist/` não existe ou vazio              | Rodar `cd dashboard && npm run build`       |
+| WebSocket desconecta                    | Bot process crashou ou timeout                     | Verificar `dashboard_server.py` watchdog em `_watch_process()` |
+| `build_windows.py` falha                | Python sem shared library (Linux)                  | Usar `find_build_python()` que cria `.venv_build/` com Python 3.12 |
+| `.exe` não abre                         | PyInstaller frozen mode sem hidden import          | Adicionar hidden import em `build_windows.py` |
+| Scroll do terminal buga/rolagem na página | Evento wheel propaga até a página ou entra em conflito com xterm.js | Chamar `e.preventDefault()` no handle do event `wheel` e realizar a rolagem programaticamente com a API `term.scrollLines(lines)` |
 
 ---
 
@@ -314,17 +339,208 @@ Tipos: `feat`, `fix`, `refactor`, `chore`, `docs`
 - [ ] Syntax check em todos os arquivos .py modificados
 - [ ] Verificar que nenhuma feature existente quebrou (rodar testes manuais nos fluxos principais)
 - [ ] Testar o fluxo principal do feature novo
-- [ ] Atualizar documentação se aplicável (README, `sb help`, TUI help)
+- [ ] Atualizar documentação se aplicável (README, `sb help`, TUI help, AGENTS.md)
 
-### 8.3 Deploy
+### 8.3 Deploy — Pipeline de Build (3 etapas)
 
-```bash
-# Dashboard
-cd dashboard && npm run build
+O projeto tem um pipeline completo que transforma código fonte em um instalador Windows `.exe`:
 
-# Bot
-python main.py
+```
+Código → npm build (React) → PyInstaller (Python bundle) → Inno Setup (Instalador .exe)
 ```
 
-- Verificar logs por erros após iniciar
-- Confirmar que todas as interfaces (Discord, TUI, Dashboard) estão operacionais
+**Etapa 1 — Frontend:**
+```bash
+cd dashboard && npm install && npm run build
+```
+Gera `dashboard/dist/` com os assets estáticos (JS, CSS, HTML).
+
+**Etapa 2 — PyInstaller:**
+```bash
+python build_windows.py --package
+```
+Empacota o bot + dashboard em um executável `OracleOS.exe` usando `--onedir`. Inclui:
+- Modelos `.h5` e `.tflite` (se existirem)
+- Frontend buildado (`dashboard/dist/`)
+- `options_example.ini`, `classes.txt`, `bot/tui_theme.tcss`
+- Hidden imports: TensorFlow, Uvicorn, FastAPI, Starlette, Pydantic, Textual, discord, aiohttp
+
+**Etapa 3 — Inno Setup (Windows):**
+```bash
+python build_windows.py --installer   # ou: ISCC.exe setup.iss
+```
+Gera `Output/OracleOS_Setup.exe` — instalador Windows com ícone, desinstalador, atalhos.
+
+### 8.4 CI/CD — GitHub Actions (Automático)
+
+O arquivo `.github/workflows/build-windows.yml` executa o pipeline completo automaticamente:
+
+**Trigger:** Toda tag `v*` (ex: `v3.0.1`) ou manual via `workflow_dispatch`
+
+**Pipeline:**
+```
+checkout → setup Python 3.12 + Node.js 20
+         → pip install -r requirements.txt pyinstaller
+         → npm install && npm run build  (frontend)
+         → python build_windows.py --package  (PyInstaller)
+         → choco install innosetup && ISCC.exe setup.iss  (instalador)
+         → upload artifact (OracleOS_Setup.exe)
+         → criar GitHub Release (se tag v*)
+```
+
+**Importante:**
+- A pipeline roda no `windows-latest` — o `.exe` gerado é nativo Windows
+- Se for adicionar nova dependência Python, testar se o PyInstaller a detecta. Se não, adicionar em `hidden_imports` dentro de `build_windows.py`
+- O artifact fica disponível por 90 dias nos detalhes da Action
+
+---
+
+## 9. Modelo de IA (Captcha)
+
+### 9.1 Arquitetura do Sistema
+
+O Oracle usa **dois modelos CNN independentes** para resolver captchas do Epic RPG, com fallback automático cross-model:
+
+| Modelo | Arquivo | Tamanho | Acurácia | Confiança Média |
+|--------|---------|---------|----------|-----------------|
+| Colorido (RGB) | `oracle_v2_color.h5` | 21 MB | 96.28% | 97.01% |
+| Grayscale | `oracle_v2_gray.h5` | 21 MB | 95.15% | 95.55% |
+| Colorido (TFLite) | `oracle_v2_color.tflite` | 9.2 MB | *mesmo modelo, formato otimizado* | — |
+| Grayscale (TFLite) | `oracle_v2_gray.tflite` | 9.2 MB | *mesmo modelo, formato otimizado* | — |
+
+**16 classes** de captcha definidas em `classes.txt`.
+
+### 9.2 Roteamento de Inferência
+
+O fluxo em `bot/captcha.py:tentar_resolver_captcha()`:
+
+```
+1. Salvar attachment → detectar se é grayscale (função is_grayscale())
+2. Rota primária: modelo COLOR (preferencial — maior acurácia)
+3. Se confiança < 80% E modelo alternativo existe:
+   → Fallback: rodar modelo GRAY
+   → Se confiança do gray > color: usar predição gray
+4. Top-3 predictions como palpites
+5. Enviar para o canal do Discord (com delay humano 1.5-3s entre tentativas)
+6. Se falhar: marcar como jailed + notificar Telegram
+```
+
+**Regras:**
+- Modelo colorido é sempre preferido (96.28% vs 95.15%), mesmo em imagens grayscale
+- `config.captcha_model_color` e `config.captcha_model_gray` são carregados em `config.py`
+- Fallback cross-model é ativado quando confiança < 80%
+- Se nenhum modelo estiver disponível: aguarda override manual via Telegram
+
+### 9.3 TFLite
+
+Os arquivos `.tflite` existem no repositório mas **não são usados atualmente** pelo `captcha.py`. Foram convertidos para potencial uso futuro em dispositivos com recursos limitados. Para ativar:
+
+```python
+import tflite_runtime.interpreter as tflite
+interpreter = tflite.Interpreter(model_path="oracle_v2_color.tflite")
+```
+
+### 9.4 Como adicionar/retreinar
+
+- Modelos são carregados em `config.py` via `tf.keras.models.load_model()`
+- Pipeline de treino: `train_model_no_aug.py` (em `Epic-Rpg-Macro-main/`)
+- Dataset: `dataset_cropped/` (imagens de captcha recortadas)
+- Para substituir um modelo: colocar novo `.h5` na raiz com o mesmo nome
+
+---
+
+## 10. FastAPI Dashboard — API de Referência
+
+O backend do dashboard em `dashboard_server.py` expõe uma API REST + WebSocket.
+
+### 10.1 Endpoints REST
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `GET` | `/api/config?profile=` | Retorna configuração do perfil (tokens mascarados) |
+| `POST` | `/api/config` | Atualiza settings do perfil (restaura tokens se mascarados) |
+| `GET` | `/api/status?profile=` | Estado do bot (offline/starting/online/stopping) + filas |
+| `GET` | `/api/stats?profile=&mode=session` | Estatísticas da sessão (baseline subtraction) |
+| `GET` | `/api/logs?profile=&limit=50` | Últimas N linhas do log |
+| `POST` | `/api/bot/start` | Inicia o bot como subprocesso |
+| `POST` | `/api/bot/stop` | Para o bot |
+| `GET` | `/api/profiles` | Lista perfis com estado e flag de incomplete |
+| `POST` | `/api/profiles` | Cria perfil (cópia de existente ou do example) |
+| `DELETE` | `/api/profiles?name=` | Deleta perfil (exceto default) |
+| `POST` | `/api/profiles/import` | Importa `.ini` via upload |
+| `GET` | `/api/profiles/export?name=` | Exporta `.ini` como download |
+| `WS` | `/ws/terminal?profile=` | WebSocket bidirecional (telemetria + input) |
+
+### 10.2 WebSocket (`/ws/terminal`)
+
+**Conexão:** `ws://127.0.0.1:8000/ws/terminal?profile=options.ini`
+
+**Mensagens do servidor:**
+- `{"type": "status", "profile": ..., "state": "online"}` — mudança de estado
+- `{"type": "pong"}` — resposta a heartbeat
+- `bytes` — output raw do terminal do bot (PTY)
+
+**Mensagens do cliente:**
+- `{"type": "heartbeat"}` → recebe `pong`
+- `{"type": "resize", "cols": 80, "rows": 24}` → redimensiona PTY
+- `bytes` → input do teclado enviado ao bot
+
+### 10.3 BotProcessManager
+
+Gerencia o ciclo de vida do bot como subprocesso:
+- `start()`: spawn via PTY (POSIX) ou winpty (Windows), broadcast de status
+- `stop()`: terminate → wait 5s → kill → cleanup
+- `_watch_process()`: polling a cada 0.75s, detecta crash e broadcast
+- `_output_worker()`: thread que lê stdout do PTY e broadcast via WebSocket
+
+### 10.4 Frozen Mode Detection
+
+Quando executado como `.exe` (PyInstaller), `sys.frozen` é `True`. O `_build_bot_command()` se adapta:
+
+```python
+if getattr(sys, "frozen", False):
+    return [sys.executable, "--run-bot", profile]   # re-invoca o .exe
+else:
+    return [sys.executable, "main.py", profile]      # dev normal
+```
+
+### 10.5 Perfis Múltiplos
+
+O dashboard gerencia múltiplos perfis (arquivos `.ini` em `user_data/`):
+- Cada perfil tem seu próprio `BotProcessManager`
+- Stats e logs são segregados por perfil
+- Import/export de perfis via API
+- Token masking: `user_token`, `miner_token`, `telegram_bot_token` são exibidos como `********`
+
+### 10.6 Segurança
+
+- CORS: `allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"` — apenas localhost
+- Erros: handlers globais para `HTTPException` e `Exception` com payload padronizado
+- Shutdown: `on_event("shutdown")` para todos os bots em execução
+
+---
+
+## 11. Build System (build_windows.py)
+
+Script de build em `build_windows.py` com 3 subcomandos:
+
+| Flag | Ação |
+|------|------|
+| `--frontend` | `npm run build` no dashboard |
+| `--package` | PyInstaller `--onedir --windowed` |
+| `--installer` | Inno Setup (ISCC.exe) |
+| *(sem flag)* | Executa todas as 3 etapas |
+
+**Detecção de Python:** `find_build_python()` procura Python 3.12 com shared library (necessário para PyInstaller no Linux). Cria `.venv_build/` se necessário.
+
+**Hidden imports** (adicionar aqui se PyInstaller não detectar):
+```python
+# TensorFlow
+"tflite_runtime", "numpy", "PIL"
+# Uvicorn (todos os submodulos de protocolos/loops)
+"uvicorn", "uvicorn.logging", "uvicorn.loops.auto", "uvicorn.protocols.http.h11_impl", ...
+# FastAPI / Starlette / Pydantic
+"fastapi", "fastapi.responses", "starlette.routing", "pydantic", "pydantic_core"
+# Discord / Textual / aiohttp
+"discord", "textual", "textual.app", "aiohttp", "colorama"
+```
