@@ -170,13 +170,18 @@ export default function TerminalTab({ isActive }) {
     }
   }, [connected]);
 
-  // Prevent native browser scroll when wheeling inside terminal container
+  // Prevent native browser scroll and scroll via terminal API
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
 
     const handleWheel = (e) => {
       e.preventDefault();
+      if (termRef.current) {
+        // e.deltaY > 0 means scroll down, < 0 means scroll up
+        const lines = e.deltaY > 0 ? 3 : -3;
+        termRef.current.scrollLines(lines);
+      }
     };
 
     el.addEventListener("wheel", handleWheel, { passive: false });
