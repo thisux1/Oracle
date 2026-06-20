@@ -162,18 +162,41 @@ async def tentar_resolver_captcha(message):
 
         HUD.oracle(f"Melhor palpite da IA: {best_guess} ({confidence:.1%})")
 
-        # Telegram logging for model route and confidence values
-        img_type_pt = "preto e branco" if detected_gray else "colorida"
-        if fallback_triggered:
-            model_info = f"Imagem {img_type_pt} processada com {primary_confidence:.1%} (modelo {primary_mode.upper()}) e {alt_confidence:.1%} (modelo {alt_mode.upper()}) de certeza"
-        else:
-            model_info = f"Imagem {img_type_pt} processada com {confidence:.1%} de certeza (modelo {primary_mode.upper()})"
+        color_conf = None
+        gray_conf = None
+
+        if config.captcha_model_color is not None:
+            if actual_mode == 'color':
+                color_conf = primary_confidence
+            elif fallback_triggered and alt_mode == 'color':
+                color_conf = alt_confidence
+            else:
+                x_color = _prepare_input(img, 'color')
+                preds_color = config.captcha_model_color.predict(x_color, verbose=0)[0]
+                color_conf = np.max(preds_color)
+
+        if config.captcha_model_gray is not None:
+            if actual_mode == 'gray':
+                gray_conf = primary_confidence
+            elif fallback_triggered and alt_mode == 'gray':
+                gray_conf = alt_confidence
+            else:
+                x_gray = _prepare_input(img, 'gray')
+                preds_gray = config.captcha_model_gray.predict(x_gray, verbose=0)[0]
+                gray_conf = np.max(preds_gray)
+
+        model_info_lines = []
+        if color_conf is not None:
+            model_info_lines.append(f"palpite do modelo color: {color_conf:.1%}")
+        if gray_conf is not None:
+            model_info_lines.append(f"palpite do modelo gray: {gray_conf:.1%}")
+        model_info = "\n".join(model_info_lines)
 
         # INSTANT NOTIFICATION WITH GUESS
         HUD.alert("CAPTCHA! Enviando para o Telegram...")
         await send_telegram_photo(
             img_path,
-            f"🚨 CAPTCHA DETECTADO!\nPalpite da IA: {best_guess} ({confidence:.1%})\n🔍 {model_info}\nDigite a resposta aqui para sobrescrever a IA.",
+            f"🚨 CAPTCHA DETECTADO!\nPalpite da IA: {best_guess} ({confidence:.1%})\n{model_info}\nDigite a resposta aqui para sobrescrever a IA.",
         )
 
         await human_delay(1.5, 2.0)  # 1.5-3.5s human "reading" delay
