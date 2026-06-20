@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
+import { CanvasAddon } from "@xterm/addon-canvas";
 import "@xterm/xterm/css/xterm.css";
 import { useOracleStore } from "../stores/useOracleStore";
 import { Maximize2, Minimize2, Trash2, Play, Pause, RefreshCw, Cookie, ShieldAlert, Sparkles } from "lucide-react";
@@ -37,13 +38,12 @@ export default function TerminalTab({ isActive }) {
 
   const activeProfile = useOracleStore((s) => s.activeProfile);
   const connected = useOracleStore((s) => s.terminalConnected);
-  const binaryHistory = useOracleStore((s) => s.binaryHistory);
   const lastBinaryChunk = useOracleStore((s) => s.lastBinaryChunk);
-  const sendTerminalBinary = useOracleStore((s) => s.sendTerminalBinary);
-  const resizeTerminal = useOracleStore((s) => s.resizeTerminal);
+  const terminalResetKey = useOracleStore((s) => s.terminalResetKey);
 
   const [fullscreen, setFullscreen] = useState(false);
 
+  // ── Fit helper ──────────────────────────────────────────────────────────
   const fitTerminal = useCallback(() => {
     if (fitAddonRef.current && termRef.current) {
       try {
@@ -51,46 +51,48 @@ export default function TerminalTab({ isActive }) {
         const { cols, rows } = termRef.current;
         useOracleStore.getState().resizeTerminal(cols, rows);
       } catch {
-        // container not visible
+        // container not visible yet
       }
     }
   }, []);
 
-  // Observe container size changes (mount, visibility toggle, window resize, fullscreen)
+  // ── ResizeObserver for container dimension changes ──────────────────────
   useEffect(() => {
     if (!containerRef.current) return;
-
-    const resizeObserver = new ResizeObserver(() => {
-      requestAnimationFrame(() => {
-        fitTerminal();
-      });
+    const ro = new ResizeObserver(() => {
+      requestAnimationFrame(fitTerminal);
     });
-
-    resizeObserver.observe(containerRef.current);
-    return () => {
-      resizeObserver.disconnect();
-    };
+    ro.observe(containerRef.current);
+    return () => ro.disconnect();
   }, [fitTerminal]);
 
+  // ── Re-fit when websocket connects ─────────────────────────────────────
+  useEffect(() => {
+    if (connected) {
+      fitTerminal();
+    }
+  }, [connected, fitTerminal]);
+
+  // ── Lazy-init flag: only create xterm after the tab has been opened once
   const [hasOpened, setHasOpened] = useState(false);
+  if (isActive && !hasOpened) {
+    setHasOpened(true);
+  }
 
+  // ── Re-fit + refresh when the tab becomes visible ─────────────────────
   useEffect(() => {
-    if (isActive && !hasOpened) {
-      setHasOpened(true);
-    }
-  }, [isActive, hasOpened]);
-
-  // Trigger fitTerminal when tab becomes active
-  useEffect(() => {
-    if (isActive) {
-      const timer = setTimeout(() => {
-        fitTerminal();
-      }, 50);
-      return () => clearTimeout(timer);
-    }
+    if (!isActive) return;
+    const timer = setTimeout(() => {
+      fitTerminal();
+      // Force the renderer to repaint after display:none culling
+      if (termRef.current) {
+        termRef.current.refresh(0, termRef.current.rows - 1);
+      }
+    }, 50);
+    return () => clearTimeout(timer);
   }, [isActive, fitTerminal]);
 
-  // Initialize xterm
+  // ── Create xterm instance (once) ───────────────────────────────────────
   useEffect(() => {
     if (!hasOpened || !containerRef.current || termRef.current) return;
 
@@ -112,20 +114,28 @@ export default function TerminalTab({ isActive }) {
     term.loadAddon(webLinksAddon);
     term.open(containerRef.current);
 
+    try {
+      const canvasAddon = new CanvasAddon();
+      term.loadAddon(canvasAddon);
+    } catch (e) {
+      console.warn("CanvasAddon failed to load, falling back to DOM renderer:", e);
+    }
+
     termRef.current = term;
     fitAddonRef.current = fitAddon;
 
-    // Expose for debugging
-    window.term = term;
-    window.fitAddon = fitAddon;
+
 
     // Replay historical binary chunks once during initialization
     const history = useOracleStore.getState().binaryHistory;
-    history.forEach((chunk) => {
-      term.write(chunk);
-    });
+    history.forEach((chunk) => term.write(chunk));
 
-    // Handle user keyboard typing
+    // Force alternate screen buffer and mouse reporting modes if already connected
+    if (useOracleStore.getState().terminalConnected) {
+      term.write("\x1b[?1049h\x1b[?1000h\x1b[?1002h\x1b[?1003h\x1b[?1006h");
+    }
+
+    // Forward user keystrokes to WebSocket
     const onDataDisposable = term.onData((data) => {
       useOracleStore.getState().sendTerminalBinary(data);
     });
@@ -138,76 +148,85 @@ export default function TerminalTab({ isActive }) {
     };
   }, [hasOpened]);
 
-  // Append new chunks from WebSocket with scroll position preservation
+  // ── Clear terminal buffer on profile switch (store-driven) ─────────────
+  const lastResetKeyRef = useRef(terminalResetKey);
+  const pendingClearRef = useRef(false);
+
+  useEffect(() => {
+    if (lastResetKeyRef.current === terminalResetKey) return;
+    lastResetKeyRef.current = terminalResetKey;
+
+    if (!termRef.current) {
+      pendingClearRef.current = true;
+      return;
+    }
+
+    termRef.current.write("\x1b[2J\x1b[3J\x1b[H");
+    termRef.current.clear();
+  }, [terminalResetKey]);
+
+  // Apply deferred clear when the tab becomes visible
+  useEffect(() => {
+    if (isActive && pendingClearRef.current && termRef.current) {
+      pendingClearRef.current = false;
+      termRef.current.write("\x1b[2J\x1b[3J\x1b[H");
+      termRef.current.clear();
+    }
+  }, [isActive]);
+
+  // ── Append new binary chunks from WebSocket ────────────────────────────
   useEffect(() => {
     if (lastBinaryChunk && termRef.current) {
-      const term = termRef.current;
-      const buffer = term.buffer?.active;
-      if (buffer) {
-        const isScrolledUp = buffer.viewportY < buffer.baseY;
-        const scrollOffset = buffer.baseY - buffer.viewportY;
-        
-        term.write(lastBinaryChunk);
-        
-        if (isScrolledUp) {
-          requestAnimationFrame(() => {
-            if (termRef.current && termRef.current.buffer?.active) {
-              const newBaseY = termRef.current.buffer.active.baseY;
-              termRef.current.scrollToLine(newBaseY - scrollOffset);
-            }
-          });
-        }
-      } else {
-        term.write(lastBinaryChunk);
-      }
+      termRef.current.write(lastBinaryChunk);
     }
   }, [lastBinaryChunk]);
 
-  // Reset terminal modes when disconnected (disable mouse tracking, exit alternate screen, show cursor)
+  // ── Sync terminal modes on connection state changes ─────────────────────
   useEffect(() => {
-    if (!connected && termRef.current) {
+    if (!termRef.current) return;
+    if (connected) {
+      termRef.current.write("\x1b[?1049h\x1b[?1000h\x1b[?1002h\x1b[?1003h\x1b[?1006h");
+    } else {
       termRef.current.write("\x1b[?1000l\x1b[?1002l\x1b[?1003l\x1b[?1006l\x1b[?1049l\x1b[?25h");
     }
   }, [connected]);
 
-  // Prevent native browser scroll and scroll via terminal API
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
+  // ── No manual wheel event interception ─────────────────────────────────
+  // Using Canvas renderer handles scroll naturally.
 
-    const handleWheel = (e) => {
-      e.preventDefault();
-      if (termRef.current) {
-        // e.deltaY > 0 means scroll down, < 0 means scroll up
-        const lines = e.deltaY > 0 ? 3 : -3;
-        termRef.current.scrollLines(lines);
-      }
-    };
-
-    el.addEventListener("wheel", handleWheel, { passive: false });
-    return () => {
-      el.removeEventListener("wheel", handleWheel);
-    };
-  }, [hasOpened]);
-
-  const handleClear = () => {
-    if (termRef.current) {
-      termRef.current.clear();
-    }
-  };
-
+  // ── Fullscreen helpers ─────────────────────────────────────────────────
   const toggleFullscreen = () => {
-    setFullscreen((v) => !v);
+    setFullscreen((v) => {
+      setTimeout(fitTerminal, 60);
+      return !v;
+    });
   };
 
-  const handleQuickCommand = useCallback((cmd) => {
-    if (connected) {
-      useOracleStore.getState().sendTerminalBinary(cmd + "\r");
-    }
-  }, [connected]);
+  // Auto-exit fullscreen when navigating away from the terminal tab
+  if (!isActive && fullscreen) {
+    setFullscreen(false);
+  }
+
+  // ── Actions ────────────────────────────────────────────────────────────
+  const handleClear = () => {
+    if (termRef.current) termRef.current.clear();
+  };
+
+  const handleQuickCommand = useCallback(
+    (cmd) => {
+      if (connected) {
+        useOracleStore.getState().sendTerminalBinary(cmd + "\r");
+      }
+    },
+    [connected]
+  );
 
   return (
-    <div className={`flex-1 flex flex-col min-h-0 ${fullscreen ? "fixed inset-0 z-50 bg-[var(--bg-void)] p-4" : ""}`}>
+    <div
+      className={`flex-1 flex flex-col min-h-0 ${
+        fullscreen ? "fixed inset-0 z-50 bg-[var(--bg-void)] p-4" : ""
+      }`}
+    >
       {/* Toolbar */}
       <div className="glass flex items-center justify-between rounded-2xl px-4 py-2">
         <div className="flex items-center gap-3">
@@ -215,7 +234,9 @@ export default function TerminalTab({ isActive }) {
             className="h-2 w-2 rounded-full animate-pulse"
             style={{
               background: connected ? "var(--accent-success)" : "var(--accent-danger)",
-              boxShadow: connected ? "0 0 8px var(--accent-success)" : "0 0 8px var(--accent-danger)",
+              boxShadow: connected
+                ? "0 0 8px var(--accent-success)"
+                : "0 0 8px var(--accent-danger)",
             }}
           />
           <span className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>

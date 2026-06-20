@@ -392,6 +392,13 @@ class BotProcessManager:
         master_fd, slave_fd = pty.openpty()
 
         command = self._build_bot_command(self.profile)
+        
+        # Copy environment and ensure terminal capability variables are set
+        import os
+        env = os.environ.copy()
+        env["TERM"] = "xterm-256color"
+        env["COLORTERM"] = "truecolor"
+
         try:
             self.process = subprocess.Popen(
                 command,
@@ -401,6 +408,7 @@ class BotProcessManager:
                 stderr=slave_fd,
                 start_new_session=True,
                 close_fds=True,
+                env=env,
             )
         finally:
             os.close(slave_fd)
@@ -667,6 +675,19 @@ MANAGERS: dict[str, BotProcessManager] = {}
 MANAGERS_LOCK = asyncio.Lock()
 
 
+@app.on_event("shutdown")
+async def shutdown_event():
+    print("[oracle] Stopping all running bots...")
+    async with MANAGERS_LOCK:
+        for profile, manager in list(MANAGERS.items()):
+            if manager.state in (BotState.ONLINE, BotState.STARTING):
+                print(f"[oracle] Terminating bot process for profile: {profile}")
+                try:
+                    await manager.stop()
+                except Exception as e:
+                    print(f"[oracle] Error stopping bot {profile} during shutdown: {e}")
+
+
 async def get_manager(profile: str) -> BotProcessManager:
     async with MANAGERS_LOCK:
         manager = MANAGERS.get(profile)
@@ -929,6 +950,16 @@ async def ws_terminal(websocket: WebSocket):
 
     manager = await get_manager(profile_name)
     await websocket.accept()
+
+    if manager.state == BotState.ONLINE:
+        try:
+            # Switch the client terminal to the alternate screen buffer, enable mouse tracking and SGR mouse mode
+            await websocket.send_bytes(b"\x1b[?1049h\x1b[?1000h\x1b[?1002h\x1b[?1003h\x1b[?1006h")
+            # Force the TUI process to redraw the entire screen (Ctrl+L)
+            await manager.write_input(b"\x0c")
+        except Exception:
+            pass
+
     await manager.add_ws_client(websocket)
 
     try:

@@ -88,6 +88,7 @@ export const useOracleStore = create((set, get) => ({
   terminalLines: [],
   binaryHistory: [],
   lastBinaryChunk: null,
+  terminalResetKey: 0,
   heartbeatInterval: null,
   reconnectTimeout: null,
 
@@ -119,8 +120,13 @@ export const useOracleStore = create((set, get) => ({
     // Clean up existing connection if any
     get().disconnectTerminal();
     
-    // Clear terminal history on new connection
-    set({ terminalLines: [], binaryHistory: [], lastBinaryChunk: null });
+    // Clear terminal history on new connection and signal reset
+    set((state) => ({
+      terminalLines: [],
+      binaryHistory: [],
+      lastBinaryChunk: null,
+      terminalResetKey: state.terminalResetKey + 1,
+    }));
 
     const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const defaultWsUrl = import.meta.env.DEV 

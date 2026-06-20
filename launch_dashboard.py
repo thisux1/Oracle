@@ -6,6 +6,7 @@ frontend, and opens the dashboard in the default browser.
 
 from __future__ import annotations
 
+from typing import Any
 import os
 import sys
 import tempfile
@@ -137,7 +138,7 @@ URL = f"http://{HOST}:{PORT}"
 # ---------------------------------------------------------------------------
 
 
-def _start_server() -> None:
+def _start_server() -> tuple[Any, threading.Thread]:
     """Run uvicorn in a background daemon thread."""
     import uvicorn
 
@@ -166,6 +167,8 @@ def _start_server() -> None:
         print(f"[oracle] ERROR: server did not start within 15s on {URL}")
         sys.exit(1)
 
+    return server, thread
+
 
 # ---------------------------------------------------------------------------
 # Window / browser helpers
@@ -190,18 +193,29 @@ def main() -> None:
         print(f"[oracle] WARNING: dist directory not found at {DIST_DIR}")
         print("[oracle] Run 'cd dashboard && npm run build' first.")
 
-    _start_server()
+    server, thread = _start_server()
     print(f"[oracle] Backend ready at {URL}")
 
     print("[oracle] Opening in default browser...")
     _open_browser(URL)
     print("[oracle] Dashboard is running. Close this console window or press Ctrl+C to stop.")
 
+    def handle_sigterm(signum, frame):
+        raise KeyboardInterrupt()
+
+    try:
+        import signal
+        signal.signal(signal.SIGTERM, handle_sigterm)
+    except ValueError:
+        pass
+
     try:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
         print("\n[oracle] Shutting down...")
+        server.should_exit = True
+        thread.join(timeout=5)
 
 
 if __name__ == "__main__":
