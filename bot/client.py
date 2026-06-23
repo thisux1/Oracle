@@ -1377,10 +1377,14 @@ class DiscordClient(discord.Client):
             is_pet_message = False
             is_cardhand_message = False
             if message.embeds:
-                msg_text = str(message.embeds[0].to_dict()).lower()
+                msg_embed_dict = message.embeds[0].to_dict()
+                msg_text = str(msg_embed_dict).lower()
                 if "— pets" in msg_text or "pet adventure rewards" in msg_text:
                     is_pet_message = True
-                if "card hand" in msg_text:
+                author_name = (msg_embed_dict.get("author") or {}).get("name") or ""
+                title = msg_embed_dict.get("title") or ""
+                embed_header = (author_name + " " + title).lower()
+                if "card hand" in embed_header:
                     is_cardhand_message = True
             if message.author.id == config.EPIC_RPG_ID and message.embeds and not is_pet_message and not is_cardhand_message:
                 self._track_processed_message(message.id)
@@ -1402,8 +1406,12 @@ class DiscordClient(discord.Client):
 
         is_cardhand_message = False
         if after.embeds:
-            embed_text = str(after.embeds[0].to_dict()).lower()
-            if "card hand" in embed_text:
+            edit_embed_dict = after.embeds[0].to_dict()
+            embed_text = str(edit_embed_dict).lower()
+            author_name = (edit_embed_dict.get("author") or {}).get("name") or ""
+            title = edit_embed_dict.get("title") or ""
+            embed_header = (author_name + " " + title).lower()
+            if "card hand" in embed_header:
                 is_cardhand_message = True
 
         if bot_state.paused:
@@ -1420,10 +1428,14 @@ class DiscordClient(discord.Client):
             is_pet_edit = False
             is_cardhand_edit = False
             if after.embeds:
-                after_text = str(after.embeds[0].to_dict()).lower()
+                after_dict = after.embeds[0].to_dict()
+                after_text = str(after_dict).lower()
                 if "— pets" in after_text or "pet adventure rewards" in after_text:
                     is_pet_edit = True
-                if "card hand" in after_text:
+                author_name = (after_dict.get("author") or {}).get("name") or ""
+                title = after_dict.get("title") or ""
+                embed_header = (author_name + " " + title).lower()
+                if "card hand" in embed_header:
                     is_cardhand_edit = True
 
             if after.id in self._processed_msg_ids and not is_pet_edit and not is_cardhand_edit:

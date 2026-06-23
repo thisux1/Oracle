@@ -112,6 +112,7 @@ class BotState:
         self.lootbox_fallback_triggered = False
         self.pending_life_boost_buy = None
         self.life_boost_fallback_triggered = False
+        self.farm_seed_fallback = False
         self.has_bank_account = True
         self.quest_active = False
         self.gamble_quest_goal = 0
@@ -484,6 +485,7 @@ def reset_bot_state() -> None:
     bot_state.lootbox_fallback_triggered = False
     bot_state.pending_life_boost_buy = None
     bot_state.life_boost_fallback_triggered = False
+    bot_state.farm_seed_fallback = False
     bot_state.sent_message_ids = []
     bot_state.has_bank_account = True
     bot_state.auto_enchant_active = False

@@ -238,6 +238,12 @@ async def check_and_forward_cardhand_image(message) -> None:
     if not message.attachments:
         return
 
+    if message.embeds:
+        if not check_user_matches(message.embeds[0].to_dict(), config.user_name_lower, config.userID):
+            return
+    else:
+        return
+
     import os
     import options_resolver
     from bot.captcha import save_and_crop_attachment
@@ -776,7 +782,10 @@ async def responseResolver(message) -> None:
                     final_cmd += " h"
                 add_to_high_priority_queue(final_cmd)
             elif cmd_name == "farm":
-                farm_cmd = f"rpg farm {config.farm_seed}" if config.farm_seed and config.farm_seed.lower() != "none" else "rpg farm"
+                if bot_state.farm_seed_fallback:
+                    farm_cmd = "rpg farm"
+                else:
+                    farm_cmd = f"rpg farm {config.farm_seed}" if config.farm_seed and config.farm_seed.lower() != "none" else "rpg farm"
                 add_to_high_priority_queue(farm_cmd)
                 final_cmd = farm_cmd
             elif cmd_name in ("tr", "training"):
@@ -1399,7 +1408,7 @@ async def responseResolver(message) -> None:
             # the mid-game pattern to avoid an early return.
             # Only reset here if the interactive loop hasn't started yet;
             # otherwise let the loop handle it to avoid concurrent state resets.
-            if bot_state.cardhand_in_progress and "goldened" in embed_text:
+            if bot_state.cardhand_in_progress and "goldened" in embed_text and check_user_matches(embed_dict, config.user_name_lower, config.userID):
                 if not bot_state.cardhand_first_pass_done:
                     bot_state.cardhand_in_progress = False
                     bot_state.cardhand_first_pass_done = False
@@ -1886,5 +1895,25 @@ async def responseResolver(message) -> None:
                                     f"{item}, quantity: {numOfDrops[0]:,}"
                                 )
             if "you do not have this type of seed" in msg:
+                bot_state.farm_seed_fallback = True
                 add_to_low_priority_queue("rpg farm", suppress_log=True)
-                logger.info("rpg farm queued due to invalid seed")
+                HUD.system("Semente específica esgotada! Usando rpg farm como fallback.")
+                logger.info("rpg farm queued due to invalid seed, fallback activated")
+
+            if "you need a seed to farm" in msg:
+                add_to_high_priority_queue("rpg buy seed 10")
+                HUD.system("Sem sementes! Comprando 10 sementes...")
+                logger.info("rpg buy seed 10 queued due to no seeds")
+
+            if bot_state.farm_seed_fallback and "also got" in msg:
+                for match in config.drop_regex.finditer(msg):
+                    item_name = match.group(2).strip().lower()
+                    item_name = re.sub(r'\s*!.*$|\s*\(.*?\)$|\s*in one of the leaves.*$|\s*use it with.*$', '', item_name).strip()
+                    if item_name.endswith(" seed"):
+                        gained_seed = item_name.replace(" seed", "").strip()
+                        cfg_seed = config.farm_seed.lower() if config.farm_seed and config.farm_seed.lower() != "none" else None
+                        if cfg_seed is None or gained_seed == cfg_seed:
+                            bot_state.farm_seed_fallback = False
+                            HUD.system(f"Semente {gained_seed} recuperada! Fallback desativado.")
+                            logger.info(f"Farm seed fallback disabled — gained {gained_seed} seed")
+                            break

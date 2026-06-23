@@ -411,7 +411,10 @@ async def rdCheckEpicRPG(message):
                         )
 
                     elif cmd_type == "farm":
-                        cmd = f"rpg farm {config.farm_seed}" if config.farm_seed and config.farm_seed.lower() != "none" else "rpg farm"
+                        if bot_state.farm_seed_fallback:
+                            cmd = "rpg farm"
+                        else:
+                            cmd = f"rpg farm {config.farm_seed}" if config.farm_seed and config.farm_seed.lower() != "none" else "rpg farm"
                         add_to_low_priority_queue(cmd, suppress_log=True)
                         logger.info(
                             f"Command '{cmd}' added to LPQ from Epic RPG rd."
