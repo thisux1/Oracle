@@ -1900,7 +1900,7 @@ async def responseResolver(message) -> None:
                 HUD.system("Semente específica esgotada! Usando rpg farm como fallback.")
                 logger.info("rpg farm queued due to invalid seed, fallback activated")
 
-            if re.search(r"need a\s+seed to farm", msg):
+            if "need a" in msg and "seed to farm" in msg:
                 add_to_high_priority_queue("rpg buy seed 10")
                 HUD.system("Sem sementes! Comprando 10 sementes...")
                 logger.info("rpg buy seed 10 queued due to no seeds")
