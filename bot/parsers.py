@@ -13,6 +13,14 @@ from bot.telegram import send_telegram_notification, make_channel_link
 from colorama import Fore, Style
 from bot.locales import t
 
+MISC_MAX_ITEMS = 25
+
+def _cap_misc(misc_drops, item_name, qty):
+    if item_name in misc_drops:
+        misc_drops[item_name] += qty
+    elif len(misc_drops) < MISC_MAX_ITEMS:
+        misc_drops[item_name] = qty
+
 
 
 def process_drops(lines, player_name, loot_data):
@@ -80,7 +88,7 @@ def process_drops(lines, player_name, loot_data):
                     f"{player_name} collected: {item_name}, quantity: {qty:,}"
                 )
             else:
-                misc_drops[item_name] = misc_drops.get(item_name, 0) + qty
+                _cap_misc(misc_drops, item_name, qty)
                 logger.info(
                     f"{player_name} collected (misc): {item_name}, quantity: {qty:,}"
                 )
@@ -128,7 +136,7 @@ def process_drops(lines, player_name, loot_data):
                     f"{player_name} collected: {item_name}, quantity: {qty:,}"
                 )
             else:
-                misc_drops[item_name] = misc_drops.get(item_name, 0) + qty
+                _cap_misc(misc_drops, item_name, qty)
                 logger.info(
                     f"{player_name} collected (misc): {item_name}, quantity: {qty:,}"
                 )
@@ -154,7 +162,7 @@ def process_drops(lines, player_name, loot_data):
                     f"{player_name} collected: {item_name}, quantity: {qty:,}"
                 )
             else:
-                misc_drops[item_name] = misc_drops.get(item_name, 0) + qty
+                _cap_misc(misc_drops, item_name, qty)
                 logger.info(
                     f"{player_name} collected (misc): {item_name}, quantity: {qty:,}"
                 )
@@ -175,7 +183,7 @@ def process_drops(lines, player_name, loot_data):
                     f"{player_name} collected: {item_name}, quantity: {qty:,}"
                 )
             else:
-                misc_drops[item_name] = misc_drops.get(item_name, 0) + qty
+                _cap_misc(misc_drops, item_name, qty)
                 logger.info(
                     f"{player_name} collected (misc): {item_name}, quantity: {qty:,}"
                 )
@@ -681,6 +689,6 @@ def process_pet_claim_drops(embed_dict, embed_text, player_name):
 
         # 4. Fallback to misc_drops
         misc_drops = misc.setdefault("misc", {})
-        misc_drops[item_name] = misc_drops.get(item_name, 0) + qty
+        _cap_misc(misc_drops, item_name, qty)
         HUD.loot(player_name, item_name, qty)
         logger.info(f"{player_name} collected (pet claim misc): {item_name}, quantity: {qty:,}")
