@@ -446,7 +446,7 @@ async def interactive_card_hand_loop(message) -> None:
             # Send Neon analysis AFTER the status message (preserves order: status first, analysis second)
             if neon_formatted:
                 try:
-                    await send_telegram_raw(neon_formatted)
+                    await send_telegram_raw(neon_formatted, reply_to=active_card_hand_msg_id)
                     HUD.cardhand(f"Análise do Neon enviada ao Telegram (rec: {rec or 'N/A'}).")
                 except Exception as neon_err:
                     logger.error(f"Erro ao enviar análise Neon ao Telegram: {neon_err}")
