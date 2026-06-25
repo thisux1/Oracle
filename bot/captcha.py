@@ -226,8 +226,10 @@ async def tentar_resolver_captcha(message):
                 HUD.alert(f"📲 HIJACK DO TELEGRAM: Mudando para '{override}'")
                 item_name = override
 
-            await human_delay(1.5, 3.0)  # 1.5-4.5s "reading + typing" delay
+            await human_delay(3.0, 2.0)  # 3-5s hesitation
             HUD.oracle(f"Tentativa {tentativa}: Enviando '{item_name}'")
+            async with message.channel.typing():
+                await asyncio.sleep(0.2 + random.random() * 0.4)
             sent = await message.channel.send(item_name)
 
             try:
