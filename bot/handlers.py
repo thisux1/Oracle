@@ -321,6 +321,7 @@ async def interactive_card_hand_loop(message) -> None:
     global active_card_hand_msg_id
     HUD.system("Iniciando loop de Card Hand interativo-automático...")
     
+    loop_start_time = time.monotonic()
     bot_state.cardhand_message = message
     if hasattr(bot_state, '_cardhand_updated_event') and bot_state._cardhand_updated_event is not None:
         bot_state._cardhand_updated_event.set()
@@ -409,9 +410,11 @@ async def interactive_card_hand_loop(message) -> None:
             bot_state.neon_updated_event.clear()
 
             # Check if there is already a very fresh recommendation (within last 3 seconds)
+            # Only use if it arrived after the loop started (avoids re-sending what
+            # on_message_edit already sent before the loop began)
             if bot_state.latest_neon_recommendation:
                 rec_val, form_val, ts = bot_state.latest_neon_recommendation
-                if time.monotonic() - ts < NEON_RECENCY_WINDOW:
+                if time.monotonic() - ts < NEON_RECENCY_WINDOW and ts > loop_start_time:
                     rec = rec_val
                     neon_formatted = form_val
 
@@ -423,14 +426,6 @@ async def interactive_card_hand_loop(message) -> None:
                 except asyncio.TimeoutError:
                     if bot_state.cardhand_in_progress:
                         rec, neon_formatted = await find_neon_recommendation(message.channel)
-            
-            # Send Neon analysis to Telegram if available
-            if neon_formatted:
-                try:
-                    await send_telegram_raw(neon_formatted)
-                    HUD.cardhand(f"Análise do Neon enviada ao Telegram (rec: {rec or 'N/A'}).")
-                except Exception as neon_err:
-                    logger.error(f"Erro ao enviar análise Neon ao Telegram: {neon_err}")
                 
             # Determine timeout
             timeout = CARD_HAND_FIRST_TURN_TIMEOUT if bot_state.cardhand_turn_count == 1 else CARD_HAND_TURN_TIMEOUT
@@ -440,14 +435,22 @@ async def interactive_card_hand_loop(message) -> None:
             msg_text = (
                 f"🃏 CARD HAND ATIVO (Turno {bot_state.cardhand_turn_count})\n\n"
                 f"{clean_txt}\n\n"
-                f"🤖 Recomendação Auto: {rec_display}\n"
-                f"⏳ Autoplay em: {timeout}s (Envie nome da carta ex: s5, hk ou pass via Telegram para sobrescrever)"
+                f"🤖 Recomendação: {rec_display}\n"
+                f"⏳ Autoplay em: {timeout}s"
             )
             
             if active_card_hand_msg_id is None:
                 active_card_hand_msg_id = await send_telegram_keyboard(msg_text, None, parse_mode=None)
             else:
                 await edit_telegram_message(active_card_hand_msg_id, msg_text, None, parse_mode=None)
+            
+            # Send Neon analysis AFTER the status message (preserves order: status first, analysis second)
+            if neon_formatted:
+                try:
+                    await send_telegram_raw(neon_formatted)
+                    HUD.cardhand(f"Análise do Neon enviada ao Telegram (rec: {rec or 'N/A'}).")
+                except Exception as neon_err:
+                    logger.error(f"Erro ao enviar análise Neon ao Telegram: {neon_err}")
             
             bot_state.cardhand_user_choice = None
             user_choice = None
@@ -466,8 +469,8 @@ async def interactive_card_hand_loop(message) -> None:
                     msg_text = (
                         f"🃏 CARD HAND ATIVO (Turno {bot_state.cardhand_turn_count})\n\n"
                         f"{clean_txt}\n\n"
-                        f"🤖 Recomendação Auto: {rec_display}\n"
-                        f"⏳ Autoplay em: {t_left}s (Envie nome da carta ex: s5, hk ou pass via Telegram para sobrescrever)"
+                        f"🤖 Recomendação: {rec_display}\n"
+                        f"⏳ Autoplay em: {t_left}s"
                     )
                     await edit_telegram_message(active_card_hand_msg_id, msg_text, None, parse_mode=None)
                 await asyncio.sleep(1)
@@ -485,12 +488,12 @@ async def interactive_card_hand_loop(message) -> None:
                 is_auto = True
                 HUD.oracle(f"Nenhuma resposta manual. Enviando escolha automática: '{final_choice}'")
                 
-            status_text = f"🤖 Enviando escolha automática: <code>{final_choice.upper()}</code>..." if is_auto else f"📲 Enviando escolha manual: <code>{final_choice.upper()}</code>..."
+            choice_label = f"🤖 {final_choice.upper()}" if is_auto else f"📲 {final_choice.upper()}"
             
             await edit_telegram_message(
                 active_card_hand_msg_id,
-                f"🃏 <b>CARD HAND ATIVO</b> (Turno {bot_state.cardhand_turn_count})\n\n{clean_txt}\n\n{status_text}",
-                None
+                f"🃏 CARD HAND ATIVO (Turno {bot_state.cardhand_turn_count})\n\n{clean_txt}\n\n{choice_label}",
+                None, parse_mode=None
             )
             
             # Send choice to Discord channel
