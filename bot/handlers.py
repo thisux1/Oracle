@@ -26,6 +26,7 @@ from bot.telegram import (
     make_channel_link,
     send_telegram_keyboard,
     edit_telegram_message,
+    edit_telegram_caption,
     send_telegram_photo,
 )
 from bot.locales import t, set_language
@@ -127,10 +128,49 @@ def clean_embed_text_for_telegram(embed_dict: dict) -> str:
             fields_text += f"\n{fname}:\n{fval}"
     
     full_text = desc + fields_text
-    # Replace some common emojis / text for Telegram friendly presentation
+
+    emoji_map = {
+        ":timecookie:": "🍪",
+        ":guildring:": "💍",
+        ":arenacookie:": "⚔️",
+        ":cookie:": "🍪",
+        ":gem:": "💎",
+        ":moneybag:": "💰",
+        ":coin:": "🪙",
+        ":star:": "⭐",
+        ":trophy:": "🏆",
+        ":crossed_swords:": "⚔️",
+        ":shield:": "🛡️",
+        ":heart:": "❤️",
+        ":fire:": "🔥",
+        ":muscle:": "💪",
+        ":scroll:": "📜",
+        ":carrot:": "🥕",
+        ":potato:": "🥔",
+        ":bread:": "🍞",
+        ":fish:": "🐟",
+        ":pick:": "⛏️",
+        ":ring:": "💍",
+        ":crown:": "👑",
+        ":medal:": "🏅",
+    }
+    for old, new in emoji_map.items():
+        full_text = full_text.replace(old, new)
+
+    full_text = re.sub(r'<a?:[^:]+:\d+>', '', full_text)
+    full_text = re.sub(r':\w+:', '', full_text)
+    full_text = re.sub(r'[*_~`|]+', '', full_text)
+    full_text = re.sub(r'  +', ' ', full_text)
+    full_text = re.sub(r'\n{3,}', '\n\n', full_text)
     full_text = full_text.replace("YOUR HAND", "🃏 SUA MÃO")
-    full_text = full_text.replace("try to get the best possible hand", "Tente conseguir a melhor mão possível")
-    return full_text
+    full_text = full_text.replace("Try to get the best possible hand", "Tente conseguir a melhor mão possível")
+    full_text = full_text.replace("See the list with the hands button", "")
+    full_text = full_text.replace("There are 3 turns", "3 turnos")
+    full_text = full_text.replace("in each turn you can decide to change a card (with its button) or pass, and you will receive a new card", "")
+    full_text = full_text.replace("goldened", "✨ Concluída")
+    full_text = re.sub(r'  +', ' ', full_text)
+    full_text = re.sub(r'\n{3,}', '\n\n', full_text)
+    return full_text.strip()
 
 
 def format_neon_for_telegram(emb: dict) -> Optional[str]:
@@ -321,6 +361,19 @@ async def interactive_card_hand_loop(message) -> None:
             except Exception:
                 pass
 
+            # Brief wait for attachment on first turn (image is often added via edit right after)
+            if message.attachments is not None and len(message.attachments) == 0 and bot_state.cardhand_turn_count == 1:
+                for _ in range(6):
+                    await asyncio.sleep(0.5)
+                    try:
+                        fresh = await message.channel.fetch_message(message.id)
+                        if fresh and fresh.attachments:
+                            message = fresh
+                            bot_state.cardhand_message = fresh
+                            break
+                    except Exception:
+                        pass
+
             # Ensure the image is forwarded for this turn
             try:
                 await check_and_forward_cardhand_image(message)
@@ -358,7 +411,7 @@ async def interactive_card_hand_loop(message) -> None:
             # Check if there is already a very fresh recommendation (within last 3 seconds)
             if bot_state.latest_neon_recommendation:
                 rec_val, form_val, ts = bot_state.latest_neon_recommendation
-                if time.time() - ts < NEON_RECENCY_WINDOW:
+                if time.monotonic() - ts < NEON_RECENCY_WINDOW:
                     rec = rec_val
                     neon_formatted = form_val
 
@@ -521,18 +574,18 @@ async def handle_sleepet_summary(embed_dict: dict, embed_text: str) -> None:
 
     if ready_to_claim > 0:
         bot_state.sleepet_state = "waiting_claim"
-        bot_state.last_sleepet_cmd_time = time.time()
+        bot_state.last_sleepet_cmd_time = time.monotonic()
         add_to_high_priority_queue("rpg pet claim")
         HUD.system("[Sleepet] Queued claim.")
     elif idle_pets > 0:
         bot_state.sleepet_state = "waiting_adventure"
-        bot_state.last_sleepet_cmd_time = time.time()
+        bot_state.last_sleepet_cmd_time = time.monotonic()
         add_to_high_priority_queue(config.pet_adventure_command)
         HUD.system(f"[Sleepet] Queued adventure: {config.pet_adventure_command}")
     else:
         # All on adventure
         bot_state.sleepet_state = "waiting_potion"
-        bot_state.last_sleepet_cmd_time = time.time()
+        bot_state.last_sleepet_cmd_time = time.monotonic()
         add_to_high_priority_queue("rpg use sleepet potion")
         HUD.system("[Sleepet] Queued use sleepet potion.")
 
@@ -554,7 +607,7 @@ async def handle_sleepet_claim(embed_dict: dict, embed_text: str) -> None:
 
     HUD.system("[Sleepet] Recompensas coletadas! Enviando pet para aventura...")
     bot_state.sleepet_state = "waiting_adventure"
-    bot_state.last_sleepet_cmd_time = time.time()
+    bot_state.last_sleepet_cmd_time = time.monotonic()
     add_to_high_priority_queue(config.pet_adventure_command)
 
 
@@ -572,7 +625,7 @@ async def handle_sleepet_adv(message, msg) -> None:
 
     # 2. Validation by time interval and compatible command
     # If the last sent command contained "pet" and ("adv" or "adventure"), and was sent within 6 seconds
-    current_time = time.time()
+    current_time = time.monotonic()
     time_since_last_cmd = current_time - bot_state.last_sent_time
     
     is_recent_our_command = False
@@ -594,13 +647,13 @@ async def handle_sleepet_adv(message, msg) -> None:
     if any(term in msg for term in ["travel in time", "back instantly", "are back instantly"]):
         HUD.system("[Sleepet] Retorno instantâneo detectado na aventura! Re-claimando...")
         bot_state.sleepet_state = "waiting_claim"
-        bot_state.last_sleepet_cmd_time = time.time()
+        bot_state.last_sleepet_cmd_time = time.monotonic()
         add_to_high_priority_queue("rpg pet claim")
         return
 
     HUD.system("[Sleepet] Aventura iniciada com sucesso! Usando poção sleepet...")
     bot_state.sleepet_state = "waiting_potion"
-    bot_state.last_sleepet_cmd_time = time.time()
+    bot_state.last_sleepet_cmd_time = time.monotonic()
     add_to_high_priority_queue("rpg use sleepet potion")
 
 
@@ -809,13 +862,13 @@ async def responseResolver(message) -> None:
                 lootbox_type = config.lootbox_type
                 if (
                     lootbox_type != "none"
-                    and time.time() > bot_state.lootbox_cooldown_until
+                    and time.monotonic() > bot_state.lootbox_cooldown_until
                 ):
                     add_to_low_priority_queue(f"rpg buy {lootbox_type}")
                     bot_state.pending_lootbox_buy = lootbox_type
                     bot_state.lootbox_fallback_triggered = False
                     final_cmd = f"rpg buy {lootbox_type}"
-                elif time.time() < bot_state.lootbox_cooldown_until:
+                elif time.monotonic() < bot_state.lootbox_cooldown_until:
                     HUD.system("Compra de lootbox pulada (Cooldown Financeiro).")
                     return
                 else:
@@ -901,7 +954,7 @@ async def responseResolver(message) -> None:
     elif message.author.id == config.EPIC_RPG_ID:
         # Check for locked pet commands error (no pets / no 2nd time travel)
         if "command is unlocked after the second" in msg or "when you get your first pet" in msg:
-            current_time = time.time()
+            current_time = time.monotonic()
             is_our_error = False
             
             # Check if reference is our command
@@ -938,7 +991,7 @@ async def responseResolver(message) -> None:
             is_instant_return = True
 
         if is_instant_return:
-            current_time = time.time()
+            current_time = time.monotonic()
             
             # Check if reference is our message
             is_reference_ours = False
@@ -960,12 +1013,12 @@ async def responseResolver(message) -> None:
                 if bot_state.sleepet_mode:
                     HUD.system("Retorno instantâneo do pet detectado no Sleepet Mode! Resgatando recompensas...")
                     bot_state.sleepet_state = "waiting_claim"
-                    bot_state.last_sleepet_cmd_time = time.time()
+                    bot_state.last_sleepet_cmd_time = time.monotonic()
                     add_to_high_priority_queue("rpg pet claim")
                     return
                 HUD.system("Retorno instantâneo do pet detectado! Resgatando recompensas...")
                 bot_state.pet_adventure_return_time = 0
-                bot_state.last_sleepet_cmd_time = time.time()
+                bot_state.last_sleepet_cmd_time = time.monotonic()
                 add_to_low_priority_queue("rpg pet claim")
                 return
             else:
@@ -986,7 +1039,7 @@ async def responseResolver(message) -> None:
                     else:
                         HUD.system("Sleepet potion usada com sucesso! Resgatando recompensas...")
                         bot_state.sleepet_state = "waiting_claim"
-                        bot_state.last_sleepet_cmd_time = time.time()
+                        bot_state.last_sleepet_cmd_time = time.monotonic()
                         add_to_high_priority_queue("rpg pet claim")
                     return
             elif bot_state.sleepet_state == "waiting_potion" and any(err in msg for err in ["don't have", "do not have", "not have"]):
@@ -999,7 +1052,7 @@ async def responseResolver(message) -> None:
                     is_our_error = True
                 if bot_state.last_sent_command:
                     last_cmd = bot_state.last_sent_command.lower()
-                    if "sleepet" in last_cmd and (time.time() - bot_state.last_sent_time) < PET_COMMAND_RECENCY_WINDOW:
+                    if "sleepet" in last_cmd and (time.monotonic() - bot_state.last_sent_time) < PET_COMMAND_RECENCY_WINDOW:
                         is_our_error = True
                 if is_our_error:
                     bot_state.sleepet_mode = False
@@ -1038,7 +1091,7 @@ async def responseResolver(message) -> None:
         await rdCheckEpicRPG(message)
 
         if "you have " in msg and " seconds!" in msg:
-            bot_state.minigame_pending_until = time.time() + MINIGAME_PAUSE_DURATION
+            bot_state.minigame_pending_until = time.monotonic() + MINIGAME_PAUSE_DURATION
             logger.info(f"Minigame detected. All queues paused for {MINIGAME_PAUSE_DURATION} seconds.")
             
         if any(w in msg for w in ["better luck next time", "you got it", "you passed", "well done", "nope! it was"]):
@@ -1192,7 +1245,7 @@ async def responseResolver(message) -> None:
                             lowPriorityQueueSet.clear()
                             bot_state.duel_in_progress = True
                             bot_state.duel_step = "waiting_weapon"
-                            bot_state.last_duel_time = time.time()
+                            bot_state.last_duel_time = time.monotonic()
                             bot_state.duel_channel_id = message.channel.id
                             add_to_high_priority_queue("yes")
                             HUD.system(f"Duelo recebido! Aceitando com 'yes' no canal {message.channel.id}. LPQ limpa.")
@@ -1206,7 +1259,7 @@ async def responseResolver(message) -> None:
                         lowPriorityQueueSet.clear()
                         bot_state.duel_in_progress = True
                         bot_state.duel_step = "waiting_confirmation"
-                        bot_state.last_duel_time = time.time()
+                        bot_state.last_duel_time = time.monotonic()
                         bot_state.duel_channel_id = message.channel.id
                         bot_state.duel_fail_count = 0
                         HUD.system(f"Duelo enviado! Aguardando resposta do parceiro no canal {message.channel.id}. LPQ limpa.")
@@ -1222,7 +1275,7 @@ async def responseResolver(message) -> None:
                                 choice = random.choice(["a", "b", "c"])
                                 add_to_high_priority_queue(choice)
                                 bot_state.duel_step = "finished"
-                                bot_state.last_duel_time = time.time()
+                                bot_state.last_duel_time = time.monotonic()
                                 HUD.system(f"Arma de duelo selecionada: '{choice}'")
                             else:
                                 bot_state.duel_step = "finished"
@@ -1285,14 +1338,14 @@ async def responseResolver(message) -> None:
                 if "are you sure you want to enter" in embed_text and "all players have to say 'yes'" in embed_text:
                     add_to_high_priority_queue("yes")
                     bot_state.dungeon_in_progress = True
-                    bot_state.last_dungeon_time = time.time()
+                    bot_state.last_dungeon_time = time.monotonic()
                     HUD.dungeon("Entrando com 'yes'")
                     return
                 if bot_state.dungeon_in_progress:
                     if "eternal dragon" in embed_text:
                         if not bot_state.dragon_alive and ("you have encountered" in embed_text or "turn" in embed_text):
                             bot_state.dragon_alive = True
-                            bot_state.last_dungeon_time = time.time()
+                            bot_state.last_dungeon_time = time.monotonic()
                             add_to_high_priority_queue("bite")
                             HUD.dungeon("Encontrado! Iniciando loop de mordida")
                         elif bot_state.dragon_alive and "died" not in embed_text:
@@ -1377,7 +1430,7 @@ async def responseResolver(message) -> None:
             # ─── Ruby Dragon Event ───
             if "ruby dragon just spawned in front of you" in embed_text:
                 sessionData["misc"]["personal_events"] += 1
-                current_time = time.time()
+                current_time = time.monotonic()
                 
                 # Check if previous turn has expired (>60s) to avoid desync
                 if bot_state.ruby_dragon_state == "first_turn":
@@ -1439,7 +1492,7 @@ async def responseResolver(message) -> None:
             # ─── Pet Embeds (Summary / Reward / Status) ───
             if config.do_pet and ("— pets" in embed_text or "pet adventure rewards" in embed_text):
                 from random import randint
-                bot_state.next_pet_summary_check = time.time() + randint(5400, 10800)
+                bot_state.next_pet_summary_check = time.monotonic() + randint(5400, 10800)
                 
                 author_name = (embed_dict.get("author") or {}).get("name") or ""
                 author_name = author_name.lower()
@@ -1491,7 +1544,7 @@ async def responseResolver(message) -> None:
                     m = int(timer_match.group(2) or 0)
                     s = int(timer_match.group(3) or 0)
                     total_seconds = h * 3600 + m * 60 + s + PET_TIMER_BUFFER_SECONDS
-                    bot_state.pet_adventure_return_time = time.time() + total_seconds
+                    bot_state.pet_adventure_return_time = time.monotonic() + total_seconds
                     HUD.system(f"Pet em aventura - retorna em {h}h {m}m {s}s")
                 elif "back from adventure" in embed_text:
                     bot_state.pet_adventure_return_time = 0
@@ -1632,7 +1685,7 @@ async def responseResolver(message) -> None:
                         m = int(timer_match.group(2) or 0)
                         s = int(timer_match.group(3) or 0)
                         total_seconds = h * 3600 + m * 60 + s + PET_TIMER_BUFFER_SECONDS
-                        bot_state.pet_adventure_return_time = time.time() + total_seconds
+                        bot_state.pet_adventure_return_time = time.monotonic() + total_seconds
                         HUD.system(
                             f"Aventura do pet iniciada - {h}h {m}m {s}s para retornar"
                         )

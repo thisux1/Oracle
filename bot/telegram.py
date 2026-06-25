@@ -75,10 +75,10 @@ async def send_telegram_raw(text):
         logger.error(f"Error sending Telegram raw message: {e}")
 
 
-async def send_telegram_photo(photo_path, caption):
+async def send_telegram_photo(photo_path, caption, reply_to=None):
     caption = append_profile_info(caption)
     if not config.TelegramBotToken or not config.TelegramChatID:
-        return
+        return None
 
     url = f"https://api.telegram.org/bot{config.TelegramBotToken}/sendPhoto"
     try:
@@ -90,15 +90,40 @@ async def send_telegram_photo(photo_path, caption):
         data.add_field('chat_id', config.TelegramChatID)
         data.add_field('caption', caption)
         data.add_field('photo', photo_data, filename='captcha.png')
+        if reply_to is not None:
+            data.add_field('reply_to_message_id', str(reply_to))
 
         async with session.post(url, data=data, timeout=aiohttp.ClientTimeout(total=15)) as response:
             if response.status != 200:
                 text = await response.text()
                 logger.error(f"Failed to send Telegram photo: {text}")
+                return None
             else:
                 logger.info("Telegram photo sent successfully.")
+                data = await response.json()
+                return data.get("result", {}).get("message_id")
     except Exception as e:
         logger.error(f"Error sending Telegram photo: {e}")
+    return None
+
+
+async def edit_telegram_caption(message_id, caption):
+    caption = append_profile_info(caption)
+    if not config.TelegramBotToken or not config.TelegramChatID:
+        return False
+    url = f"https://api.telegram.org/bot{config.TelegramBotToken}/editMessageCaption"
+    payload = {
+        "chat_id": config.TelegramChatID,
+        "message_id": message_id,
+        "caption": caption,
+    }
+    try:
+        session = _get_session()
+        async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=10)) as response:
+            return response.status == 200
+    except Exception as e:
+        logger.error(f"Error editing Telegram caption: {e}")
+    return False
 
 
 def make_channel_link():

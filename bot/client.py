@@ -194,7 +194,7 @@ class DiscordClient(discord.Client):
             pass
         last_mtime_check_time = 0.0
 
-        last_check = time.time() - 120
+        last_check = time.monotonic() - 120
 
         while not self.is_closed():
             # Dynamic recovery of channel if it was not resolved yet or config channel changed
@@ -221,7 +221,7 @@ class DiscordClient(discord.Client):
                 break
 
             try:
-                current_time = time.time()
+                current_time = time.monotonic()
 
                 # Dynamic config reload check (skip until on_ready completes)
                 if self._ready_initialized and current_time - last_mtime_check_time > CONFIG_RELOAD_CHECK_INTERVAL:
@@ -262,7 +262,7 @@ class DiscordClient(discord.Client):
                 ):
                     break_duration = randint(COFFEE_BREAK_DURATION_MIN, COFFEE_BREAK_DURATION_MAX)
                     bot_state.is_on_coffee_break = True
-                    bot_state.coffee_break_end_time = time.time() + break_duration
+                    bot_state.coffee_break_end_time = time.monotonic() + break_duration
                     
                     coffee_art = f"""
 {Fore.LIGHTBLACK_EX}    ─────────────────────────────────────────────
@@ -278,7 +278,7 @@ class DiscordClient(discord.Client):
                     
                     await asyncio.sleep(break_duration)
                     bot_state.is_on_coffee_break = False
-                    bot_state.next_break_time = time.time() + randint(COFFEE_BREAK_INTERVAL_MIN, COFFEE_BREAK_INTERVAL_MAX)
+                    bot_state.next_break_time = time.monotonic() + randint(COFFEE_BREAK_INTERVAL_MIN, COFFEE_BREAK_INTERVAL_MAX)
                     HUD.system("Fim da pausa. Retomando.")
 
                 # Watchdog: Detect expired response_pending (command sent, no Epic RPG reply at all)
@@ -406,7 +406,7 @@ class DiscordClient(discord.Client):
                                 if target_cmd in highPriorityQueue:
                                     highPriorityQueue.remove(target_cmd)
                                     highPriorityQueueSet.discard(target_cmd)
-                                    bot_state.response_pending_until = time.time() + RESPONSE_PENDING_DURATION
+                                    bot_state.response_pending_until = time.monotonic() + RESPONSE_PENDING_DURATION
                                     HUD.command(target_cmd, "HPQ-RP")
                                     await send_with_typo_chance(active_channel, target_cmd, "HPQ-RP")
                                 break
@@ -442,7 +442,7 @@ class DiscordClient(discord.Client):
                             highPriorityQueueSet.discard(cmd)
                         
                         await human_delay(1.5, 2.0)
-                        current_time = time.time()
+                        current_time = time.monotonic()
                         if cmd == bot_state.last_sent_command and (current_time - bot_state.last_sent_time) < ANTI_SPAM_WINDOW and not cmd.startswith("rpg cf") and not is_sleepet_command(cmd) and not any(x in cmd.lower() for x in ["enchant", "refine", "transmute", "transcend"]):
                             HUD.system(f"Comando duplicado '{cmd}' ignorado (Anti-Spam).")
                         else:
@@ -480,7 +480,7 @@ class DiscordClient(discord.Client):
                             continue
                         cmd = lowPriorityQueue.pop(0)
                         lowPriorityQueueSet.discard(cmd)
-                        current_time = time.time()
+                        current_time = time.monotonic()
                         if cmd == bot_state.last_sent_command and (current_time - bot_state.last_sent_time) < ANTI_SPAM_WINDOW and not cmd.startswith("rpg cf") and not is_sleepet_command(cmd) and not any(x in cmd.lower() for x in ["enchant", "refine", "transmute", "transcend"]):
                             HUD.system(f"Comando duplicado '{cmd}' ignorado (Anti-Spam).")
                         else:
@@ -503,7 +503,7 @@ class DiscordClient(discord.Client):
                             await send_with_typo_chance(active_channel, cmd, "LPQ")
                     else:
                         if bot_state.sleepet_mode:
-                            current_time = time.time()
+                            current_time = time.monotonic()
                             if bot_state.sleepet_state in ["init", None]:
                                 bot_state.sleepet_state = "waiting_summary"
                                 bot_state.last_sleepet_cmd_time = current_time
@@ -612,7 +612,7 @@ class DiscordClient(discord.Client):
                     lowPriorityQueueSet.clear()
                     bot_state.sleepet_mode = True
                     bot_state.sleepet_state = "init"
-                    bot_state.last_sleepet_cmd_time = time.time()
+                    bot_state.last_sleepet_cmd_time = time.monotonic()
                     HUD.system("Sleepet Mode ATIVADO via Discord.")
                     await message.channel.send("😴 **Sleepet Mode Ativado. LPQ limpa e loop de pets iniciado!**")
                     return
@@ -665,7 +665,7 @@ class DiscordClient(discord.Client):
                         bot_state.auto_enchant_target_value = target_val
                         bot_state.auto_enchant_channel_id = config.channelID
                         bot_state.auto_enchant_attempts = 0
-                        bot_state.last_auto_enchant_time = time.time()
+                        bot_state.last_auto_enchant_time = time.monotonic()
                         bot_state.auto_enchant_withdrawn = False
                         
                         lowPriorityQueue.clear()
@@ -696,7 +696,7 @@ class DiscordClient(discord.Client):
                     for part in parts[2:]:
                         if part.endswith('m') and part[:-1].isdigit():
                             mins = int(part[:-1])
-                            bot_state.tc_end_time = time.time() + (mins * 60)
+                            bot_state.tc_end_time = time.monotonic() + (mins * 60)
                             break
                     else:
                         bot_state.tc_end_time = 0
@@ -867,7 +867,7 @@ class DiscordClient(discord.Client):
         if message.author.id == config.EPIC_RPG_ID:
             # Any Epic RPG message in our channel resets watchdog timers
             if message.channel.id == config.channelID:
-                bot_state.last_epic_rpg_channel_message_time = time.time()
+                bot_state.last_epic_rpg_channel_message_time = time.monotonic()
                 bot_state.response_pending_until = 0
             # Plain text errors for Auto Enchant
             if bot_state.auto_enchant_active and message.channel.id == bot_state.auto_enchant_channel_id:
@@ -882,7 +882,7 @@ class DiscordClient(discord.Client):
                         add_to_high_priority_queue(f"rpg {bot_state.auto_enchant_tier} {bot_state.auto_enchant_target}")
                         highPriorityQueueSet.clear()
                         highPriorityQueueSet.update(highPriorityQueue)
-                        bot_state.last_auto_enchant_time = time.time()
+                        bot_state.last_auto_enchant_time = time.monotonic()
                     else:
                         bot_state.auto_enchant_active = False
                         HUD.alert("Auto-Enchant CANCELADO: Sem dinheiro suficiente mesmo após 'rpg withdraw all'!")
@@ -905,7 +905,7 @@ class DiscordClient(discord.Client):
                             add_to_high_priority_queue(f"rpg {bot_state.auto_enchant_tier} {bot_state.auto_enchant_target}")
                             highPriorityQueueSet.clear()
                             highPriorityQueueSet.update(highPriorityQueue)
-                            bot_state.last_auto_enchant_time = time.time()
+                            bot_state.last_auto_enchant_time = time.monotonic()
                         else:
                             bot_state.auto_enchant_active = False
                             HUD.alert("Auto-Enchant CANCELADO: Comando base 'enchant' bloqueado!")
@@ -931,7 +931,7 @@ class DiscordClient(discord.Client):
                     bot_state.paused = True
                     bot_state.no_response_count = 0
                     maint_cooldown_minutes = randint(MAINTENANCE_COOLDOWN_MIN, MAINTENANCE_COOLDOWN_MAX)
-                    bot_state.watchdog_paused_until = time.time() + (maint_cooldown_minutes * 60)
+                    bot_state.watchdog_paused_until = time.monotonic() + (maint_cooldown_minutes * 60)
                     highPriorityQueue.clear()
                     highPriorityQueueSet.clear()
                     lowPriorityQueue.clear()
@@ -1028,7 +1028,7 @@ class DiscordClient(discord.Client):
                                 highPriorityQueueSet.clear()
                                 highPriorityQueueSet.update(highPriorityQueue)
                             else:
-                                bot_state.last_auto_enchant_time = time.time()
+                                bot_state.last_auto_enchant_time = time.monotonic()
                                 highPriorityQueue[:] = [c for c in highPriorityQueue if not any(x in c.lower() for x in ["enchant", "refine", "transmute", "transcend", "withdraw"])]
                                 add_to_high_priority_queue(f"rpg {bot_state.auto_enchant_tier} {bot_state.auto_enchant_target}")
                                 highPriorityQueueSet.clear()
@@ -1090,12 +1090,15 @@ class DiscordClient(discord.Client):
                     "everything seems fine",
                     "everything looks fine",
                 ]
-            ) and (config.user_name_lower and (config.user_name_lower in combined_content or (user_name_clean and user_name_clean in content_clean))):
-                bot_state.jailed = False
-                bot_state.paused = False
-                bot_state.captcha_pending = False
-                HUD.system("Liberdade detectada! Retomando automação.")
-                return
+            ):
+                has_username = config.user_name_lower and (config.user_name_lower in combined_content or (user_name_clean and user_name_clean in content_clean))
+                is_our_pending = bot_state.captcha_pending or bot_state.jailed
+                if has_username or is_our_pending:
+                    bot_state.jailed = False
+                    bot_state.paused = False
+                    bot_state.captcha_pending = False
+                    HUD.system("Liberdade detectada! Retomando automação.")
+                    return
 
             # Profile detection (update bankroll)
             is_profile = False
@@ -1197,7 +1200,7 @@ class DiscordClient(discord.Client):
                     add_to_high_priority_queue("rpg deposit all")
                     return
 
-                bot_state.lootbox_cooldown_until = time.time() + LOOTBOX_COOLDOWN
+                bot_state.lootbox_cooldown_until = time.monotonic() + LOOTBOX_COOLDOWN
                 if "don't have a bank account" in combined_content:
                     bot_state.has_bank_account = False
                 HUD.alert(
@@ -1258,7 +1261,7 @@ class DiscordClient(discord.Client):
                 return
 
             HUD.system("Diálogo de NPC detectado. Analisando quest...")
-            bot_state.quest_dialog_pending_until = time.time() + 15
+            bot_state.quest_dialog_pending_until = time.monotonic() + 15
             if any(
                 x in combined_content
                 for x in ["arena", "miniboss", "guild raid"]
@@ -1363,7 +1366,7 @@ class DiscordClient(discord.Client):
                 if rec:
                     from bot.handlers import format_neon_for_telegram
                     formatted = format_neon_for_telegram(embed_dict)
-                    bot_state.latest_neon_recommendation = (rec, formatted, time.time())
+                    bot_state.latest_neon_recommendation = (rec, formatted, time.monotonic())
                     bot_state.neon_updated_event.set()
 
                     if config.card_hand_action == "legacy_auto":
@@ -1458,13 +1461,17 @@ class DiscordClient(discord.Client):
             if rec:
                 from bot.handlers import format_neon_for_telegram
                 formatted = format_neon_for_telegram(embed_dict)
-                bot_state.latest_neon_recommendation = (rec, formatted, time.time())
+                bot_state.latest_neon_recommendation = (rec, formatted, time.monotonic())
                 bot_state.neon_updated_event.set()
 
                 HUD.cardhand(f"Neon Bot Helper atualizou análise do Card Hand.")
                 logger.info(f"Neon edit detected (rec: {rec})...")
 
-                if config.card_hand_action in ["auto", "legacy_auto"]:
+                needs_immediate_send = (
+                    config.card_hand_action == "legacy_auto"
+                    or not bot_state.cardhand_in_progress
+                )
+                if config.card_hand_action in ["auto", "legacy_auto"] and needs_immediate_send:
                     try:
                         await send_telegram_raw(formatted)
                     except Exception as e:
@@ -1617,7 +1624,7 @@ class DiscordClient(discord.Client):
             lowPriorityQueueSet.clear()
             bot_state.sleepet_mode = True
             bot_state.sleepet_state = "init"
-            bot_state.last_sleepet_cmd_time = time.time()
+            bot_state.last_sleepet_cmd_time = time.monotonic()
             HUD.system("📲 COMANDO TELEGRAM: Sleepet Mode ATIVADO.")
             await send_telegram_notification("😴 *Sleepet Mode Ativado.* LPQ limpa e loop de pets iniciado!")
 
@@ -1640,7 +1647,7 @@ class DiscordClient(discord.Client):
             for part in parts[2:]:
                 if part.endswith('m') and part[:-1].isdigit():
                     mins = int(part[:-1])
-                    bot_state.tc_end_time = time.time() + (mins * 60)
+                    bot_state.tc_end_time = time.monotonic() + (mins * 60)
                     break
             else:
                 bot_state.tc_end_time = 0
@@ -1690,7 +1697,7 @@ class DiscordClient(discord.Client):
                     bot_state.auto_enchant_target_value = target_val
                     bot_state.auto_enchant_channel_id = config.channelID
                     bot_state.auto_enchant_attempts = 0
-                    bot_state.last_auto_enchant_time = time.time()
+                    bot_state.last_auto_enchant_time = time.monotonic()
                     bot_state.auto_enchant_withdrawn = False
                     
                     lowPriorityQueue.clear()

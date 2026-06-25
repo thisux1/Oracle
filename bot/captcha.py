@@ -3,7 +3,7 @@ import time
 import traceback
 import os
 import numpy as np
-from random import randint
+from random import random, randint
 from PIL import Image
 import options_resolver
 from bot.hud import HUD, logger
