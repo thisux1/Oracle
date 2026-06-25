@@ -390,8 +390,7 @@ async def interactive_card_hand_loop(message) -> None:
                 final_msg = f"🎯 CARD HAND CONCLUÍDO!\n\n{clean_txt}"
                 if active_card_hand_msg_id:
                     await edit_telegram_message(active_card_hand_msg_id, final_msg, None, parse_mode=None)
-                else:
-                    await send_telegram_raw(final_msg)
+                await send_telegram_raw(final_msg)
                 
                 bot_state.cardhand_in_progress = False
                 bot_state.cardhand_first_pass_done = False
