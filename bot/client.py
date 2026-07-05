@@ -808,12 +808,33 @@ class DiscordClient(discord.Client):
                     await message.channel.send(stats_msg)
                     return
                 elif cmd.startswith("say "):
-                    text_to_say = msg_clean.split("sb say ")[1]
-                    add_to_high_priority_queue(text_to_say)
-                    HUD.system(f"Comando remoto enfileirado: {text_to_say}")
-                    await message.channel.send(
-                        f"🚀 **Enviado para o canal <#{config.channelID}>:** `{text_to_say}`"
-                    )
+                    # Extract exact text to preserve case
+                    orig_content = message.content.strip()
+                    idx = orig_content.lower().find("say ")
+                    if idx != -1:
+                        text_to_say = orig_content[idx + 4:].strip()
+                    else:
+                        text_to_say = msg_clean.split("sb say ")[1]
+
+                    target_channel = self.get_channel(config.channelID)
+                    if not target_channel:
+                        try:
+                            target_channel = await self.fetch_channel(config.channelID)
+                        except Exception:
+                            target_channel = message.channel
+
+                    if target_channel:
+                        try:
+                            async with target_channel.typing():
+                                await asyncio.sleep(0.5)
+                            await target_channel.send(text_to_say)
+                            await message.channel.send(
+                                f"🚀 **Enviado para o canal <#{config.channelID}>:** `{text_to_say}`"
+                            )
+                        except Exception as e:
+                            await message.channel.send(f"⚠️ Erro ao enviar mensagem: {e}")
+                    else:
+                        await message.channel.send("⚠️ Canal não encontrado.")
                     return
 
         # (Watchdog reset moved inside status detection below to respect channel filter)
