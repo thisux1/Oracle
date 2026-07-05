@@ -75,9 +75,8 @@ def predict_item_from_captcha(img_path):
             img_path = os.path.join(options_resolver.USER_DATA_DIR, img_path)
         with Image.open(img_path) as img:
             img = img.convert('RGB')
-        # We prefer using the color model directly for all images because the color model has higher accuracy (96.28% vs 95.15%)
-        # and higher confidence (97.01% vs 95.55%) even on grayscale/silhouette images, and completely avoids misrouting.
-        preferred = 'color'
+        # Route by image type: grayscale → gray model, color → color model
+        preferred = 'gray' if is_grayscale(img) else 'color'
         model, actual_mode = _get_model_for(preferred)
 
         if model is None:
@@ -104,13 +103,12 @@ async def tentar_resolver_captcha(message):
         if not bot_state.captcha_pending:
             return
 
-        # AI Prediction — with cross-model fallback
+        # AI Prediction — route by image type, fallback if confidence < 80%
         with Image.open(img_path) as img:
             img = img.convert('RGB')
         detected_gray = is_grayscale(img)
-        # We prefer using the color model directly for all images because the color model has higher accuracy (96.28% vs 95.15%)
-        # and higher confidence (97.01% vs 95.55%) even on grayscale/silhouette images, and completely avoids misrouting.
-        preferred = 'color'
+        # Route by image type: grayscale → gray model, color → color model
+        preferred = 'gray' if detected_gray else 'color'
         model, actual_mode = _get_model_for(preferred)
 
         if model is None:
