@@ -323,8 +323,8 @@ class SidebarPane(Static):
             )
 
         if bot_state.paused:
-            if bot_state.watchdog_paused_until > time.time():
-                remaining = max(0, int(bot_state.watchdog_paused_until - time.time()))
+            if bot_state.watchdog_paused_until > time.monotonic():
+                remaining = max(0, int(bot_state.watchdog_paused_until - time.monotonic()))
                 mm, ss = remaining // 60, remaining % 60
                 return (
                     f"{self._header(t('sidebar_paused_wd'), marker, w)}\n"
@@ -342,7 +342,7 @@ class SidebarPane(Static):
             )
 
         if bot_state.is_on_coffee_break:
-            remaining = max(0, int(bot_state.coffee_break_end_time - time.time()))
+            remaining = max(0, int(bot_state.coffee_break_end_time - time.monotonic()))
             mm, ss = remaining // 60, remaining % 60
             coffee_art = COFFEE_ART if self.steam_idx % 2 == 0 else COFFEE_ART_B
 
@@ -408,8 +408,8 @@ class SidebarPane(Static):
 
         tc_str = ""
         if bot_state.time_cookie_mode:
-            if bot_state.tc_end_time > time.time():
-                tc_remaining = max(0, int(bot_state.tc_end_time - time.time()))
+            if bot_state.tc_end_time > time.monotonic():
+                tc_remaining = max(0, int(bot_state.tc_end_time - time.monotonic()))
                 tcm, tcs = tc_remaining // 60, tc_remaining % 60
                 tc_str = f"{self._trunc(' ' + t('sidebar_tc_remaining', time=f'{tcm:02d}:{tcs:02d}'), w)}\n"
             else:

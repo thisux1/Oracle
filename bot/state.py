@@ -91,6 +91,7 @@ class BotState:
         self.last_coinflip_time = 0.0
         self.jailed = False
         self.captcha_pending = False
+        self.captcha_user_override = None
         self.last_message_id = None
         self.sent_message_ids = []
         self.coinflip_step = 1
@@ -104,7 +105,7 @@ class BotState:
         self.last_epic_rpg_channel_message_time = 0
         self.quest_dialog_pending_until = 0
         self.is_on_coffee_break = False
-        self.next_break_time = time.time() + randint(3600, 7200)
+        self.next_break_time = time.monotonic() + randint(3600, 7200)
         self.coffee_break_end_time = 0
         self.last_curiosity_time = 0
         self.lootbox_cooldown_until = 0
@@ -136,8 +137,8 @@ class BotState:
         self.cardhand_channel_id = 0
         # Pet Adventure
         self.pet_adventure_return_time = 0
-        self.next_pet_summary_check = time.time() + randint(5400, 10800)
-        self.last_save_time = time.time()
+        self.next_pet_summary_check = time.monotonic() + randint(5400, 10800)
+        self.last_save_time = time.monotonic()
         # Dungeon State
         self.dungeon_waiting_confirmation = False
         self.dungeon_in_progress = False
@@ -198,7 +199,7 @@ class BotState:
     def coinflip_pending(self, value: bool) -> None:
         self._coinflip_pending = value
         if value:
-            self.last_coinflip_time = time.time()
+            self.last_coinflip_time = time.monotonic()
 
     @property
     def gambling_paused(self) -> bool:
@@ -446,6 +447,7 @@ def reset_bot_state() -> None:
     bot_state.gambling_paused = True
     bot_state.jailed = False
     bot_state.captcha_pending = False
+    bot_state.captcha_user_override = None
     bot_state.coinflip_pending = False
     bot_state.last_coinflip_time = 0.0
     bot_state.awaiting_withdraw = False
@@ -475,7 +477,7 @@ def reset_bot_state() -> None:
     bot_state.sleepet_mode = False
     bot_state.sleepet_state = None
     bot_state.last_sleepet_cmd_time = 0
-    bot_state.next_pet_summary_check = time.time() + randint(5400, 10800)
+    bot_state.next_pet_summary_check = time.monotonic() + randint(5400, 10800)
     bot_state.ruby_dragon_state = None
     bot_state.duel_in_progress = False
     bot_state.duel_step = None
@@ -503,7 +505,7 @@ def reset_bot_state() -> None:
 
 async def queue_tc_commands() -> None:
     """Enfileira comandos iniciais ao ativar TC mode para nao desperdicar cooldowns."""
-    bot_state.last_tc_use_time = time.time()
+    bot_state.last_tc_use_time = time.monotonic()
     tc_qty = bot_state.tc_quantity
     add_to_high_priority_queue(f"rpg use tc {tc_qty}")
     add_to_low_priority_queue("rpg rd", suppress_log=True)

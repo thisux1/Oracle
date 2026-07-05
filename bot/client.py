@@ -1748,6 +1748,11 @@ class DiscordClient(discord.Client):
                 # Route text messages to card hand during active game
                 bot_state.cardhand_user_choice = text
                 return
+            if bot_state.captcha_pending:
+                # Route text messages to captcha override during pending captcha
+                bot_state.captcha_user_override = text
+                logger.info(f"📲 CAPTCHA TELEGRAM OVERRIDE RECEIVED: {text}")
+                return
             if not cmd.startswith("/start"):
                 await send_telegram_notification("❓ Comando não reconhecido. Digite `/help` para ver as opções.")
 

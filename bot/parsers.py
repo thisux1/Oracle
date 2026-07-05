@@ -250,7 +250,7 @@ async def rdCheckNavi(message):
                     lootbox_type = config.lootbox_type
                     if (
                         lootbox_type != "none"
-                        and time.time() > bot_state.lootbox_cooldown_until
+                        and time.monotonic() > bot_state.lootbox_cooldown_until
                     ):
                         add_to_low_priority_queue(
                             f"rpg buy {lootbox_type}", suppress_log=True
@@ -260,7 +260,7 @@ async def rdCheckNavi(message):
                         HUD.system(
                             f"Comando de compra de lootbox ({lootbox_type}) enfileirado a partir do Navi Lite."
                         )
-                    elif time.time() < bot_state.lootbox_cooldown_until:
+                    elif time.monotonic() < bot_state.lootbox_cooldown_until:
                         HUD.system("Compra de lootbox pulada (Cooldown Financeiro).")
                 elif cmd in ["pickup", "chop", "fish", "mine"] and config.do_work:
                     add_to_low_priority_queue(f"rpg {cmd}", suppress_log=True)
@@ -392,7 +392,7 @@ async def rdCheckEpicRPG(message):
                         if not flag_value:
                             # Special case: card hand still sends notification when disabled
                             if cmd_type == "card hand":
-                                current_time = time.time()
+                                current_time = time.monotonic()
                                 if current_time - bot_state.last_cardhand_notification_time >= 3600:
                                     bot_state.last_cardhand_notification_time = current_time
                                     asyncio.create_task(send_telegram_notification(
@@ -439,7 +439,7 @@ async def rdCheckEpicRPG(message):
                         lootbox_type = config.lootbox_type
                         if (
                             lootbox_type != "none"
-                            and time.time() > bot_state.lootbox_cooldown_until
+                            and time.monotonic() > bot_state.lootbox_cooldown_until
                         ):
                             add_to_low_priority_queue(
                                 f"rpg buy {lootbox_type}", suppress_log=True
@@ -449,7 +449,7 @@ async def rdCheckEpicRPG(message):
                             HUD.system(
                                 f"Comando de compra de lootbox ({lootbox_type}) enfileirado."
                             )
-                        elif time.time() < bot_state.lootbox_cooldown_until:
+                        elif time.monotonic() < bot_state.lootbox_cooldown_until:
                             HUD.system("Compra de lootbox pulada (Cooldown Financeiro).")
 
                     elif cmd_type == "card hand":

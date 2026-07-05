@@ -16,8 +16,8 @@ ENV/
 *.png
 session_data.json
 opencode.json
-stats_history.json
-stats_totals.json
+stats*.json
+stats_*.json
 session_baseline*.json
 TUI_PLAN.md
 

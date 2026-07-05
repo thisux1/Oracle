@@ -125,6 +125,7 @@ async def tentar_resolver_captcha(message):
                 if override and override not in ["/start", "rpg", "sb"]:
                     HUD.alert(f"📲 OVERRIDE DO TELEGRAM: '{override}'")
                     await message.channel.send(override)
+                    bot_state.captcha_user_override = None
                     return
                 await asyncio.sleep(1)
             return
@@ -207,6 +208,7 @@ async def tentar_resolver_captcha(message):
             if override and override not in ["/start", "rpg", "sb"]:
                 HUD.alert(f"📲 OVERRIDE DO TELEGRAM: '{override}'")
                 topk_names = [override]
+                bot_state.captcha_user_override = None
                 break
             await asyncio.sleep(1)
 
@@ -218,13 +220,11 @@ async def tentar_resolver_captcha(message):
 
             # Check for Telegram override before every attempt
             override = await get_telegram_override(captcha_start_time)
-            if (
-                override
-                and override not in ["/start", "rpg", "sb"]
-                and override != item_name
-            ):
-                HUD.alert(f"📲 HIJACK DO TELEGRAM: Mudando para '{override}'")
-                item_name = override
+            if override and override not in ["/start", "rpg", "sb"]:
+                if override != item_name:
+                    HUD.alert(f"📲 HIJACK DO TELEGRAM: Mudando para '{override}'")
+                    item_name = override
+                bot_state.captcha_user_override = None
 
             await human_delay(3.0, 2.0)  # 3-5s hesitation
             HUD.oracle(f"Tentativa {tentativa}: Enviando '{item_name}'")
@@ -234,7 +234,7 @@ async def tentar_resolver_captcha(message):
 
             try:
                 result = await asyncio.wait_for(
-                    aguardar_resposta_epic_guard(message.channel), timeout=3.5
+                    aguardar_resposta_epic_guard(message.channel), timeout=8.0
                 )
                 if result == "freed":
                     HUD.system("🎯 Captcha Resolvido!")
@@ -250,7 +250,7 @@ async def tentar_resolver_captcha(message):
                     )
                     return False
             except asyncio.TimeoutError:
-                HUD.alert("❌ Errou. Limpando...")
+                HUD.alert("❌ Errou ou demorou para responder. Limpando...")
                 try:
                     await sent.delete()
                 except Exception:
@@ -263,6 +263,7 @@ async def tentar_resolver_captcha(message):
         logger.error(f"Error resolving captcha: {e}\n{traceback.format_exc()}")
     finally:
         bot_state.captcha_pending = False
+        bot_state.captcha_user_override = None
         bot_state.captcha_task = None
 
 
@@ -286,13 +287,34 @@ async def aguardar_resposta_epic_guard(channel):
     def check(m):
         if m.channel.id != channel.id or m.author.id != config.EPIC_RPG_ID:
             return False
-        content = m.content.lower()
-        return any(x in content for x in FREEDOM_KEYWORDS + JAIL_KEYWORDS)
+        combined = m.content.lower()
+        if m.embeds:
+            embed = m.embeds[0]
+            if embed.description:
+                combined += " " + embed.description.lower()
+            if embed.title:
+                combined += " " + embed.title.lower()
+        
+        has_keyword = any(x in combined for x in FREEDOM_KEYWORDS + JAIL_KEYWORDS)
+        if not has_keyword:
+            return False
+            
+        user_name_clean = config.user_name_lower.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+        content_clean = combined.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+        has_username = config.user_name_lower and (config.user_name_lower in combined or (user_name_clean and user_name_clean in content_clean))
+        
+        return has_username or bot_state.captcha_pending or bot_state.jailed
 
     try:
         resp = await _client.wait_for('message', check=check)
-        content = resp.content.lower()
-        if any(x in content for x in FREEDOM_KEYWORDS):
+        combined = resp.content.lower()
+        if resp.embeds:
+            embed = resp.embeds[0]
+            if embed.description:
+                combined += " " + embed.description.lower()
+            if embed.title:
+                combined += " " + embed.title.lower()
+        if any(x in combined for x in FREEDOM_KEYWORDS):
             return "freed"
         return "jailed"
     except asyncio.CancelledError:

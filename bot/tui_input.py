@@ -474,7 +474,7 @@ class CommandInput(Input):
                 for part in parts[2:]:
                     if part.endswith("m") and part[:-1].isdigit():
                         mins = int(part[:-1])
-                        bot_state.tc_end_time = time.time() + (mins * 60)
+                        bot_state.tc_end_time = time.monotonic() + (mins * 60)
                         break
                 else:
                     bot_state.tc_end_time = 0
@@ -522,7 +522,7 @@ class CommandInput(Input):
                 lowPriorityQueueSet.clear()
                 bot_state.sleepet_mode = True
                 bot_state.sleepet_state = "init"
-                bot_state.last_sleepet_cmd_time = time.time()
+                bot_state.last_sleepet_cmd_time = time.monotonic()
                 HUD.oracle("Sleepet Mode ATIVADO manualmente via TUI.")
                 self._notify_system("Sleepet Mode ativado.", severity="information")
             elif len(parts) > 1 and parts[1].lower() == "stop":

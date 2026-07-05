@@ -194,24 +194,9 @@ async def edit_telegram_message(message_id, text, buttons=None, parse_mode="HTML
 
 
 async def get_telegram_override(start_time):
-    """Polls Telegram for the latest message sent AFTER start_time."""
-    if not config.TelegramBotToken:
-        return None
-    url = f"https://api.telegram.org/bot{config.TelegramBotToken}/getUpdates"
-    try:
-        session = _get_session()
-        params = {"offset": -1, "limit": 1, "timeout": 0}
-        async with session.get(url, params=params, timeout=aiohttp.ClientTimeout(total=5)) as response:
-            data = await response.json()
-            if data.get("ok") and data.get("result"):
-                last_update = data["result"][0]
-                msg = last_update.get("message", {})
-                msg_time = msg.get("date", 0)
-                msg_text = msg.get("text", "").strip().lower()
-
-                if msg_time > start_time and (time.time() - msg_time < 60):
-                    return msg_text
-    except Exception as e:
-        logger.error(f"Error polling Telegram: {e}")
+    """Returns the user override set via the Telegram command handler."""
+    from bot.state import bot_state
+    if bot_state.captcha_user_override:
+        return bot_state.captcha_user_override.lower().strip()
     return None
 
