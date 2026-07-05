@@ -229,7 +229,7 @@ async def tentar_resolver_captcha(message):
             await human_delay(3.0, 2.0)  # 3-5s hesitation
             HUD.oracle(f"Tentativa {tentativa}: Enviando '{item_name}'")
             async with message.channel.typing():
-                await asyncio.sleep(0.2 + random.random() * 0.4)
+                await asyncio.sleep(0.2 + random() * 0.4)
             sent = await message.channel.send(item_name)
 
             try:
