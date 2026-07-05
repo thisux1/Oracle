@@ -1080,20 +1080,27 @@ class DiscordClient(discord.Client):
                 )
                 return
 
-            # Jail Feedback Detection (immediate reply, no username needed)
+            # Jail Feedback Detection (immediate reply to our command)
             # Epic RPG replies with "you are in the jail" when you try any
             # command while jailed. This catches the case where the bot
             # was already jailed before startup or the jail event was missed.
+            # Must be from Epic RPG, in our channel, and within 2 seconds of our last command.
+            time_since_last_sent = time.monotonic() - bot_state.last_sent_time
             if (
-                "you are in the jail" in combined_content
-                or "you are in the adventure jail" in combined_content
-                or "use the command `jail`" in combined_content
+                message.author.id == config.EPIC_RPG_ID
+                and message.channel.id == config.channelID
+                and time_since_last_sent <= 2.0
+                and (
+                    "you are in the jail" in combined_content
+                    or "you are in the adventure jail" in combined_content
+                    or "use the command `jail`" in combined_content
+                )
             ) and not bot_state.jailed:
                 bot_state.jailed = True
                 bot_state.paused = True
-                HUD.alert("PRISÃO DETECTADA (feedback imediato)! Automação suspensa.")
+                HUD.alert(f"PRISÃO DETECTADA (feedback imediato após {time_since_last_sent:.2f}s)! Automação suspensa.")
                 await send_telegram_notification(
-                    "🚨 BOT PRESO! Detectado via feedback do Epic RPG. "
+                    "🚨 BOT PRESO! Detectado via feedback imediato do Epic RPG. "
                     "Intervenção manual necessária."
                 )
                 # Also start jail interaction immediately
