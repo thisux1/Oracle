@@ -767,6 +767,15 @@ class DiscordClient(discord.Client):
                     except Exception as e:
                         logger.error(f"Error sending config response to Discord: {e}")
                     return
+                elif cmd == "toggle" or cmd.startswith("toggle "):
+                    from bot.handlers import handle_toggle_command
+                    cmd_text = cmd[6:].strip()
+                    response = await handle_toggle_command(cmd_text)
+                    try:
+                        await message.channel.send(response)
+                    except Exception as e:
+                        logger.error(f"Error sending toggle response to Discord: {e}")
+                    return
                 elif cmd == "export" or cmd.startswith("export "):
                     parts = cmd.split()
                     ext = "ini"  # Default
@@ -1825,6 +1834,17 @@ class DiscordClient(discord.Client):
             
             from bot.handlers import handle_config_command
             response = await handle_config_command(cmd_text)
+            await send_telegram_notification(response)
+            return
+
+        elif cmd == "/toggle" or cmd.startswith("/toggle ") or cmd == "toggle" or cmd.startswith("toggle "):
+            if cmd.startswith("/toggle"):
+                cmd_text = cmd[7:].strip()
+            else:
+                cmd_text = cmd[6:].strip()
+            
+            from bot.handlers import handle_toggle_command
+            response = await handle_toggle_command(cmd_text)
             await send_telegram_notification(response)
             return
 

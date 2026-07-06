@@ -816,24 +816,269 @@ async def _update_config_param(param_name: str, new_value: str, details: dict) -
         return f"❌ Erro ao salvar configuração: {e}"
 
 
+def find_bool_param(name: str) -> str | None:
+    norm = name.lower().replace(" ", "").replace("_", "").replace("-", "").strip()
+    aliases = {
+        "hunt": "do_hunt", "dohunt": "do_hunt",
+        "adv": "do_adv", "doadv": "do_adv", "adventure": "do_adv",
+        "farm": "do_farm", "dofarm": "do_farm",
+        "work": "do_work", "dowork": "do_work",
+        "train": "do_training", "training": "do_training", "dotraining": "do_training", "tr": "do_training",
+        "daily": "do_daily", "dodaily": "do_daily",
+        "weekly": "do_weekly", "doweekly": "do_weekly",
+        "quest": "do_quest", "doquest": "do_quest",
+        "lootbox": "do_lootbox", "dolootbox": "do_lootbox", "lb": "do_lootbox",
+        "dungeon": "do_dungeon", "dodungeon": "do_dungeon", "dg": "do_dungeon",
+        "card": "do_card_hand", "hand": "do_card_hand", "cardhand": "do_card_hand", "docardhand": "do_card_hand", "do_card_hand": "do_card_hand",
+        "duel": "do_duel", "doduel": "do_duel",
+        "pet": "do_pet", "dopet": "do_pet",
+        "ultr": "do_ultr", "doultr": "do_ultr",
+        "married": "is_married", "ismarried": "is_married", "marry": "is_married",
+        "ascended": "is_ascended", "isascended": "is_ascended", "ascend": "is_ascended",
+        "randominterval": "random_interval", "interval": "random_interval", "randomdelay": "random_interval", "delay": "random_interval",
+        "eternal": "is_eternal", "iseternal": "is_eternal",
+        "winduel": "win_duel", "win_duels": "win_duel"
+    }
+    return aliases.get(norm)
+
+
+def resolve_parameter_and_value(text: str) -> tuple[str, str, dict] | None:
+    cleaned = text.strip()
+    if "=" in cleaned:
+        parts_eq = cleaned.split("=", 1)
+        param_part = parts_eq[0].strip()
+        val_part = parts_eq[1].strip()
+    else:
+        tokens = cleaned.split()
+        if not tokens:
+            return None
+        param_part = ""
+        val_part = ""
+        
+        # Build map of param keys and aliases
+        param_map = {}
+        for cat_name, cat_data in CONFIG_CATEGORIES.items():
+            for p_name, p_details in cat_data["params"].items():
+                param_map[p_name] = (p_name, p_details)
+                norm_canonical = p_name.lower().replace("_", "").replace("-", "")
+                param_map[norm_canonical] = (p_name, p_details)
+                
+        aliases = {
+            "hunt": "do_hunt", "dohunt": "do_hunt",
+            "adv": "do_adv", "doadv": "do_adv", "adventure": "do_adv",
+            "farm": "do_farm", "dofarm": "do_farm",
+            "work": "work_command", "dowork": "do_work",
+            "train": "do_training", "training": "do_training", "dotraining": "do_training", "tr": "do_training",
+            "daily": "do_daily", "dodaily": "do_daily",
+            "weekly": "do_weekly", "doweekly": "do_weekly",
+            "quest": "do_quest", "doquest": "do_quest",
+            "lootbox": "do_lootbox", "dolootbox": "do_lootbox", "lb": "do_lootbox",
+            "dungeon": "do_dungeon", "dodungeon": "do_dungeon", "dg": "do_dungeon",
+            "card": "do_card_hand", "hand": "do_card_hand", "cardhand": "do_card_hand", "docardhand": "do_card_hand", "do_card_hand": "do_card_hand",
+            "duel": "do_duel", "doduel": "do_duel",
+            "pet": "do_pet", "dopet": "do_pet",
+            "ultr": "do_ultr", "doultr": "do_ultr",
+            "token": "user_token", "discordtoken": "user_token",
+            "channel": "channel_id",
+            "guild": "guild_id", "server": "guild_id",
+            "user": "username",
+            "admins": "admin_ids",
+            "married": "is_married",
+            "partner": "partner_name",
+            "ascended": "is_ascended",
+            "delay": "random_interval", "interval": "random_interval", "randomdelay": "random_interval",
+            "typo": "typo_chance",
+            "sleep": "sleep_at",
+            "wake": "wake_up_at", "wakeup": "wake_up_at",
+            "telegramtoken": "telegram_bot_token", "tgtoken": "telegram_bot_token",
+            "telegramchat": "telegram_chat_id", "tgchat": "telegram_chat_id",
+            "plant": "seed",
+            "workcommand": "work_command", "workcmd": "work_command", "job": "work_command",
+            "lootboxtype": "lootbox_type", "lbtype": "lootbox_type",
+            "lifeboost": "life_boost_before_adv",
+            "adventurearea": "adventure_area", "advarea": "adventure_area",
+            "currentarea": "current_area",
+            "petcommand": "pet_adventure_command", "petcmd": "pet_adventure_command",
+            "tcquantity": "tc_quantity", "tccount": "tc_quantity",
+            "tcstop": "tc_stop_on", "tcstopon": "tc_stop_on",
+            "eternal": "is_eternal",
+            "eternaltier": "eternal_tier",
+            "winduel": "win_duel", "winduels": "win_duel",
+            "partnerid": "duel_partner_id"
+        }
+        
+        for alias, canonical in aliases.items():
+            for cat_name, cat_data in CONFIG_CATEGORIES.items():
+                if canonical in cat_data["params"]:
+                    param_map[alias] = (canonical, cat_data["params"][canonical])
+                    break
+                    
+        best_match = None
+        num_tokens_matched = 0
+        for i in range(1, len(tokens) + 1):
+            test_str = "".join(tokens[:i]).lower().replace("_", "").replace("-", "")
+            if test_str in param_map:
+                best_match = param_map[test_str]
+                num_tokens_matched = i
+                
+        if best_match:
+            canonical_name, details = best_match
+            val_str = " ".join(tokens[num_tokens_matched:]).strip()
+            return canonical_name, val_str, details
+        else:
+            return None
+
+    # Handle the cases with '='
+    norm_param = param_part.lower().replace(" ", "").replace("_", "").replace("-", "")
+    for cat_name, cat_data in CONFIG_CATEGORIES.items():
+        for p_name, p_details in cat_data["params"].items():
+            norm_canonical = p_name.lower().replace("_", "").replace("-", "")
+            if norm_param == p_name.lower() or norm_param == norm_canonical:
+                return p_name, val_part, p_details
+                
+    aliases = {
+        "hunt": "do_hunt", "dohunt": "do_hunt",
+        "adv": "do_adv", "doadv": "do_adv", "adventure": "do_adv",
+        "farm": "do_farm", "dofarm": "do_farm",
+        "work": "work_command", "dowork": "do_work",
+        "train": "do_training", "training": "do_training", "dotraining": "do_training", "tr": "do_training",
+        "daily": "do_daily", "dodaily": "do_daily",
+        "weekly": "do_weekly", "doweekly": "do_weekly",
+        "quest": "do_quest", "doquest": "do_quest",
+        "lootbox": "do_lootbox", "dolootbox": "do_lootbox", "lb": "do_lootbox",
+        "dungeon": "do_dungeon", "dodungeon": "do_dungeon", "dg": "do_dungeon",
+        "card": "do_card_hand", "hand": "do_card_hand", "cardhand": "do_card_hand", "docardhand": "do_card_hand", "do_card_hand": "do_card_hand",
+        "duel": "do_duel", "doduel": "do_duel",
+        "pet": "do_pet", "dopet": "do_pet",
+        "ultr": "do_ultr", "doultr": "do_ultr",
+        "token": "user_token", "discordtoken": "user_token",
+        "channel": "channel_id",
+        "guild": "guild_id", "server": "guild_id",
+        "user": "username",
+        "admins": "admin_ids",
+        "married": "is_married",
+        "partner": "partner_name",
+        "ascended": "is_ascended",
+        "delay": "random_interval", "interval": "random_interval", "randomdelay": "random_interval",
+        "typo": "typo_chance",
+        "sleep": "sleep_at",
+        "wake": "wake_up_at", "wakeup": "wake_up_at",
+        "telegramtoken": "telegram_bot_token", "tgtoken": "telegram_bot_token",
+        "telegramchat": "telegram_chat_id", "tgchat": "telegram_chat_id",
+        "plant": "seed",
+        "workcommand": "work_command", "workcmd": "work_command", "job": "work_command",
+        "lootboxtype": "lootbox_type", "lbtype": "lootbox_type",
+        "lifeboost": "life_boost_before_adv",
+        "adventurearea": "adventure_area", "advarea": "adventure_area",
+        "currentarea": "current_area",
+        "petcommand": "pet_adventure_command", "petcmd": "pet_adventure_command",
+        "tcquantity": "tc_quantity", "tccount": "tc_quantity",
+        "tcstop": "tc_stop_on", "tcstopon": "tc_stop_on",
+        "eternal": "is_eternal",
+        "eternaltier": "eternal_tier",
+        "winduel": "win_duel", "winduels": "win_duel",
+        "partnerid": "duel_partner_id"
+    }
+    
+    if norm_param in aliases:
+        canonical = aliases[norm_param]
+        for cat_name, cat_data in CONFIG_CATEGORIES.items():
+            if canonical in cat_data["params"]:
+                return canonical, val_part, cat_data["params"][canonical]
+                
+    return None
+
+
+async def handle_toggle_command(param_arg: str) -> str:
+    cleaned = param_arg.strip()
+    if not cleaned:
+        return "⚠️ Uso: `sb toggle <parametro>` (exemplo: `sb toggle hunt` ou `sb toggle delay`)"
+        
+    param_name = find_bool_param(cleaned)
+    if not param_name:
+        return f"⚠️ Parâmetro booleano `{cleaned}` não reconhecido para toggle. Use opções como: `hunt`, `adv`, `farm`, `training`, `dungeon`, `card`, `delay`."
+        
+    config.reload_config()
+    current_val = config.userOptions.get(param_name, "false")
+    new_val = "false" if str(current_val).lower() in ("true", "yes", "1", "on") else "true"
+    
+    details = None
+    for cat_name, cat_data in CONFIG_CATEGORIES.items():
+        if param_name in cat_data["params"]:
+            details = cat_data["params"][param_name]
+            break
+            
+    if not details:
+        return f"❌ Erro interno ao buscar detalhes de `{param_name}`."
+        
+    return await _update_config_param(param_name, new_val, details)
+
+
 async def handle_config_command(command_text: str) -> str:
-    parts = command_text.strip().split()
     profile_path = config.active_profile_path or "options.ini"
     profile_name = os.path.basename(profile_path)
     
     config.reload_config()
     
-    if not parts:
+    def is_bool_true(val: str) -> bool:
+        return str(val).lower() in ("true", "yes", "1", "on")
+        
+    cleaned_input = command_text.strip()
+    if not cleaned_input:
+        def get_bool_icon(name):
+            val = config.userOptions.get(name, "false")
+            return "✅" if is_bool_true(val) else "❌"
+
+        cmd_status = f"Hunt: {get_bool_icon('do_hunt')} | Adv: {get_bool_icon('do_adv')} | Farm: {get_bool_icon('do_farm')} | Training: {get_bool_icon('do_training')} | Dungeon: {get_bool_icon('do_dungeon')}"
+        
+        uname = config.userOptions.get("username", "none")
+        guild = config.userOptions.get("guild_id", "none")
+        guild_short = guild[:6] + "..." if len(guild) > 8 else guild
+        married = get_bool_icon("is_married")
+        acc_status = f"User: `{uname}` | Server: `{guild_short}` | Married: {married}"
+        
+        rand_delay = get_bool_icon("random_interval")
+        typo = config.userOptions.get("typo_chance", "0.0")
+        try:
+            typo_pct = f"{int(float(typo)*100)}%"
+        except:
+            typo_pct = f"{typo}"
+        sleep = config.userOptions.get("sleep_at", "")
+        wake = config.userOptions.get("wake_up_at", "")
+        sleep_str = f"{sleep} às {wake}" if (sleep or wake) else "desativado"
+        safety_status = f"Delay: {rand_delay} | Typo: `{typo_pct}` | Sleep: `{sleep_str}`"
+        
+        seed = config.userOptions.get("seed", "none")
+        work = config.userOptions.get("work_command", "none")
+        lb = config.userOptions.get("lootbox_type", "none")
+        area = config.userOptions.get("adventure_area", "none")
+        items_status = f"Seed: `{seed}` | Work: `{work}` | LB: `{lb}` | Area: `{area}`"
+        
+        card = config.userOptions.get("card_hand_action", "none")
+        eternal = get_bool_icon("is_eternal")
+        tc_stop = config.userOptions.get("tc_stop_on", "none")
+        mini_status = f"Card: `{card}` | Eternal: {eternal} | TC Stop: `{tc_stop}`"
+
         lines = [
             "⚙️ **Oracle Configuração Dinâmica** ⚙️",
+            f"Perfil ativo: `{profile_name}`",
             "",
             "Escolha uma categoria abaixo para visualizar os parâmetros, valores atuais e exemplos:",
             "",
-            "• `sb config commands` - Comandos e automações ativas",
-            "• `sb config account` - Configurações de conta e Discord/Telegram IDs",
-            "• `sb config safety` - Segurança, sono e anti-detecção",
-            "• `sb config items` - Cultivo, work, lootboxes e áreas",
-            "• `sb config minigames` - Gambling, Card Hand, duelos e TC",
+            "• ⚙️ `sb config commands` - Comandos e automações ativas",
+            f"  └─ *Automações:* {cmd_status}",
+            "",
+            "• 👤 `sb config account` - Configurações de conta e Discord/Telegram IDs",
+            f"  └─ *Status:* {acc_status}",
+            "",
+            "• 🚨 `sb config safety` - Segurança, sono e anti-detecção",
+            f"  └─ *Status:* {safety_status}",
+            "",
+            "• 📦 `sb config items` - Cultivo, work, lootboxes e áreas",
+            f"  └─ *Status:* {items_status}",
+            "",
+            "• 🎮 `sb config minigames` - Minijogos, Gambling e TC",
+            f"  └─ *Status:* {mini_status}",
             "",
             "Sintaxe para alterar um parâmetro:",
             "`sb config <categoria> <parametro> <valor>` ou apenas `sb config <parametro> <valor>`",
@@ -841,55 +1086,72 @@ async def handle_config_command(command_text: str) -> str:
         ]
         return "\n".join(lines)
         
+    # Check if we should display list for a category
+    parts = cleaned_input.split()
     first_arg = parts[0].lower().strip()
     
     def get_param_line(name, details):
         raw_val = config.userOptions.get(name, "")
-        if details["type"] == "token" and raw_val:
-            raw_val = raw_val[:4] + "..." + raw_val[-4:] if len(raw_val) > 8 else "********"
-        return f"• `{name}` (Valor: `{raw_val}`): {details['desc']}\n  Sintaxe: `sb config {name} {details['syntax']}`"
+        p_type = details["type"]
+        
+        if p_type == "bool":
+            icon = "✅" if is_bool_true(raw_val) else "❌"
+            return f"{icon} `{name}`: {details['desc']}\n  └─ Sintaxe: `sb config {details['syntax']}`"
+            
+        if p_type == "token":
+            icon = "🔒"
+            val_disp = f"`{raw_val[:4]}...{raw_val[-4:]}`" if len(raw_val) > 8 else "`********`"
+        elif p_type == "time":
+            icon = "⏰"
+            val_disp = f"`{raw_val}`" if raw_val else "`Desativado`"
+        elif p_type == "int":
+            icon = "🔢"
+            val_disp = f"`{raw_val}`"
+        elif p_type == "float":
+            icon = "📊"
+            try:
+                val_disp = f"`{int(float(raw_val)*100)}%`"
+            except:
+                val_disp = f"`{raw_val}`"
+        else:
+            icon = "⚙️"
+            val_disp = f"`{raw_val}`"
+
+        return f"{icon} `{name}`: {details['desc']}\n  └─ Valor atual: {val_disp} | Sintaxe: `sb config {details['syntax']}`"
 
     if first_arg in CONFIG_CATEGORIES:
         category = first_arg
         if len(parts) == 1:
             cat_info = CONFIG_CATEGORIES[category]
             lines = [
-                f"{cat_info['title']} (Perfil: `{profile_name}`)",
-                "--------------------------------------------------",
+                f"**{cat_info['title']}**",
+                f"Perfil ativo: `{profile_name}`",
                 ""
             ]
             for p_name, p_details in cat_info["params"].items():
                 lines.append(get_param_line(p_name, p_details))
             return "\n".join(lines)
         else:
-            param_name = parts[1].lower().strip()
-            new_value = " ".join(parts[2:]).strip()
+            remaining = " ".join(parts[1:])
+            res = resolve_parameter_and_value(remaining)
+            if not res:
+                return f"⚠️ Parâmetro não reconhecido na categoria `{category}`."
+            param_name, val_str, details = res
+            return await _update_config_param(param_name, val_str, details)
             
-            cat_params = CONFIG_CATEGORIES[category]["params"]
-            if param_name not in cat_params:
-                return f"⚠️ Parâmetro `{param_name}` não encontrado na categoria `{category}`."
-            
-            return await _update_config_param(param_name, new_value, cat_params[param_name])
-            
-    target_param = None
-    target_details = None
-    for cat_name, cat_data in CONFIG_CATEGORIES.items():
-        if first_arg in cat_data["params"]:
-            target_param = first_arg
-            target_details = cat_data["params"][first_arg]
-            break
-            
-    if target_param:
-        new_value = " ".join(parts[1:]).strip()
-        if not new_value:
-            raw_val = config.userOptions.get(target_param, "")
-            if target_details["type"] == "token" and raw_val:
+    # Try resolving globally without category
+    res = resolve_parameter_and_value(cleaned_input)
+    if res:
+        param_name, val_str, details = res
+        if not val_str:
+            raw_val = config.userOptions.get(param_name, "")
+            if details["type"] == "token" and raw_val:
                 raw_val = raw_val[:4] + "..." + raw_val[-4:] if len(raw_val) > 8 else "********"
-            return f"💡 Parâmetro `{target_param}` (Valor: `{raw_val}`): {target_details['desc']}\nSintaxe para alterar: `sb config {target_param} {target_details['syntax']}`"
+            return f"💡 **{param_name}** (Valor: `{raw_val}`): {details['desc']}\nSintaxe para alterar: `sb config {details['syntax']}`"
             
-        return await _update_config_param(target_param, new_value, target_details)
+        return await _update_config_param(param_name, val_str, details)
         
-    return f"⚠️ Categoria ou parâmetro `{first_arg}` não reconhecido. Digite `sb config` para ajuda."
+    return f"⚠️ Categoria ou parâmetro `{first_arg}` não reconhecido. Digite `sb config` para ver ajuda."
 
 
 async def responseResolver(message) -> None:
