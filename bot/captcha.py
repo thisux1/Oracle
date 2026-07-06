@@ -86,7 +86,8 @@ def predict_item_from_captcha(img_path):
         x = _prepare_input(img, actual_mode)
         preds = model.predict(x, verbose=0)
         class_idx = np.argmax(preds, axis=1)[0]
-        return config.captcha_class_names[class_idx]
+        raw_name = config.captcha_class_names[class_idx]
+        return raw_name.replace('_', ' ').replace("marmaid", "mermaid")
     except Exception as e:
         logger.error(
             f"Error in predict_item_from_captcha: {e}\n{traceback.format_exc()}"
@@ -155,7 +156,7 @@ async def tentar_resolver_captcha(message):
 
         topk_idx = np.argsort(preds)[-3:][::-1]
         topk_names = [
-            config.captcha_class_names[i].replace('_', ' ') for i in topk_idx
+            config.captcha_class_names[i].replace('_', ' ').replace("marmaid", "mermaid") for i in topk_idx
         ]
         best_guess = topk_names[0]
 
@@ -249,10 +250,11 @@ async def tentar_resolver_captcha(message):
                     return False
             except asyncio.TimeoutError:
                 HUD.alert("❌ Errou ou demorou para responder. Limpando...")
-                try:
-                    await sent.delete()
-                except Exception:
-                    pass
+                # TODO: Voltar ao comportamento original de deletar a mensagem enviada após a correção do problema
+                # try:
+                #     await sent.delete()
+                # except Exception:
+                #     pass
                 await asyncio.sleep(randint(2, 4))
                 continue
 
