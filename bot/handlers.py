@@ -661,6 +661,237 @@ async def handle_sleepet_adv(message, msg) -> None:
     add_to_high_priority_queue("rpg use sleepet potion")
 
 
+# [ignoring loop detection]
+CONFIG_CATEGORIES = {
+    "commands": {
+        "title": "⚙️ Categorias de Comando (Ativar/Desativar)",
+        "params": {
+            "do_hunt": {"desc": "Ativa a caça automática (rpg hunt).", "type": "bool", "syntax": "do_hunt <true/false>"},
+            "do_adv": {"desc": "Ativa a aventura automática (rpg adv).", "type": "bool", "syntax": "do_adv <true/false>"},
+            "do_farm": {"desc": "Ativa o cultivo automático (rpg farm).", "type": "bool", "syntax": "do_farm <true/false>"},
+            "do_work": {"desc": "Ativa o trabalho automático (rpg work).", "type": "bool", "syntax": "do_work <true/false>"},
+            "do_training": {"desc": "Ativa o treino automático (rpg tr).", "type": "bool", "syntax": "do_training <true/false>"},
+            "do_daily": {"desc": "Resgata o daily automático (rpg daily).", "type": "bool", "syntax": "do_daily <true/false>"},
+            "do_weekly": {"desc": "Resgata o weekly automático (rpg weekly).", "type": "bool", "syntax": "do_weekly <true/false>"},
+            "do_quest": {"desc": "Aceita/completa quests automáticas.", "type": "bool", "syntax": "do_quest <true/false>"},
+            "do_lootbox": {"desc": "Compra/abre lootboxes automaticamente.", "type": "bool", "syntax": "do_lootbox <true/false>"},
+            "do_dungeon": {"desc": "Entra em dungeons automaticamente.", "type": "bool", "syntax": "do_dungeon <true/false>"},
+            "do_card_hand": {"desc": "Joga/alerta minigame card hand.", "type": "bool", "syntax": "do_card_hand <true/false>"},
+            "do_duel": {"desc": "Ativa automação de duelos.", "type": "bool", "syntax": "do_duel <true/false>"},
+            "do_pet": {"desc": "Ativa envios de aventuras de pet.", "type": "bool", "syntax": "do_pet <true/false>"},
+            "do_ultr": {"desc": "Ativa sequência de treino ULTR.", "type": "bool", "syntax": "do_ultr <true/false>"}
+        }
+    },
+    "account": {
+        "title": "👤 Configurações de Conta",
+        "params": {
+            "user_token": {"desc": "Token de login do Discord (ocultado por segurança).", "type": "token", "syntax": "user_token <token>"},
+            "channel_id": {"desc": "ID do canal do Discord onde o bot caça.", "type": "int", "syntax": "channel_id <id>"},
+            "guild_id": {"desc": "ID do servidor/guild do Discord.", "type": "int", "syntax": "guild_id <id>"},
+            "username": {"desc": "Nome de usuário do jogador (minúsculo).", "type": "str", "syntax": "username <name>"},
+            "admin_ids": {"desc": "IDs de administradores separados por vírgula.", "type": "str", "syntax": "admin_ids <id1,id2>"},
+            "is_married": {"desc": "Habilita verificações de casamento.", "type": "bool", "syntax": "is_married <true/false>"},
+            "partner_name": {"desc": "Nome do parceiro/casamento (minúsculo).", "type": "str", "syntax": "partner_name <name>"},
+            "is_ascended": {"desc": "Habilita comportamento de jogador ascendido.", "type": "bool", "syntax": "is_ascended <true/false>"}
+        }
+    },
+    "safety": {
+        "title": "🚨 Segurança e Anti-Detecção",
+        "params": {
+            "random_interval": {"desc": "Atraso randômico entre comandos (+1-4s).", "type": "bool", "syntax": "random_interval <true/false>"},
+            "typo_chance": {"desc": "Chance de erro de digitação proposital (0.0 a 1.0).", "type": "float", "syntax": "typo_chance <chance>"},
+            "sleep_at": {"desc": "Horário para o bot dormir (formato HH:MM).", "type": "time", "syntax": "sleep_at <HH:MM>"},
+            "wake_up_at": {"desc": "Horário para o bot acordar (formato HH:MM).", "type": "time", "syntax": "wake_up_at <HH:MM>"},
+            "telegram_bot_token": {"desc": "Token do bot do Telegram.", "type": "token", "syntax": "telegram_bot_token <token>"},
+            "telegram_chat_id": {"desc": "ID do chat de notificações do Telegram.", "type": "str", "syntax": "telegram_chat_id <chat_id>"}
+        }
+    },
+    "items": {
+        "title": "📦 Ajustes de Itens e Áreas",
+        "params": {
+            "seed": {"desc": "Semente para plantar no rpg farm.", "type": "str", "syntax": "seed <carrot/potato/etc>"},
+            "work_command": {"desc": "Comando executado no rpg work.", "type": "str", "syntax": "work_command <chainsaw/pickaxe/etc>"},
+            "lootbox_type": {"desc": "Lootbox para comprar (ex: ed lb, ep lb, none).", "type": "str", "syntax": "lootbox_type <type>"},
+            "life_boost_before_adv": {"desc": "Poção de life boost (a, b, c, none).", "type": "str", "syntax": "life_boost_before_adv <a/b/c/none>"},
+            "adventure_area": {"desc": "Área máxima de segurança para aventura.", "type": "str", "syntax": "adventure_area <area/none>"},
+            "current_area": {"desc": "Área para reentrar após teletransporte.", "type": "str", "syntax": "current_area <area/none>"},
+            "pet_adventure_command": {"desc": "Comando de pet adventure (ex: learn a).", "type": "str", "syntax": "pet_adventure_command <command>"}
+        }
+    },
+    "minigames": {
+        "title": "🎮 Minijogos e Coinflip",
+        "params": {
+            "card_hand_action": {"desc": "Ação do Card Hand (auto ou notify).", "type": "str", "syntax": "card_hand_action <auto/notify>"},
+            "tc_quantity": {"desc": "Quantidade padrão de cookies por ativação.", "type": "int", "syntax": "tc_quantity <number>"},
+            "tc_stop_on": {"desc": "Eventos que param o TC (ex: dungeon, miniboss).", "type": "str", "syntax": "tc_stop_on <events/none>"},
+            "is_eternal": {"desc": "Habilita dungeon eternal e loop de bite.", "type": "bool", "syntax": "is_eternal <true/false>"},
+            "eternal_tier": {"desc": "Nível da dungeon eternal (t1-t10).", "type": "str", "syntax": "eternal_tier <t1-t10>"},
+            "win_duel": {"desc": "Escolhe arma para ganhar duelos (se False, perde).", "type": "bool", "syntax": "win_duel <true/false>"},
+            "duel_partner_id": {"desc": "ID do parceiro de duelo cooperativo.", "type": "str", "syntax": "duel_partner_id <id>"},
+            "bankroll": {"desc": "Capital máximo para Fibonacci.", "type": "int", "syntax": "bankroll <number>"},
+            "max_losses": {"desc": "Derrotas consecutivas limite no Fibonacci.", "type": "int", "syntax": "max_losses <number>"},
+            "initial_step": {"desc": "Aposta inicial no Fibonacci.", "type": "int", "syntax": "initial_step <number>"}
+        }
+    }
+}
+
+
+async def _update_config_param(param_name: str, new_value: str, details: dict) -> str:
+    import options_resolver
+    p_type = details["type"]
+    val_to_save = new_value
+    
+    if p_type == "bool":
+        val_lower = new_value.lower()
+        if val_lower in ("true", "yes", "1", "on"):
+            val_to_save = "true"
+        elif val_lower in ("false", "no", "0", "off"):
+            val_to_save = "false"
+        else:
+            return f"❌ Erro: O valor para `{param_name}` deve ser `true` ou `false`."
+            
+    elif p_type == "int":
+        if not new_value.isdigit():
+            return f"❌ Erro: O valor para `{param_name}` deve ser um número inteiro positivo."
+            
+    elif p_type == "float":
+        try:
+            val_float = float(new_value)
+            if not (0.0 <= val_float <= 1.0):
+                return f"❌ Erro: O valor para `{param_name}` deve ser um número decimal entre 0.0 e 1.0."
+            val_to_save = str(val_float)
+        except ValueError:
+            return f"❌ Erro: O valor para `{param_name}` deve ser um número decimal (ex: 0.05)."
+            
+    elif p_type == "time":
+        if new_value.lower() in ("none", ""):
+            val_to_save = ""
+        else:
+            import re
+            if not re.match(r"^\d{2}:\d{2}$", new_value):
+                return f"❌ Erro: O valor para `{param_name}` deve estar no formato 24h `HH:MM` ou ser `none`."
+                
+    elif param_name == "lootbox_type":
+        val_lower = new_value.lower()
+        valid_lbs = {"common", "uncommon", "rare", "epic", "edgy", "common lb", "uncommon lb", "rare lb", "epic lb", "edgy lb", "none"}
+        if val_lower not in valid_lbs:
+            return f"❌ Erro: Lootbox inválida. Escolha entre: `common`, `uncommon`, `rare`, `epic`, `edgy` ou `none`."
+        norm_map = {
+            "common": "common lb", "uncommon": "uncommon lb", "rare": "rare lb",
+            "epic": "ep lb", "edgy": "ed lb", "none": "none"
+        }
+        val_to_save = norm_map.get(val_lower, val_lower)
+        
+    elif param_name == "life_boost_before_adv":
+        val_lower = new_value.lower()
+        if val_lower not in ("a", "b", "c", "none"):
+            return f"❌ Erro: O valor deve ser `a`, `b`, `c` ou `none`."
+        val_to_save = val_lower
+        
+    elif param_name == "card_hand_action":
+        val_lower = new_value.lower()
+        if val_lower not in ("auto", "legacy_auto", "notify"):
+            return f"❌ Erro: O valor deve ser `auto`, `legacy_auto` ou `notify`."
+        val_to_save = val_lower
+
+    profile_path = config.active_profile_path or "options.ini"
+    old_value = config.userOptions.get(param_name, "")
+    
+    if old_value == val_to_save:
+        return f"💡 O parâmetro `{param_name}` já está definido como `{new_value}`."
+        
+    try:
+        options_resolver.editData(param_name, val_to_save, filePath=profile_path)
+        config.reload_config()
+        
+        disp_old = old_value
+        disp_new = val_to_save
+        if p_type == "token":
+            disp_old = disp_old[:4] + "..." + disp_old[-4:] if len(disp_old) > 8 else "********"
+            disp_new = disp_new[:4] + "..." + disp_new[-4:] if len(disp_new) > 8 else "********"
+            
+        return f"✅ **Configuração atualizada com sucesso!**\nParâmetro `{param_name}` alterado de `{disp_old}` para `{disp_new}` no perfil `{os.path.basename(profile_path)}`."
+    except Exception as e:
+        logger.error(f"Erro ao salvar configuração {param_name}: {e}")
+        return f"❌ Erro ao salvar configuração: {e}"
+
+
+async def handle_config_command(command_text: str) -> str:
+    parts = command_text.strip().split()
+    profile_path = config.active_profile_path or "options.ini"
+    profile_name = os.path.basename(profile_path)
+    
+    config.reload_config()
+    
+    if not parts:
+        lines = [
+            "⚙️ **Oracle Configuração Dinâmica** ⚙️",
+            "",
+            "Escolha uma categoria abaixo para visualizar os parâmetros, valores atuais e exemplos:",
+            "",
+            "• `sb config commands` - Comandos e automações ativas",
+            "• `sb config account` - Configurações de conta e Discord/Telegram IDs",
+            "• `sb config safety` - Segurança, sono e anti-detecção",
+            "• `sb config items` - Cultivo, work, lootboxes e áreas",
+            "• `sb config minigames` - Gambling, Card Hand, duelos e TC",
+            "",
+            "Sintaxe para alterar um parâmetro:",
+            "`sb config <categoria> <parametro> <valor>` ou apenas `sb config <parametro> <valor>`",
+            "*(Exemplo: `sb config commands do_hunt false` ou `sb config do_hunt false`)*"
+        ]
+        return "\n".join(lines)
+        
+    first_arg = parts[0].lower().strip()
+    
+    def get_param_line(name, details):
+        raw_val = config.userOptions.get(name, "")
+        if details["type"] == "token" and raw_val:
+            raw_val = raw_val[:4] + "..." + raw_val[-4:] if len(raw_val) > 8 else "********"
+        return f"• `{name}` (Valor: `{raw_val}`): {details['desc']}\n  Sintaxe: `sb config {name} {details['syntax']}`"
+
+    if first_arg in CONFIG_CATEGORIES:
+        category = first_arg
+        if len(parts) == 1:
+            cat_info = CONFIG_CATEGORIES[category]
+            lines = [
+                f"{cat_info['title']} (Perfil: `{profile_name}`)",
+                "--------------------------------------------------",
+                ""
+            ]
+            for p_name, p_details in cat_info["params"].items():
+                lines.append(get_param_line(p_name, p_details))
+            return "\n".join(lines)
+        else:
+            param_name = parts[1].lower().strip()
+            new_value = " ".join(parts[2:]).strip()
+            
+            cat_params = CONFIG_CATEGORIES[category]["params"]
+            if param_name not in cat_params:
+                return f"⚠️ Parâmetro `{param_name}` não encontrado na categoria `{category}`."
+            
+            return await _update_config_param(param_name, new_value, cat_params[param_name])
+            
+    target_param = None
+    target_details = None
+    for cat_name, cat_data in CONFIG_CATEGORIES.items():
+        if first_arg in cat_data["params"]:
+            target_param = first_arg
+            target_details = cat_data["params"][first_arg]
+            break
+            
+    if target_param:
+        new_value = " ".join(parts[1:]).strip()
+        if not new_value:
+            raw_val = config.userOptions.get(target_param, "")
+            if target_details["type"] == "token" and raw_val:
+                raw_val = raw_val[:4] + "..." + raw_val[-4:] if len(raw_val) > 8 else "********"
+            return f"💡 Parâmetro `{target_param}` (Valor: `{raw_val}`): {target_details['desc']}\nSintaxe para alterar: `sb config {target_param} {target_details['syntax']}`"
+            
+        return await _update_config_param(target_param, new_value, target_details)
+        
+    return f"⚠️ Categoria ou parâmetro `{first_arg}` não reconhecido. Digite `sb config` para ajuda."
+
+
 async def responseResolver(message) -> None:
     msg = message.content.lower()
 
@@ -758,8 +989,17 @@ async def responseResolver(message) -> None:
                 "life_boost_before_adv: Buy life boost before adventure\n"
                 "sb language [pt|en] : Change bot language\n"
                 "sb export [ini|txt] : Export active config file\n"
+                "sb config           : Dynamic interactive configuration editor\n"
             )
             logger.info(help_text)
+            return
+        elif msg == "sb config" or msg.startswith("sb config "):
+            cmd_text = msg[9:].strip()
+            response = await handle_config_command(cmd_text)
+            try:
+                await message.channel.send(response)
+            except Exception as e:
+                logger.error(f"Error sending config response to Discord: {e}")
             return
         elif msg.startswith("sb language") or msg.startswith("sb lang"):
             parts = msg.split()

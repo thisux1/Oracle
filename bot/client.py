@@ -758,6 +758,15 @@ class DiscordClient(discord.Client):
                     else:
                         await message.channel.send("⚠️ Não foi possível determinar o arquivo de opções.")
                     return
+                elif cmd == "config" or cmd.startswith("config "):
+                    from bot.handlers import handle_config_command
+                    cmd_text = cmd[6:].strip()
+                    response = await handle_config_command(cmd_text)
+                    try:
+                        await message.channel.send(response)
+                    except Exception as e:
+                        logger.error(f"Error sending config response to Discord: {e}")
+                    return
                 elif cmd == "export" or cmd.startswith("export "):
                     parts = cmd.split()
                     ext = "ini"  # Default
@@ -803,6 +812,7 @@ class DiscordClient(discord.Client):
                         "• `sb <enchant/refine/transmute/transcend> stop`: Interrompe o encantamento automático\n"
                         "• `sb stats [tempo]`: Mostra progresso, loot e status da sessão. Ex: `sb stats 7d` (últimos 7 dias)\n"
                         "• `sb say [texto]`: Envia uma mensagem no canal configurado\n"
+                        "• `sb config [categoria/parametro] [valor]`: Gerenciamento interativo de configurações\n"
                         "• `sb export [ini/txt]`: Exporta o arquivo de configuração atual\n"
                         "• `sb log`: Envia o arquivo .log da sessão atual (ou os últimos 5MB dele)"
                     )
@@ -1807,6 +1817,17 @@ class DiscordClient(discord.Client):
                     HUD.system(f"📲 COMANDO TELEGRAM: Idioma alterado para {new_lang}.")
                     await send_telegram_notification(t("telegram_language_changed", lang="pt" if new_lang == "pt" else "en"))
 
+        elif cmd == "/config" or cmd.startswith("/config ") or cmd == "config" or cmd.startswith("config "):
+            if cmd.startswith("/config"):
+                cmd_text = cmd[7:].strip()
+            else:
+                cmd_text = cmd[6:].strip()
+            
+            from bot.handlers import handle_config_command
+            response = await handle_config_command(cmd_text)
+            await send_telegram_notification(response)
+            return
+
         elif cmd == "/export" or cmd == "export" or cmd.startswith("/export ") or cmd.startswith("export "):
             parts = cmd.split()
             ext = "ini"  # Default
@@ -1857,6 +1878,7 @@ class DiscordClient(discord.Client):
                 "• `enchant/refine/transmute/transcend stop` - Para Auto Enchant\n"
                 "• `toggle [hunt/adv/farm/work/cf]` - Alterna configurações em tempo real (cf = coinflip/gambling)\n"
                 "• `language [pt/en]` ou `/language [pt/en]` - Altera o idioma do bot / Change bot language\n"
+                "• `config [categoria/parametro] [valor]` ou `/config [categoria/parametro] [valor]` - Gerenciamento dinâmico de configuração\n"
                 "• `export [ini/txt]` ou `/export [ini/txt]` - Exporta o arquivo de configuração atual\n"
                 "• `help` ou `/help` - Exibe esta ajuda"
             )
