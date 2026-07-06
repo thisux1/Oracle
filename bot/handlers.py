@@ -1,3 +1,5 @@
+import os
+import discord
 import re
 import time
 import asyncio
@@ -755,6 +757,7 @@ async def responseResolver(message) -> None:
                 "tc_quantity=N        : Default cookies per use\n"
                 "life_boost_before_adv: Buy life boost before adventure\n"
                 "sb language [pt|en] : Change bot language\n"
+                "sb export [ini|txt] : Export active config file\n"
             )
             logger.info(help_text)
             return
@@ -765,6 +768,37 @@ async def responseResolver(message) -> None:
                 if new_lang in ("pt", "en"):
                     set_language(new_lang)
                     logger.info(t("telegram_language_changed", lang="pt" if new_lang == "pt" else "en"))
+            return
+        elif msg == "sb export" or msg.startswith("sb export "):
+            parts = msg.split()
+            ext = "ini"  # Default
+            if len(parts) >= 3:
+                requested_ext = parts[2].lower().strip()
+                if requested_ext in ["txt", "ini"]:
+                    ext = requested_ext
+            
+            profile_path = config.active_profile_path
+            if not profile_path or not os.path.exists(profile_path):
+                profile_path = "options.ini"
+                
+            if os.path.exists(profile_path):
+                base_name = os.path.basename(profile_path)
+                if ext == "txt":
+                    out_filename = base_name.replace(".ini", "") + ".txt"
+                else:
+                    out_filename = base_name.replace(".ini", "") + ".ini"
+                
+                try:
+                    file_to_send = discord.File(profile_path, filename=out_filename)
+                    await message.channel.send(file=file_to_send)
+                    logger.info(f"Exported configuration profile: {out_filename} to Discord channel.")
+                except Exception as e:
+                    logger.error(f"Error exporting profile to Discord: {e}")
+            else:
+                try:
+                    await message.channel.send("⚠️ Arquivo de configuração não encontrado.")
+                except Exception:
+                    pass
             return
         elif msg == "sb g pause":
             bot_state.gambling_paused = True

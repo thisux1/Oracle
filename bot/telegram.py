@@ -113,6 +113,40 @@ async def send_telegram_photo(photo_path, caption, reply_to=None):
     return None
 
 
+async def send_telegram_document(file_path, filename=None, caption=""):
+    caption = append_profile_info(caption)
+    if not config.TelegramBotToken or not config.TelegramChatID:
+        return None
+
+    url = f"https://api.telegram.org/bot{config.TelegramBotToken}/sendDocument"
+    try:
+        session = _get_session()
+        with open(file_path, 'rb') as f:
+            file_data = f.read()
+
+        data = aiohttp.FormData()
+        data.add_field('chat_id', config.TelegramChatID)
+        data.add_field('caption', caption)
+        
+        fname = filename or os.path.basename(file_path)
+        data.add_field('document', file_data, filename=fname)
+
+        async with session.post(url, data=data, timeout=aiohttp.ClientTimeout(total=15)) as response:
+            if response.status != 200:
+                text = await response.text()
+                logger.error(f"Failed to send Telegram document: {text}")
+                return None
+            else:
+                logger.info("Telegram document sent successfully.")
+                resp_data = await response.json()
+                return resp_data.get("result", {}).get("message_id")
+    except Exception as e:
+        logger.error(f"Error sending Telegram document: {e}")
+    return None
+
+
+
+
 async def edit_telegram_caption(message_id, caption):
     caption = append_profile_info(caption)
     if not config.TelegramBotToken or not config.TelegramChatID:

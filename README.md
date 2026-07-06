@@ -138,6 +138,7 @@ Os comandos listados abaixo podem ser enviados pela CLI da TUI ou pelo chat do D
 | **`sleepet stop`** | Para o loop de Sleepet Mode e restabelece a fila normal. |
 | **`<enchant/refine/transmute/transcend> <a/s> <enchant_name>`** | Auto-encanta espada (`s`) ou armadura (`a`) até atingir ou superar o nível desejado (ex: `refine s godly`). |
 | **`<enchant/refine/transmute/transcend> stop`** | Cancela o processo de encantamento automático. |
+| **`export [ini/txt]`** / **`/export [ini/txt]`** | Exporta o arquivo de configuração atual como anexo (formato `.ini` ou `.txt`). |
 | **`log`** | Envia o arquivo .log da sessão atual (ou os últimos 5MB dele). |
 | **`cfg <chave> <valor>`** | Modifica dinamicamente uma configuração em tempo real e a salva no `options.ini` (ex: `cfg do_hunt false`). |
 | **`theme`** | Abre a tela de escolha de temas visuais (TUI). |

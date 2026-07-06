@@ -1,3 +1,4 @@
+import os
 import warnings
 from typing import Optional
 warnings.simplefilter("ignore", category=RuntimeWarning)
@@ -28,7 +29,7 @@ from bot.state import (
     ENCHANT_TIERS_ORDER,
     AUTO_ENCHANT_MAX_ATTEMPTS,
 )
-from bot.telegram import send_telegram_notification, send_telegram_raw
+from bot.telegram import send_telegram_notification, send_telegram_raw, send_telegram_document
 from bot.captcha import tentar_resolver_captcha, set_client
 from bot.handlers import responseResolver
 from bot.parsers import format_session_data
@@ -1775,6 +1776,41 @@ class DiscordClient(discord.Client):
                     HUD.system(f"📲 COMANDO TELEGRAM: Idioma alterado para {new_lang}.")
                     await send_telegram_notification(t("telegram_language_changed", lang="pt" if new_lang == "pt" else "en"))
 
+        elif cmd == "/export" or cmd == "export" or cmd.startswith("/export ") or cmd.startswith("export "):
+            parts = cmd.split()
+            ext = "ini"  # Default
+            if len(parts) >= 2:
+                requested_ext = parts[1].lower().strip()
+                if requested_ext.startswith("/"):
+                    requested_ext = requested_ext.replace("/", "")
+                if requested_ext in ["txt", "ini"]:
+                    ext = requested_ext
+            
+            profile_path = config.active_profile_path
+            if not profile_path or not os.path.exists(profile_path):
+                profile_path = "options.ini"
+                
+            if os.path.exists(profile_path):
+                base_name = os.path.basename(profile_path)
+                if ext == "txt":
+                    out_filename = base_name.replace(".ini", "") + ".txt"
+                else:
+                    out_filename = base_name.replace(".ini", "") + ".ini"
+                
+                HUD.system(f"📲 COMANDO TELEGRAM: Exportando configuração ({out_filename}).")
+                sent_msg_id = await send_telegram_document(
+                    profile_path, 
+                    filename=out_filename,
+                    caption=f"📄 Configuração exportada: `{out_filename}`"
+                )
+                if sent_msg_id:
+                    logger.info("Configuration exported via Telegram.")
+                else:
+                    await send_telegram_notification("⚠️ Falha ao enviar o arquivo de configuração.")
+            else:
+                await send_telegram_notification("⚠️ Arquivo de configuração não encontrado.")
+            return
+
         if cmd == "/help" or cmd == "help":
             help_msg = (
                 "🎯 *COMANDOS DISPONÍVEIS NO TELEGRAM* 🎯\n\n"
@@ -1790,6 +1826,7 @@ class DiscordClient(discord.Client):
                 "• `enchant/refine/transmute/transcend stop` - Para Auto Enchant\n"
                 "• `toggle [hunt/adv/farm/work/cf]` - Alterna configurações em tempo real (cf = coinflip/gambling)\n"
                 "• `language [pt/en]` ou `/language [pt/en]` - Altera o idioma do bot / Change bot language\n"
+                "• `export [ini/txt]` ou `/export [ini/txt]` - Exporta o arquivo de configuração atual\n"
                 "• `help` ou `/help` - Exibe esta ajuda"
             )
 
