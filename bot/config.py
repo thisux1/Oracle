@@ -200,6 +200,13 @@ def get_opt_bool(key: str, default: bool) -> bool:
     default_str = "true" if default else "false"
     return get_opt(key, default_str).lower() == "true"
 
+def parse_tc_stop_conditions(options_dict) -> list[str]:
+    val = options_dict.get("tc_stop_on", "dungeon,miniboss")
+    val_stripped = val.strip().lower()
+    if not val_stripped or val_stripped == "none":
+        return []
+    return [x.strip() for x in val_stripped.split(",") if x.strip()]
+
 userToken = get_opt("user_token", "")
 language = get_opt("language", "pt").lower()
 
@@ -236,7 +243,7 @@ except ValueError:
     GUILD_ID = 0
 
 startTime = time.time()
-tc_stop_conditions = [x.strip().lower() for x in get_opt("tc_stop_on", "dungeon,miniboss").split(",") if x.strip()]
+tc_stop_conditions = parse_tc_stop_conditions(userOptions)
 sleep_at = get_opt("sleep_at", "")
 wake_up_at = get_opt("wake_up_at", "")
 theme_raw = get_opt("theme", "cathedral").lower()
@@ -377,7 +384,7 @@ def reload_config(profile_path: Optional[str] = None) -> None:
         GUILD_ID = int(get_opt("guild_id", "0"))
     except ValueError:
         GUILD_ID = 0
-    tc_stop_conditions = [x.strip().lower() for x in get_opt("tc_stop_on", "dungeon,miniboss").split(",") if x.strip()]
+    tc_stop_conditions = parse_tc_stop_conditions(userOptions)
     sleep_at = get_opt("sleep_at", "")
     wake_up_at = get_opt("wake_up_at", "")
     theme_raw = get_opt("theme", "cathedral").lower()
