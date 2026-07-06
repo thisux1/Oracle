@@ -295,7 +295,19 @@ export default function ConfigTab() {
           <TextField label="ID do Parceiro de Duelo" field="duel_partner_id" value={config.duel_partner_id} onChange={handleChange} placeholder="ID do Discord" />
           <ToggleSwitch label="Ascendido (Is Ascended)" checked={isTrue("is_ascended")} onChange={doToggle("is_ascended")} />
           <TextField label="IDs dos Administradores" field="admin_ids" value={config.admin_ids} onChange={handleChange} placeholder="id1,id2" />
-          <TextField label="Parar TC Em (TC Stop On)" field="tc_stop_on" value={config.tc_stop_on} onChange={handleChange} />
+          <SelectField
+            label="Parar TC Mode automaticamente em:"
+            field="tc_stop_on"
+            value={config.tc_stop_on || "none"}
+            onChange={handleChange}
+            options={[
+              { value: "none", label: "Nunca" },
+              { value: "dungeon", label: "Dungeon" },
+              { value: "card hand", label: "Card Hand" },
+              { value: "arena", label: "Arena" },
+              { value: "dungeon,miniboss", label: "Dungeon e Miniboss" },
+            ]}
+          />
         </div>
       </ConfigSection>
 
