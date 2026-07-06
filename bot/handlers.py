@@ -1023,6 +1023,13 @@ async def handle_config_command(command_text: str) -> str:
     def is_bool_true(val: str) -> bool:
         return str(val).lower() in ("true", "yes", "1", "on")
         
+    def get_val(key: str, fallback: str = "none") -> str:
+        v = config.userOptions.get(key, "")
+        if v is None:
+            return fallback
+        v_str = str(v).strip()
+        return v_str if v_str else fallback
+
     cleaned_input = command_text.strip()
     if not cleaned_input:
         def get_bool_icon(name):
@@ -1031,8 +1038,8 @@ async def handle_config_command(command_text: str) -> str:
 
         cmd_status = f"Hunt: {get_bool_icon('do_hunt')} | Adv: {get_bool_icon('do_adv')} | Farm: {get_bool_icon('do_farm')} | Training: {get_bool_icon('do_training')} | Dungeon: {get_bool_icon('do_dungeon')}"
         
-        uname = config.userOptions.get("username", "none")
-        guild = config.userOptions.get("guild_id", "none")
+        uname = get_val("username")
+        guild = get_val("guild_id")
         guild_short = guild[:6] + "..." if len(guild) > 8 else guild
         married = get_bool_icon("is_married")
         acc_status = f"User: `{uname}` | Server: `{guild_short}` | Married: {married}"
@@ -1043,20 +1050,20 @@ async def handle_config_command(command_text: str) -> str:
             typo_pct = f"{int(float(typo)*100)}%"
         except:
             typo_pct = f"{typo}"
-        sleep = config.userOptions.get("sleep_at", "")
-        wake = config.userOptions.get("wake_up_at", "")
+        sleep = get_val("sleep_at", "")
+        wake = get_val("wake_up_at", "")
         sleep_str = f"{sleep} às {wake}" if (sleep or wake) else "desativado"
         safety_status = f"Delay: {rand_delay} | Typo: `{typo_pct}` | Sleep: `{sleep_str}`"
         
-        seed = config.userOptions.get("seed", "none")
-        work = config.userOptions.get("work_command", "none")
-        lb = config.userOptions.get("lootbox_type", "none")
-        area = config.userOptions.get("adventure_area", "none")
+        seed = get_val("seed")
+        work = get_val("work_command")
+        lb = get_val("lootbox_type")
+        area = get_val("adventure_area")
         items_status = f"Seed: `{seed}` | Work: `{work}` | LB: `{lb}` | Area: `{area}`"
         
-        card = config.userOptions.get("card_hand_action", "none")
+        card = get_val("card_hand_action")
         eternal = get_bool_icon("is_eternal")
-        tc_stop = config.userOptions.get("tc_stop_on", "none")
+        tc_stop = get_val("tc_stop_on")
         mini_status = f"Card: `{card}` | Eternal: {eternal} | TC Stop: `{tc_stop}`"
 
         lines = [
@@ -1066,23 +1073,23 @@ async def handle_config_command(command_text: str) -> str:
             "Escolha uma categoria abaixo para visualizar os parâmetros, valores atuais e exemplos:",
             "",
             "• ⚙️ `sb config commands` - Comandos e automações ativas",
-            f"  └─ *Automações:* {cmd_status}",
+            f"  └─ Automações: {cmd_status}",
             "",
             "• 👤 `sb config account` - Configurações de conta e Discord/Telegram IDs",
-            f"  └─ *Status:* {acc_status}",
+            f"  └─ Status: {acc_status}",
             "",
             "• 🚨 `sb config safety` - Segurança, sono e anti-detecção",
-            f"  └─ *Status:* {safety_status}",
+            f"  └─ Status: {safety_status}",
             "",
             "• 📦 `sb config items` - Cultivo, work, lootboxes e áreas",
-            f"  └─ *Status:* {items_status}",
+            f"  └─ Status: {items_status}",
             "",
             "• 🎮 `sb config minigames` - Minijogos, Gambling e TC",
-            f"  └─ *Status:* {mini_status}",
+            f"  └─ Status: {mini_status}",
             "",
             "Sintaxe para alterar um parâmetro:",
             "`sb config <categoria> <parametro> <valor>` ou apenas `sb config <parametro> <valor>`",
-            "*(Exemplo: `sb config commands do_hunt false` ou `sb config do_hunt false`)*"
+            "💡 Exemplo: `sb config commands do_hunt false` ou `sb config do_hunt false`"
         ]
         return "\n".join(lines)
         
@@ -1091,7 +1098,7 @@ async def handle_config_command(command_text: str) -> str:
     first_arg = parts[0].lower().strip()
     
     def get_param_line(name, details):
-        raw_val = config.userOptions.get(name, "")
+        raw_val = get_val(name)
         p_type = details["type"]
         
         if p_type == "bool":
@@ -1100,10 +1107,13 @@ async def handle_config_command(command_text: str) -> str:
             
         if p_type == "token":
             icon = "🔒"
-            val_disp = f"`{raw_val[:4]}...{raw_val[-4:]}`" if len(raw_val) > 8 else "`********`"
+            if raw_val and raw_val != "none":
+                val_disp = f"`{raw_val[:4]}...{raw_val[-4:]}`"
+            else:
+                val_disp = "`********`"
         elif p_type == "time":
             icon = "⏰"
-            val_disp = f"`{raw_val}`" if raw_val else "`Desativado`"
+            val_disp = f"`{raw_val}`" if (raw_val and raw_val != "none") else "`Desativado`"
         elif p_type == "int":
             icon = "🔢"
             val_disp = f"`{raw_val}`"
