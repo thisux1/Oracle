@@ -759,6 +759,37 @@ class DiscordClient(discord.Client):
                     else:
                         await message.channel.send("⚠️ Não foi possível determinar o arquivo de opções.")
                     return
+                elif cmd == "export" or cmd.startswith("export "):
+                    parts = cmd.split()
+                    ext = "ini"  # Default
+                    if len(parts) >= 2:
+                        requested_ext = parts[1].lower().strip()
+                        if requested_ext in ["txt", "ini"]:
+                            ext = requested_ext
+                    
+                    profile_path = config.active_profile_path
+                    if not profile_path or not os.path.exists(profile_path):
+                        profile_path = "options.ini"
+                        
+                    if os.path.exists(profile_path):
+                        base_name = os.path.basename(profile_path)
+                        if ext == "txt":
+                            out_filename = base_name.replace(".ini", "") + ".txt"
+                        else:
+                            out_filename = base_name.replace(".ini", "") + ".ini"
+                        
+                        try:
+                            file_to_send = discord.File(profile_path, filename=out_filename)
+                            await message.channel.send(file=file_to_send)
+                            logger.info(f"Exported configuration profile: {out_filename} to Discord channel.")
+                        except Exception as e:
+                            logger.error(f"Error exporting profile to Discord: {e}")
+                    else:
+                        try:
+                            await message.channel.send("⚠️ Arquivo de configuração não encontrado.")
+                        except Exception:
+                            pass
+                    return
                 elif cmd in ["ajuda", "tutorial", "help"]:
 
                     msg_part1 = (
@@ -773,6 +804,7 @@ class DiscordClient(discord.Client):
                         "• `sb <enchant/refine/transmute/transcend> stop`: Interrompe o encantamento automático\n"
                         "• `sb stats [tempo]`: Mostra progresso, loot e status da sessão. Ex: `sb stats 7d` (últimos 7 dias)\n"
                         "• `sb say [texto]`: Envia uma mensagem no canal configurado\n"
+                        "• `sb export [ini/txt]`: Exporta o arquivo de configuração atual\n"
                         "• `sb log`: Envia o arquivo .log da sessão atual (ou os últimos 5MB dele)"
                     )
                     msg_part2 = (
