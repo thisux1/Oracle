@@ -760,9 +760,8 @@ class DiscordClient(discord.Client):
                     return
                 elif cmd in ["ajuda", "tutorial", "help"]:
 
-                    tutorial_msg = (
-                        "📚 **Tutorial Oracle v2**\n\n"
-                        "**Comandos de Controle:**\n"
+                    msg_part1 = (
+                        "📚 **Tutorial Oracle v2 - Comandos de Controle**\n\n"
                         "• `sb start` / `sb pause`: Inicia ou pausa a execução do bot\n"
                         "• `sb reset`: Limpa todas as filas e reseta variáveis de estado\n"
                         "• `sb tc start [Xc] [m]`: Ativa modo Time Cookie. Ex: `sb tc start 4c 60m` (4 cookies, 60 min)\n"
@@ -773,8 +772,10 @@ class DiscordClient(discord.Client):
                         "• `sb <enchant/refine/transmute/transcend> stop`: Interrompe o encantamento automático\n"
                         "• `sb stats [tempo]`: Mostra progresso, loot e status da sessão. Ex: `sb stats 7d` (últimos 7 dias)\n"
                         "• `sb say [texto]`: Envia uma mensagem no canal configurado\n"
-                        "• `sb log`: Envia o arquivo .log da sessão atual (ou os últimos 5MB dele)\n\n"
-                        "**Configurações (options.ini):**\n"
+                        "• `sb log`: Envia o arquivo .log da sessão atual (ou os últimos 5MB dele)"
+                    )
+                    msg_part2 = (
+                        "⚙️ **Tutorial Oracle v2 - Configurações (options.ini)**\n\n"
                         "• `do_hunt`, `do_adv`, `do_farm`, etc: Liga/desliga comandos individuais sem editar o código\n"
                         "• `do_ultr`: Substitui training pela sequência ULTR (rpg ultr, ou rpg ultr → double → attack se não for eternal)\n"
                         "• `is_eternal`: Habilita auto-enter em dungeon e bite loop automático no dragão eternal\n"
@@ -793,7 +794,9 @@ class DiscordClient(discord.Client):
                         "• `daysToCloseVoid`: Quantidade de dias para fechamento da área atual (void tr)"
                     )
 
-                    await message.channel.send(tutorial_msg)
+                    await message.channel.send(msg_part1)
+                    await asyncio.sleep(0.5)
+                    await message.channel.send(msg_part2)
                     return
                 elif cmd.startswith("stats"):
                     parts = cmd.split()
