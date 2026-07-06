@@ -827,8 +827,13 @@ async def _update_config_param(param_name: str, new_value: str, details: dict) -
         options_resolver.editData(param_name, val_to_save, filePath=profile_path)
         config.reload_config()
         
-        disp_old = old_value
-        disp_new = val_to_save
+        disp_old = str(old_value).strip() if old_value is not None else ""
+        disp_new = str(val_to_save).strip() if val_to_save is not None else ""
+        if not disp_old:
+            disp_old = "none"
+        if not disp_new:
+            disp_new = "none"
+            
         if p_type == "token":
             disp_old = disp_old[:4] + "..." + disp_old[-4:] if len(disp_old) > 8 else "********"
             disp_new = disp_new[:4] + "..." + disp_new[-4:] if len(disp_new) > 8 else "********"
