@@ -730,7 +730,6 @@ class DiscordClient(discord.Client):
                     return
                 elif cmd == "log":
                     import options_resolver
-                    import os
                     import io
                     options_path = getattr(options_resolver, "optionsFilePath", None)
                     if options_path:
