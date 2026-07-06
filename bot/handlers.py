@@ -736,6 +736,29 @@ CONFIG_CATEGORIES = {
 }
 
 
+TOGGLE_ALIASES = {
+    "do_hunt": "hunt",
+    "do_adv": "adv",
+    "do_farm": "farm",
+    "do_work": "work",
+    "do_training": "train",
+    "do_daily": "daily",
+    "do_weekly": "weekly",
+    "do_quest": "quest",
+    "do_lootbox": "lootbox",
+    "do_dungeon": "dungeon",
+    "do_card_hand": "card",
+    "do_duel": "duel",
+    "do_pet": "pet",
+    "do_ultr": "ultr",
+    "is_married": "married",
+    "is_ascended": "ascended",
+    "random_interval": "delay",
+    "is_eternal": "eternal",
+    "win_duel": "winduel"
+}
+
+
 async def _update_config_param(param_name: str, new_value: str, details: dict) -> str:
     import options_resolver
     p_type = details["type"]
@@ -1103,7 +1126,8 @@ async def handle_config_command(command_text: str) -> str:
         
         if p_type == "bool":
             icon = "✅" if is_bool_true(raw_val) else "❌"
-            return f"{icon} `{name}`: {details['desc']}\n  └─ Sintaxe: `sb config {details['syntax']}`"
+            toggle_name = TOGGLE_ALIASES.get(name, name)
+            return f"{icon} `{name}`: {details['desc']}\n  └─ Sintaxe: `sb toggle {toggle_name}`"
             
         if p_type == "token":
             icon = "🔒"
