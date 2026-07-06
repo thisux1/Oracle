@@ -250,11 +250,10 @@ async def tentar_resolver_captcha(message):
                     return False
             except asyncio.TimeoutError:
                 HUD.alert("❌ Errou ou demorou para responder. Limpando...")
-                # TODO: Voltar ao comportamento original de deletar a mensagem enviada após a correção do problema
-                # try:
-                #     await sent.delete()
-                # except Exception:
-                #     pass
+                try:
+                    await sent.delete()
+                except Exception:
+                    pass
                 await asyncio.sleep(randint(2, 4))
                 continue
 
