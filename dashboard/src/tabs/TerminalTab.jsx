@@ -88,7 +88,7 @@ export default function TerminalTab({ isActive }) {
       if (termRef.current) {
         termRef.current.refresh(0, termRef.current.rows - 1);
       }
-    }, 50);
+    }, 250); // Matches the 250ms tab transition animation duration
     return () => clearTimeout(timer);
   }, [isActive, fitTerminal]);
 
@@ -333,7 +333,7 @@ export default function TerminalTab({ isActive }) {
       {/* Terminal container */}
       <div
         ref={containerRef}
-        className="mt-3 flex-1 overflow-hidden rounded-xl"
+        className="mt-3 flex-1 min-h-0 overflow-hidden rounded-xl"
         style={{
           background: "var(--bg-void)",
           border: "1px solid var(--border-subtle)",
