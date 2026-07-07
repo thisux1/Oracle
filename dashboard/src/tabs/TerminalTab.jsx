@@ -111,7 +111,7 @@ export default function TerminalTab({ isActive }) {
     const term = new Terminal({
       scrollback: 5000,
       theme: TERMINAL_THEME,
-      fontFamily: 'var(--font-mono), "Cascadia Code", "Fira Code", "SF Mono", monospace',
+      fontFamily: 'var(--font-mono), "Cascadia Code", "Cascadia Mono", "Fira Code", "SF Mono", Menlo, Monaco, Consolas, monospace',
       fontSize: 13,
       lineHeight: 1.3,
       cursorBlink: true,
