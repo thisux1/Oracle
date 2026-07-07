@@ -199,6 +199,8 @@ class BotProcessManager:
         self.started_at: float | None = None
         self.last_exit_code: int | None = None
         self.last_crash_at: float | None = None
+        self.cols: int = 80
+        self.rows: int = 24
 
         self._pty_master_fd: int | None = None
         self._pty_process: Any | None = None
@@ -339,8 +341,14 @@ class BotProcessManager:
         return True
 
     async def resize(self, cols: int, rows: int) -> bool:
-        if cols <= 0 or rows <= 0 or not self._is_process_alive():
+        if cols <= 0 or rows <= 0:
             return False
+
+        self.cols = cols
+        self.rows = rows
+
+        if not self._is_process_alive():
+            return True
 
         try:
             if os.name == "nt":
@@ -390,6 +398,16 @@ class BotProcessManager:
 
     def _spawn_posix(self) -> None:
         master_fd, slave_fd = pty.openpty()
+
+        # Set the terminal window size (TIOCSWINSZ) before launching the subprocess
+        try:
+            import fcntl
+            import termios
+            import struct
+            winsize = struct.pack("HHHH", self.rows, self.cols, 0, 0)
+            fcntl.ioctl(master_fd, termios.TIOCSWINSZ, winsize)
+        except Exception as resize_err:
+            print(f"[oracle] Failed to set initial dimensions on POSIX openpty: {resize_err}")
 
         command = self._build_bot_command(self.profile)
         
@@ -450,6 +468,11 @@ class BotProcessManager:
         try:
             self._pty_process = winpty.PtyProcess.spawn(command_line, cwd=str(PROJECT_DIR))
             self.process = self._pty_process
+            # Set the initial size immediately after spawn
+            try:
+                self._pty_process.set_size(self.cols, self.rows)
+            except Exception as resize_err:
+                print(f"[oracle] Failed to set initial dimensions on Windows spawn: {resize_err}")
         except Exception as e:
             print(f"[oracle] winpty failed to spawn ({e}), falling back to plain Popen...")
             self._spawn_windows_fallback(command)

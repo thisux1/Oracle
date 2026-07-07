@@ -92,6 +92,18 @@ export default function TerminalTab({ isActive }) {
     return () => clearTimeout(timer);
   }, [isActive, fitTerminal]);
 
+  // ── Wait for web fonts to load to prevent xterm.js character measuring race condition ──
+  useEffect(() => {
+    if (!document.fonts) return;
+    document.fonts.ready.then(() => {
+      if (termRef.current) {
+        // Re-assigning option forces xterm.js to re-measure character dimensions
+        termRef.current.options.fontFamily = termRef.current.options.fontFamily;
+        fitTerminal();
+      }
+    });
+  }, [fitTerminal]);
+
   // ── Create xterm instance (once) ───────────────────────────────────────
   useEffect(() => {
     if (!hasOpened || !containerRef.current || termRef.current) return;
