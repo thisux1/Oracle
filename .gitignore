@@ -37,3 +37,8 @@ final2.asciimtn
 # Logs e arquivos dinamicos de execucao
 *.log
 
+# Claude & Graphify
+.claude/
+CLAUDE.md
+.graphify*
+graphify-out/
