@@ -279,15 +279,25 @@ class SplashScreen(ModalScreen):
         yield Static(id="splash_art")
 
     def on_mount(self) -> None:
+        self._dismissed = False
         self._splash_timer = self.set_interval(0.05, self._tick_splash)
         self._render_splash()
 
     def _tick_splash(self) -> None:
+        if getattr(self, "_dismissed", False):
+            return
         if self.progress < 100:
             self.progress += 2
         else:
-            self._splash_timer.stop()
-            self.dismiss()
+            self._dismissed = True
+            try:
+                self._splash_timer.stop()
+            except Exception:
+                pass
+            try:
+                self.dismiss()
+            except Exception:
+                pass
             return
 
         self.shine_pos += 2
@@ -488,8 +498,17 @@ class SplashScreen(ModalScreen):
         self.query_one("#splash_art", Static).update(splash)
 
     def on_key(self, event) -> None:
-        self._splash_timer.stop()
-        self.dismiss()
+        if getattr(self, "_dismissed", False):
+            return
+        self._dismissed = True
+        try:
+            self._splash_timer.stop()
+        except Exception:
+            pass
+        try:
+            self.dismiss()
+        except Exception:
+            pass
 
 
 CONFIG_SCHEMA = [
