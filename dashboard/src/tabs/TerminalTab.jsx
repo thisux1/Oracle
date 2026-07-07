@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
-import { CanvasAddon } from "@xterm/addon-canvas";
+import { WebglAddon } from "@xterm/addon-webgl";
 import "@xterm/xterm/css/xterm.css";
 import { useOracleStore } from "../stores/useOracleStore";
 import { Maximize2, Minimize2, Trash2, Play, Pause, RefreshCw, Cookie, ShieldAlert, Sparkles } from "lucide-react";
@@ -127,10 +127,10 @@ export default function TerminalTab({ isActive }) {
     term.open(containerRef.current);
 
     try {
-      const canvasAddon = new CanvasAddon();
-      term.loadAddon(canvasAddon);
+      const webglAddon = new WebglAddon();
+      term.loadAddon(webglAddon);
     } catch (e) {
-      console.warn("CanvasAddon failed to load, falling back to DOM renderer:", e);
+      console.warn("WebglAddon failed to load, falling back to DOM renderer:", e);
     }
 
     termRef.current = term;
@@ -204,7 +204,7 @@ export default function TerminalTab({ isActive }) {
   }, [connected]);
 
   // ── No manual wheel event interception ─────────────────────────────────
-  // Using Canvas renderer handles scroll naturally.
+  // Using WebGL renderer handles scroll naturally.
 
   // ── Fullscreen helpers ─────────────────────────────────────────────────
   const toggleFullscreen = () => {

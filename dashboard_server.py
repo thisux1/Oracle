@@ -466,13 +466,12 @@ class BotProcessManager:
 
         command_line = subprocess.list2cmdline(command)
         try:
-            self._pty_process = winpty.PtyProcess.spawn(command_line, cwd=str(PROJECT_DIR))
+            self._pty_process = winpty.PtyProcess.spawn(
+                command_line,
+                cwd=str(PROJECT_DIR),
+                dimensions=(self.rows, self.cols),
+            )
             self.process = self._pty_process
-            # Set the initial size immediately after spawn
-            try:
-                self._pty_process.set_size(self.cols, self.rows)
-            except Exception as resize_err:
-                print(f"[oracle] Failed to set initial dimensions on Windows spawn: {resize_err}")
         except Exception as e:
             print(f"[oracle] winpty failed to spawn ({e}), falling back to plain Popen...")
             self._spawn_windows_fallback(command)
