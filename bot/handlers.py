@@ -117,9 +117,10 @@ async def handleCoinflipResponse(message) -> bool:
 
 
 active_card_hand_msg_id = None
+_sent_cardhand_images = set()
 
 
-def clean_embed_text_for_telegram(embed_dict: dict) -> str:
+def clean_embed_text_for_telegram(embed_dict: dict, is_final: bool = False) -> str:
     desc = embed_dict.get("description", "")
     
     fields_text = ""
@@ -159,7 +160,11 @@ def clean_embed_text_for_telegram(embed_dict: dict) -> str:
     for old, new in emoji_map.items():
         full_text = full_text.replace(old, new)
 
+    # Remove Discord custom emojis (<:name:id> and <a:name:id>)
     full_text = re.sub(r'<a?:[^:]+:\d+>', '', full_text)
+    # Remove Discord sticker/emoji ID references (e.g. <🍪1025993469426143303>)
+    # These appear as <emoji + numeric_id> in reward lines
+    full_text = re.sub(r'<([^<>]*?)(\d{15,})>', r'\1', full_text)
     full_text = re.sub(r':\w+:', '', full_text)
     full_text = re.sub(r'[*_~`|]+', '', full_text)
     full_text = re.sub(r'  +', ' ', full_text)
@@ -170,6 +175,27 @@ def clean_embed_text_for_telegram(embed_dict: dict) -> str:
     full_text = full_text.replace("There are 3 turns", "3 turnos")
     full_text = full_text.replace("in each turn you can decide to change a card (with its button) or pass, and you will receive a new card", "")
     full_text = full_text.replace("goldened", "✨ Concluída")
+    
+    # For the final result message, format reward lines nicely
+    if is_final:
+        lines = full_text.split('\n')
+        cleaned_lines = []
+        for line in lines:
+            stripped = line.strip()
+            # Clean up reward lines: "+N emoji item_name" format
+            reward_match = re.match(r'^([+-]\d+)\s+(.+)$', stripped)
+            if reward_match:
+                qty = reward_match.group(1)
+                item_part = reward_match.group(2).strip()
+                # Remove any remaining long numeric IDs that leaked through
+                item_part = re.sub(r'\d{10,}', '', item_part).strip()
+                # Collapse multiple spaces
+                item_part = re.sub(r'\s{2,}', ' ', item_part)
+                cleaned_lines.append(f"  {qty} {item_part}")
+            elif stripped:
+                cleaned_lines.append(stripped)
+        full_text = '\n'.join(cleaned_lines)
+    
     full_text = re.sub(r'  +', ' ', full_text)
     full_text = re.sub(r'\n{3,}', '\n\n', full_text)
     return full_text.strip()
@@ -271,7 +297,9 @@ async def find_neon_recommendation(channel) -> tuple:
 async def check_and_forward_cardhand_image(message) -> None:
     """Downloads and forwards Card Hand images (cards2.png, cards3.png, etc.)
     to Telegram. Only acts when cardhand_in_progress is active and message is on the correct channel.
+    Uses a set-based deduplication to prevent race conditions between on_message_edit and the loop.
     """
+    global _sent_cardhand_images
     if not bot_state.cardhand_in_progress:
         return
     cardhand_chan_id = getattr(bot_state, "cardhand_channel_id", config.channelID)
@@ -280,10 +308,13 @@ async def check_and_forward_cardhand_image(message) -> None:
     if not message.attachments:
         return
 
+    # User verification: check embeds if available, but don't block on first turn
+    # where attachments may arrive before embeds are populated
     if message.embeds:
         if not check_user_matches(message.embeds[0].to_dict(), config.user_name_lower, config.userID):
             return
-    else:
+    elif message.author.id != config.EPIC_RPG_ID:
+        # If no embeds AND not from Epic RPG, skip
         return
 
     import os
@@ -294,29 +325,34 @@ async def check_and_forward_cardhand_image(message) -> None:
     for attachment in message.attachments:
         filename = attachment.filename.lower()
         if any(x in filename for x in ["cards", "card_hand"]):
-            if getattr(bot_state, 'last_sent_cardhand_image', None) != attachment.filename:
-                bot_state.last_sent_cardhand_image = attachment.filename
+            # Atomic deduplication using message_id + filename
+            dedup_key = f"{message.id}_{attachment.filename}"
+            if dedup_key in _sent_cardhand_images:
+                continue
+            _sent_cardhand_images.add(dedup_key)
                 
-                photo_name = f"cardhand_{attachment.filename}"
-                photo_path = os.path.join(options_resolver.USER_DATA_DIR, photo_name)
+            photo_name = f"cardhand_{attachment.filename}"
+            photo_path = os.path.join(options_resolver.USER_DATA_DIR, photo_name)
                 
-                try:
-                    await save_and_crop_attachment(attachment, out_path=photo_path)
+            try:
+                await save_and_crop_attachment(attachment, out_path=photo_path)
                     
-                    caption = f"🃏 Card Hand — {attachment.filename}"
-                    embed_text = ""
-                    if message.embeds:
-                        embed_text = str(message.embeds[0].to_dict()).lower()
+                caption = f"🃏 Card Hand — {attachment.filename}"
+                embed_text = ""
+                if message.embeds:
+                    embed_text = str(message.embeds[0].to_dict()).lower()
                     
-                    if "goldened" in message.content.lower() or "goldened" in embed_text:
-                        caption += " (Final)"
-                    else:
-                        caption += f" (Turno {bot_state.cardhand_turn_count})"
+                if "goldened" in message.content.lower() or "goldened" in embed_text:
+                    caption += " (Final)"
+                else:
+                    caption += f" (Turno {bot_state.cardhand_turn_count})"
                         
-                    await send_telegram_photo(photo_path, caption)
-                    HUD.cardhand(f"Imagem {attachment.filename} encaminhada ao Telegram.")
-                except Exception as img_err:
-                    logger.error(f"Erro ao baixar/enviar imagem do Card Hand: {img_err}")
+                await send_telegram_photo(photo_path, caption)
+                HUD.cardhand(f"Imagem {attachment.filename} encaminhada ao Telegram.")
+            except Exception as img_err:
+                logger.error(f"Erro ao baixar/enviar imagem do Card Hand: {img_err}")
+                # Remove from dedup set so it can be retried
+                _sent_cardhand_images.discard(dedup_key)
 
 
 async def interactive_card_hand_loop(message) -> None:
@@ -388,11 +424,13 @@ async def interactive_card_hand_loop(message) -> None:
             
             # Check if game is finished — "goldened" only appears in the final embed
             if "goldened" in embed_text:
-                clean_txt = clean_embed_text_for_telegram(embed_dict)
+                clean_txt = clean_embed_text_for_telegram(embed_dict, is_final=True)
                 final_msg = f"🎯 CARD HAND CONCLUÍDO!\n\n{clean_txt}"
                 if active_card_hand_msg_id:
                     await edit_telegram_message(active_card_hand_msg_id, final_msg, None, parse_mode=None)
-                await send_telegram_raw(final_msg)
+                else:
+                    # Only send as new message if there's no existing message to edit
+                    await send_telegram_raw(final_msg)
                 
                 bot_state.cardhand_in_progress = False
                 bot_state.cardhand_first_pass_done = False
@@ -513,6 +551,7 @@ async def interactive_card_hand_loop(message) -> None:
         bot_state.last_sent_cardhand_image = None
         bot_state.cardhand_user_choice = None
         bot_state.cardhand_message = None
+        _sent_cardhand_images.clear()
         if hasattr(bot_state, '_cardhand_updated_event') and bot_state._cardhand_updated_event is not None:
             bot_state._cardhand_updated_event.clear()
         active_card_hand_msg_id = None
