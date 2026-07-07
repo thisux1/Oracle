@@ -203,8 +203,36 @@ export default function TerminalTab({ isActive }) {
     }
   }, [connected]);
 
-  // ── No manual wheel event interception ─────────────────────────────────
-  // Using WebGL renderer handles scroll naturally.
+  // ── Manual wheel event interception for smooth programmatic scroll without artifacts ──
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e) => {
+      if (termRef.current) {
+        e.preventDefault();
+        let lines = 0;
+        if (e.deltaMode === 1) { // Line mode
+          lines = e.deltaY;
+        } else if (e.deltaMode === 2) { // Page mode
+          lines = e.deltaY * 20;
+        } else { // Pixel mode
+          lines = Math.round(e.deltaY / 40);
+          if (lines === 0 && e.deltaY !== 0) {
+            lines = Math.sign(e.deltaY);
+          }
+        }
+        if (lines !== 0) {
+          termRef.current.scrollLines(lines);
+        }
+      }
+    };
+
+    container.addEventListener("wheel", handleWheel, { passive: false });
+    return () => {
+      container.removeEventListener("wheel", handleWheel);
+    };
+  }, []);
 
   // ── Fullscreen helpers ─────────────────────────────────────────────────
   const toggleFullscreen = () => {
