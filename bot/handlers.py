@@ -298,14 +298,17 @@ async def check_and_forward_cardhand_image(message) -> None:
     """Downloads and forwards Card Hand images (cards2.png, cards3.png, etc.)
     to Telegram. Only acts when cardhand_in_progress is active and message is on the correct channel.
     Uses a set-based deduplication to prevent race conditions between on_message_edit and the loop.
+    
+    Handles two cases:
+    1. Image as message attachment (turns 2+): downloaded via discord.Attachment.save()
+    2. Image as embed.image.url (first turn): downloaded via HTTP since Epic RPG
+       sends cards2.png embedded in the embed's image field, not as an attachment.
     """
     global _sent_cardhand_images
     if not bot_state.cardhand_in_progress:
         return
     cardhand_chan_id = getattr(bot_state, "cardhand_channel_id", config.channelID)
     if message.channel.id != cardhand_chan_id and message.channel.id != config.channelID:
-        return
-    if not message.attachments:
         return
 
     # User verification: check embeds if available, but don't block on first turn
@@ -318,13 +321,18 @@ async def check_and_forward_cardhand_image(message) -> None:
         return
 
     import os
+    import aiohttp
     import options_resolver
     from bot.captcha import save_and_crop_attachment
     from bot.telegram import send_telegram_photo
 
+    found_attachment_image = False
+
+    # Case 1: Image as message attachment (normal case for turns 2+)
     for attachment in message.attachments:
         filename = attachment.filename.lower()
         if any(x in filename for x in ["cards", "card_hand"]):
+            found_attachment_image = True
             # Atomic deduplication using message_id + filename
             dedup_key = f"{message.id}_{attachment.filename}"
             if dedup_key in _sent_cardhand_images:
@@ -353,6 +361,52 @@ async def check_and_forward_cardhand_image(message) -> None:
                 logger.error(f"Erro ao baixar/enviar imagem do Card Hand: {img_err}")
                 # Remove from dedup set so it can be retried
                 _sent_cardhand_images.discard(dedup_key)
+
+    # Case 2: Image embedded in embed.image.url (first turn — cards2.png)
+    # Epic RPG sends the first turn image as the embed's image field, not as an attachment.
+    if not found_attachment_image and message.embeds:
+        for embed in message.embeds:
+            if embed.image and embed.image.url:
+                image_url = embed.image.url
+                # Extract filename from URL (e.g. ".../cards2.png?...")
+                url_path = image_url.split("?")[0]
+                url_filename = url_path.split("/")[-1].lower()
+                if any(x in url_filename for x in ["cards", "card_hand"]):
+                    dedup_key = f"{message.id}_embed_{url_filename}"
+                    if dedup_key in _sent_cardhand_images:
+                        continue
+                    _sent_cardhand_images.add(dedup_key)
+                    
+                    photo_name = f"cardhand_{url_filename}"
+                    photo_path = os.path.join(options_resolver.USER_DATA_DIR, photo_name)
+                    
+                    try:
+                        # Download via HTTP since it's an embed image URL, not a discord.Attachment
+                        async with aiohttp.ClientSession() as session:
+                            async with session.get(image_url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                                if resp.status == 200:
+                                    img_data = await resp.read()
+                                    with open(photo_path, "wb") as f:
+                                        f.write(img_data)
+                                    logger.info(f"Embed image saved to {photo_path}")
+                                else:
+                                    logger.error(f"Failed to download embed image: HTTP {resp.status}")
+                                    _sent_cardhand_images.discard(dedup_key)
+                                    continue
+                        
+                        caption = f"🃏 Card Hand — {url_filename}"
+                        embed_text = str(embed.to_dict()).lower()
+                        
+                        if "goldened" in message.content.lower() or "goldened" in embed_text:
+                            caption += " (Final)"
+                        else:
+                            caption += f" (Turno {bot_state.cardhand_turn_count})"
+                        
+                        await send_telegram_photo(photo_path, caption)
+                        HUD.cardhand(f"Imagem {url_filename} (embed) encaminhada ao Telegram.")
+                    except Exception as img_err:
+                        logger.error(f"Erro ao baixar/enviar imagem embed do Card Hand: {img_err}")
+                        _sent_cardhand_images.discard(dedup_key)
 
 
 async def interactive_card_hand_loop(message) -> None:
