@@ -758,6 +758,10 @@ class DiscordClient(discord.Client):
                     else:
                         await message.channel.send("⚠️ Não foi possível determinar o arquivo de opções.")
                     return
+                elif cmd == "status":
+                    from bot.handlers import trigger_status_command
+                    await trigger_status_command(message.channel)
+                    return
                 elif cmd == "config" or cmd.startswith("config "):
                     from bot.handlers import handle_config_command
                     cmd_text = cmd[6:].strip()
@@ -1659,30 +1663,8 @@ class DiscordClient(discord.Client):
             await send_telegram_notification(stats_msg)
             
         elif cmd == "/status" or cmd == "status":
-            status_emoji = "🟢 RUNNING"
-            if bot_state.paused:
-                status_emoji = "🔴 PAUSED"
-            elif bot_state.is_on_coffee_break:
-                status_emoji = "☕ COFFEE BREAK"
-            elif bot_state.jailed:
-                status_emoji = "💀 JAILED (PRESO)"
-            elif bot_state.sleepet_mode:
-                status_emoji = "😴 SLEEPET MODE"
-                
-            msg = (
-                f"ℹ️ *STATUS DO ORACLE*\n\n"
-                f"• Estado: {status_emoji}\n"
-                f"• Sleepet Mode: {'Ativo (' + str(bot_state.sleepet_state) + ')' if bot_state.sleepet_mode else 'Inativo'}\n"
-                f"• Time Cookie Mode: {'Ativo' if bot_state.time_cookie_mode else 'Inativo'}\n"
-                f"• Cooldowns pendentes: {len(lowPriorityQueue)} no LPQ, {len(highPriorityQueue)} no HPQ\n"
-                f"• Telegram Notifier: Ativo\n"
-                f"• Configs:\n"
-                f"  - Hunt: {'Ativo' if config.do_hunt else 'Inativo'}\n"
-                f"  - Adventure: {'Ativo' if config.do_adv else 'Inativo'}\n"
-                f"  - Farm: {'Ativo' if config.do_farm else 'Inativo'}\n"
-                f"  - Coinflip: {'Pausado' if bot_state.gambling_paused else 'Jogando'}"
-            )
-            await send_telegram_notification(msg)
+            from bot.handlers import trigger_status_command
+            await trigger_status_command()
             
         elif cmd == "/pause" or cmd == "pause":
             bot_state.paused = True
