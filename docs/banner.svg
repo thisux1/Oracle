@@ -7,7 +7,6 @@
 
     <!-- Color gradients matching the screenshot -->
     <linearGradient id="eye-grad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <!-- Animated stops for dynamic gradient cycle -->
       <stop offset="0%" stop-color="#b5179e">
         <animate attributeName="stop-color" values="#b5179e;#7209b7;#00f2ff;#00ffaa;#b5179e" dur="8s" repeatCount="indefinite" />
       </stop>
@@ -37,11 +36,11 @@
     .bg-terminal { fill: #07090e; }
     .grid-bg { fill: url(#grid); }
     
-    /* Animations */
+    /* Breathing / pulse animation for the centered eye */
     @keyframes pulse-eye {
-      0% { opacity: 0.90; transform: translate(90.0px, 30.0px) scale(4.6512) scaleY(1); }
-      50% { opacity: 1; transform: translate(90.0px, 30.0px) scale(4.6512) scaleY(0.98); }
-      100% { opacity: 0.90; transform: translate(90.0px, 30.0px) scale(4.6512) scaleY(1); }
+      0% { opacity: 0.85; }
+      50% { opacity: 1.0; }
+      100% { opacity: 0.85; }
     }
 
     @keyframes flicker {
@@ -57,7 +56,6 @@
 
     .eye-group {
       animation: pulse-eye 4s ease-in-out infinite;
-      transform-origin: center;
     }
 
     .glitch-title {
@@ -71,10 +69,12 @@
     /* Progress bar and text animation logic */
     .progress-stage {
       opacity: 0;
+      position: absolute;
     }
 
     .status-text {
       opacity: 0;
+      position: absolute;
     }
 
     @keyframes stage-0 { 0%, 10% { opacity: 1; } 10.1%, 100% { opacity: 0; } }
@@ -103,8 +103,8 @@
   <rect class="bg-terminal" width="100%" height="100%"/>
   <rect class="grid-bg" width="100%" height="100%"/>
 
-  <!-- CYBER EYE: MATHEMATICALLY CENTERED AND DYNAMICALLY PULSING -->
-  <g class="eye-group" fill="url(#eye-grad)">
+  <!-- CYBER EYE: MATHEMATICALLY CENTERED VIA ATTRIBUTE TRANSFORMS -->
+  <g class="eye-group" transform="translate(90.0, 30.0) scale(4.6512)" fill="url(#eye-grad)">
       <circle cx="88.8" cy="0.0" r="1.1" />
   <circle cx="88.8" cy="1.1" r="1.1" />
   <circle cx="88.8" cy="2.3" r="1.1" />
@@ -2708,15 +2708,15 @@
   <circle cx="87.5" cy="145.1" r="1.1" />
   </g>
 
-  <!-- GLITCH TITLE ORACLE V3 -->
+  <!-- GLITCH TITLE ORACLE V3: Left-aligned with text-anchor="start" at x="180" to ensure column consistency -->
   <g class="glitch-title">
-    <text x="500" y="365" class="term-text" font-size="15" fill="url(#glitch-grad)" xml:space="preserve" text-anchor="middle" font-weight="bold">
-      <tspan x="500" dy="0"> ██████╗ ██████╗  █████╗  ██████╗██╗     ███████╗   ██╗   ██╗██████╗ </tspan>
-      <tspan x="500" dy="18">██╔═══██╗██╔══██╗██╔══██╗██╔════╝██║     ██╔════╝   ██║   ██║╚════██╗</tspan>
-      <tspan x="500" dy="18">██║   ██║██████╔╝███████║██║     ██║     █████╗     ██║   ██║ █████╔╝</tspan>
-      <tspan x="500" dy="18">██║   ██║██╔══██╗██╔══██║██║     ██║     ██╔══╝     ╚██╗ ██╔╝ ╚═══██╗</tspan>
-      <tspan x="500" dy="18">╚██████╔╝██║  ██║██║  ██║╚██████╗███████╗███████╗    ╚████╔╝ ██████╔╝</tspan>
-      <tspan x="500" dy="18"> ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚══════╝╚══════╝     ╚═══╝  ╚═════╝</tspan>
+    <text x="180" y="365" class="term-text" font-size="15" fill="url(#glitch-grad)" xml:space="preserve" text-anchor="start" font-weight="bold">
+      <tspan x="180" dy="0"> ██████╗ ██████╗  █████╗  ██████╗██╗     ███████╗   ██╗   ██╗██████╗ </tspan>
+      <tspan x="180" dy="18">██╔═══██╗██╔══██╗██╔══██╗██╔════╝██║     ██╔════╝   ██║   ██║╚════██╗</tspan>
+      <tspan x="180" dy="18">██║   ██║██████╔╝███████║██║     ██║     █████╗     ██║   ██║ █████╔╝</tspan>
+      <tspan x="180" dy="18">██║   ██║██╔══██╗██╔══██║██║     ██║     ██╔══╝     ╚██╗ ██╔╝ ╚═══██╗</tspan>
+      <tspan x="180" dy="18">╚██████╔╝██║  ██║██║  ██║╚██████╗███████╗███████╗    ╚████╔╝ ██████╔╝</tspan>
+      <tspan x="180" dy="18"> ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚══════╝╚══════╝     ╚═══╝  ╚═════╝</tspan>
     </text>
   </g>
 
@@ -2725,41 +2725,37 @@
     Terminal de IA do Epic RPG
   </text>
 
-  <!-- PROGRESS BAR CONTAINER WITH CSS ANIMATION STAGES -->
-  <g>
-    <!-- Stage 0: 0% -->
-    <text x="500" y="565" class="term-text progress-stage p-0" font-size="15" fill="#00ffaa" xml:space="preserve" text-anchor="middle" letter-spacing="1">
-      │ <tspan fill="#3f4e5a">░░░░░░░░░░░░░░░░░░░░░░░░░░░</tspan> 0% │
-    </text>
-    <!-- Stage 1: 28% -->
-    <text x="500" y="565" class="term-text progress-stage p-1" font-size="15" fill="#00ffaa" xml:space="preserve" text-anchor="middle" letter-spacing="1">
-      │ <tspan fill="#00ffaa">███████</tspan><tspan fill="#3f4e5a">░░░░░░░░░░░░░░░░░░░░</tspan> 28% │
-    </text>
-    <!-- Stage 2: 54% -->
-    <text x="500" y="565" class="term-text progress-stage p-2" font-size="15" fill="#00ffaa" xml:space="preserve" text-anchor="middle" letter-spacing="1">
-      │ <tspan fill="#00ffaa">██████████████</tspan><tspan fill="#3f4e5a">░░░░░░░░░░░░⠂</tspan> 54% │
-    </text>
-    <!-- Stage 3: 82% -->
-    <text x="500" y="565" class="term-text progress-stage p-3" font-size="15" fill="#00ffaa" xml:space="preserve" text-anchor="middle" letter-spacing="1">
-      │ <tspan fill="#00ffaa">██████████████████████</tspan><tspan fill="#3f4e5a">░░░░░</tspan> 82% │
-    </text>
-    <!-- Stage 4: 100% -->
-    <text x="500" y="565" class="term-text progress-stage p-4" font-size="15" fill="#00ffaa" xml:space="preserve" text-anchor="middle" letter-spacing="1">
-      │ <tspan fill="#00ffaa">███████████████████████████</tspan> 100% │
-    </text>
+  <!-- VECTOR PROGRESS BAR GROUP: CENTERED AT X=295 (Group Width: 410) -->
+  <g transform="translate(295, 548)">
+    <!-- Left Border -->
+    <text x="0" y="15" class="term-text" font-size="15" fill="#3f4e5a">│</text>
+    
+    <!-- Progress Bar Track -->
+    <rect x="18" y="1" width="310" height="17" fill="#141923" rx="2" stroke="rgba(255,255,255,0.05)" stroke-width="1" />
+    
+    <!-- Progress Bar Fill (Animated width) -->
+    <rect x="20" y="3" height="13" fill="#00ffaa" rx="1">
+      <animate attributeName="width" values="0;87;167;254;306;306" dur="8s" repeatCount="indefinite" />
+    </rect>
+    
+    <!-- Right Border -->
+    <text x="338" y="15" class="term-text" font-size="15" fill="#3f4e5a">│</text>
+    
+    <!-- Percentage texts (matching progress stages) -->
+    <g transform="translate(355, 15)">
+      <text x="0" y="0" class="term-text progress-stage p-0" font-size="14" fill="#00ffaa" font-weight="bold">0%</text>
+      <text x="0" y="0" class="term-text progress-stage p-1" font-size="14" fill="#00ffaa" font-weight="bold">28%</text>
+      <text x="0" y="0" class="term-text progress-stage p-2" font-size="14" fill="#00ffaa" font-weight="bold">54%</text>
+      <text x="0" y="0" class="term-text progress-stage p-3" font-size="14" fill="#00ffaa" font-weight="bold">82%</text>
+      <text x="0" y="0" class="term-text progress-stage p-4" font-size="14" fill="#00ffaa" font-weight="bold">100%</text>
+    </g>
   </g>
 
   <!-- CONNECTING STATUS STAGES -->
-  <g>
-    <text x="500" y="605" class="term-text status-text s-0" font-size="13" fill="#ffffff" opacity="0.8" xml:space="preserve" text-anchor="middle">
-      Conectando...
-    </text>
-    <text x="500" y="605" class="term-text status-text s-1" font-size="13" fill="#ffffff" opacity="0.8" xml:space="preserve" text-anchor="middle">
-      Autenticando sessão de gateway...
-    </text>
-    <text x="500" y="605" class="term-text status-text s-2" font-size="13" fill="#00ffaa" opacity="1" xml:space="preserve" text-anchor="middle" font-weight="bold">
-      Conexão Estabelecida: ONLINE
-    </text>
+  <g transform="translate(500, 605)">
+    <text x="0" y="0" class="term-text status-text s-0" font-size="13" fill="#ffffff" opacity="0.8" xml:space="preserve" text-anchor="middle">Conectando...</text>
+    <text x="0" y="0" class="term-text status-text s-1" font-size="13" fill="#ffffff" opacity="0.8" xml:space="preserve" text-anchor="middle">Autenticando sessão de gateway...</text>
+    <text x="0" y="0" class="term-text status-text s-2" font-size="13" fill="#00ffaa" opacity="1" xml:space="preserve" text-anchor="middle" font-weight="bold">Conexão Estabelecida: ONLINE</text>
   </g>
 
   <!-- SEPARATOR -->
