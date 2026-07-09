@@ -2744,7 +2744,7 @@
 
   <!-- SUBTITLE -->
   <text x="240" y="380" class="term-text" font-size="12" fill="#ffffff" xml:space="preserve" text-anchor="middle" font-weight="bold" letter-spacing="1">
-    Terminal de IA do Epic RPG
+    Epic RPG AI Terminal
   </text>
 
   <!-- SPLIT COLUMN DASHED SEPARATOR -->
@@ -2767,11 +2767,11 @@
 
     <!-- Simulated TUI Boot logs -->
     <g transform="translate(535, 75)">
-      <text x="0" y="10" class="term-text" font-size="11" fill="#ffffff" opacity="0.7">[SYS] Inicializando Oracle V3...</text>
-      <text x="0" y="32" class="term-text log-line p-1-up" font-size="11" fill="#ffffff">[SYS] Carregando modelo TFLite CNN... ok</text>
-      <text x="0" y="54" class="term-text log-line p-2-up" font-size="11" fill="#ffffff">[SYS] Conectando ao gateway Discord...</text>
-      <text x="0" y="76" class="term-text log-line p-3-up" font-size="11" fill="#ffffff">[SYS] Autenticando sessão de gateway... ok</text>
-      <text x="0" y="98" class="term-text log-line p-4-up" font-size="11" fill="#00ffaa" font-weight="bold">[SYS] Conexão Estabelecida: ONLINE</text>
+      <text x="0" y="10" class="term-text" font-size="11" fill="#ffffff" opacity="0.7">[SYS] Initializing Oracle V3...</text>
+      <text x="0" y="32" class="term-text log-line p-1-up" font-size="11" fill="#ffffff">[SYS] Loading TFLite CNN model... ok</text>
+      <text x="0" y="54" class="term-text log-line p-2-up" font-size="11" fill="#ffffff">[SYS] Connecting to Discord gateway...</text>
+      <text x="0" y="76" class="term-text log-line p-3-up" font-size="11" fill="#ffffff">[SYS] Authenticating gateway session... ok</text>
+      <text x="0" y="98" class="term-text log-line p-4-up" font-size="11" fill="#00ffaa" font-weight="bold">[SYS] Connection established: ONLINE</text>
     </g>
 
     <!-- Vector progress bar group -->
@@ -2807,9 +2807,9 @@
 
     <!-- Connecting status messages -->
     <g transform="translate(740, 275)">
-      <text x="0" y="0" class="term-text status-text s-0" font-size="12" fill="#ffffff" opacity="0.8" xml:space="preserve" text-anchor="middle">Conectando...</text>
-      <text x="0" y="0" class="term-text status-text s-1" font-size="12" fill="#ffffff" opacity="0.8" xml:space="preserve" text-anchor="middle">Autenticando sessão de gateway...</text>
-      <text x="0" y="0" class="term-text status-text s-2" font-size="12" fill="#00ffaa" opacity="1" xml:space="preserve" text-anchor="middle" font-weight="bold">Conexão Estabelecida: ONLINE</text>
+      <text x="0" y="0" class="term-text status-text s-0" font-size="12" fill="#ffffff" opacity="0.8" xml:space="preserve" text-anchor="middle">Connecting...</text>
+      <text x="0" y="0" class="term-text status-text s-1" font-size="12" fill="#ffffff" opacity="0.8" xml:space="preserve" text-anchor="middle">Authenticating gateway session...</text>
+      <text x="0" y="0" class="term-text status-text s-2" font-size="12" fill="#00ffaa" opacity="1" xml:space="preserve" text-anchor="middle" font-weight="bold">Connection established: ONLINE</text>
     </g>
 
     <!-- Typing bar separator -->
@@ -2818,10 +2818,10 @@
     <!-- CLI Input Command typing simulation -->
     <g transform="translate(530, 368)">
       <text x="0" y="0" class="term-text" font-size="11" fill="rgba(255, 255, 255, 0.45)" text-anchor="start">
-        OracleCLI | <tspan fill="#00ffaa">digite /help para comandos...</tspan>
+        OracleCLI | <tspan fill="#00ffaa">type /help for commands...</tspan>
       </text>
       <!-- Blinking Cursor -->
-      <text x="254" y="0" class="term-text cursor-blink" font-size="11" fill="#00ffaa">█</text>
+      <text x="234" y="0" class="term-text cursor-blink" font-size="11" fill="#00ffaa">█</text>
     </g>
   </g>
 </svg>
