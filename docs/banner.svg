@@ -19,15 +19,16 @@
     </linearGradient>
 
     <!-- UserSpaceOnUse maps the gradient from start coordinate x1=180 to end coordinate x2=820 -->
+    <!-- Cycling stops synchronized with the eye colors to create a cohesive theme without flickers -->
     <linearGradient id="glitch-grad" x1="180" y1="0" x2="820" y2="0" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#00ffaa">
-        <animate attributeName="stop-color" values="#00ffaa;#00f2ff;#00ffaa" dur="4s" repeatCount="indefinite" />
+      <stop offset="0%" stop-color="#b5179e">
+        <animate attributeName="stop-color" values="#b5179e;#7209b7;#00f2ff;#00ffaa;#b5179e" dur="8s" repeatCount="indefinite" />
       </stop>
       <stop offset="50%" stop-color="#00f2ff">
-        <animate attributeName="stop-color" values="#00f2ff;#00ffaa;#00f2ff" dur="4s" repeatCount="indefinite" />
+        <animate attributeName="stop-color" values="#00f2ff;#00ffaa;#b5179e;#7209b7;#00f2ff" dur="8s" repeatCount="indefinite" />
       </stop>
-      <stop offset="100%" stop-color="#00ffaa">
-        <animate attributeName="stop-color" values="#00ffaa;#00f2ff;#00ffaa" dur="4s" repeatCount="indefinite" />
+      <stop offset="100%" stop-color="#7209b7">
+        <animate attributeName="stop-color" values="#7209b7;#b5179e;#7209b7;#00f2ff;#7209b7" dur="8s" repeatCount="indefinite" />
       </stop>
     </linearGradient>
   </defs>
@@ -44,23 +45,8 @@
       100% { opacity: 0.85; }
     }
 
-    @keyframes flicker {
-      0%, 19.999%, 22%, 62.999%, 64%, 64.999%, 70%, 100% {
-        opacity: 0.99;
-        filter: hue-rotate(0deg);
-      }
-      20%, 21.999%, 63%, 63.999%, 65%, 69.999% {
-        opacity: 0.5;
-        filter: hue-rotate(20deg) brightness(1.2);
-      }
-    }
-
     .eye-group {
       animation: pulse-eye 4s ease-in-out infinite;
-    }
-
-    .glitch-title {
-      animation: flicker 5s infinite;
     }
 
     .term-text {
@@ -2709,8 +2695,8 @@
   <circle cx="87.5" cy="145.1" r="1.1" />
   </g>
 
-  <!-- GLITCH TITLE ORACLE V3: Centered below the eye in Y axis -->
-  <g class="glitch-title">
+  <!-- TITLE ORACLE V3: Centered below the eye in Y axis, filled with synchronized multi-color gradient -->
+  <g>
     <text x="180" y="425" class="term-text" font-size="15" fill="url(#glitch-grad)" xml:space="preserve" text-anchor="start" font-weight="bold">
       <tspan x="180" dy="0"> ██████╗ ██████╗  █████╗  ██████╗██╗     ███████╗   ██╗   ██╗██████╗ </tspan>
       <tspan x="180" dy="18">██╔═══██╗██╔══██╗██╔══██╗██╔════╝██║     ██╔════╝   ██║   ██║╚════██╗</tspan>
