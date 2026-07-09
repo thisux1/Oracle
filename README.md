@@ -1,96 +1,128 @@
-<!-- BANNER ANIMADO -->
+<!-- VISUAL MASCOT BANNER -->
 <p align="center">
-  <img src="docs/banner.svg" alt="Oracle v3 Banner" width="100%" style="border-radius: 8px; border: 1px solid rgba(168, 85, 247, 0.15);" />
+  <img src="docs/banner.svg" alt="Oracle v3 Cybernetic Eye Banner" width="100%" style="border-radius: 8px; border: 1px solid rgba(168, 85, 247, 0.18);" />
 </p>
 
-<!-- TECH BADGES MINIMALISTAS -->
+· · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
+🇧🇷 **Para ler a documentação em Português, acesse: [README.pt-BR.md](docs/README.pt-BR.md).**
+· · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
+
+```text
+┌──────────────────────────────────────────────────────────────────────────┐
+│                                                                          │
+│                       ░      █▒                                          │
+│                       █░      ░      ░▒                                  │
+│                    ░░░░▒███▓█████▓▓░ █                                   │
+│                 ▒ ░▓███▓░       ░▒█▓▓▓░░                                 │
+│                 ░██▒ ░░░  ░░░        ░▓▓▓ █                              │
+│               ░▓█  ░░░█   █░░░▒▒▒▒░     ▓▓▓░                             │
+│             ▒▓▓  ░░▒▓█░    ▓███████▓▒░    ░██▒░                          │
+│             ▒▒░  ▒███▒     ▒██████████▒░   ░░░                           │
+│            █░ ░░▓████▒      ▓██████████▓▒░   ▒█                          │
+│           █    ▓█████▒      ▒██████████▓▓▒     █                         │
+│          ░  ░ ▒▒▒████▒      ▓████████████▒      ░░                       │
+│          ▒██▓ ▒██████▒      █████████████▓░   ██░                        │
+│          █▒░░░ ▒█████▒      ████████████▓░░ ░░░░▓                        │
+│            ░░  ░▒█████░    ████████████▓▒░  ░░░                          │
+│              ░▓░░▒▓████   ████████████▓▒░  ░                             │
+│               ░░▓░ ░▓███ ██████████▓▒▒  ▓░▓░                             │
+│                  ▒▒█░░░░░▒▓▒▒▒▒▒░░░  ██▒░                                │
+│                    ░░█▒▒▓██▓▓▓███▒▒█▒ ░                                  │
+│                        ░░░░░░░░░▒░                                       │
+│                                                                          │
+│   ██████╗ ██████╗  █████╗  ██████╗██╗     ███████╗   ██╗   ██╗██████╗    │
+│  ██╔═══██╗██╔══██╗██╔══██╗██╔════╝██║     ██╔════╝   ██║   ██║╚════██╗   │
+│  ██║   ██║██████╔╝███████║██║     ██║     █████╗     ██║   ██║ █████╔╝   │
+│  ██║   ██║██╔══██╗██╔══██║██║     ██║     ██╔══╝     ╚██╗ ██╔╝ ╚═══██╗   │
+│  ╚██████╔╝██║  ██║██║  ██║╚██████╗███████╗███████╗    ╚████╔╝ ██████╔╝   │
+│   ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚══════╝╚══════╝     ╚═══╝  ╚═════╝    │
+│                                                                          │
+│                 -- EPIC RPG TELEMETRY & AUTO-RESOLVER --                 │
+│                                                                          │
+│    [ SYSTEM ] DISCORD_GATEWAY = SECURE_WEBSOCKET                         │
+│    [ SYSTEM ] TFLITE_ENGINE   = ACTIVE (weights/captcha_cnn.tflite)      │
+│    [ SYSTEM ] INTERFACE_HUB   = TEXTUAL_TUI + FASTAPI_FEED               │
+│    [ SYSTEM ] HUMAN_EMULATOR  = ENABLED (typo_chance: 5%, breaks: true)   │
+│                                                                          │
+│                 [ ██████████████████░░░░░░░░░░░░░░░ 54% ]                │
+│                              Connecting...                               │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+───────────────────────────────────────── ▪ ─────────────────────────────────────────
+
+## 📡 System Diagnostics
+
+**Oracle v3** is a low-latency automation companion built specifically for Epic RPG. Optimized for deep background performance and security, it runs a local **TensorFlow Lite Convolutional Neural Network (CNN)** to solve verification guards, executes a humanized action queue, and keeps you fully updated via a terminal interface (**TUI**) and a browser-based **Control Dashboard**.
+
+───────────────────────────────────────── ▪ ─────────────────────────────────────────
+
+## 🧠 System Architecture & Pipelines
+
+The diagram below details the continuous execution pipeline, handling data transmission between Discord servers, our queue system, and local machine learning models:
+
 <p align="center">
-  <img src="https://img.shields.io/badge/Python-3.12-black?style=flat-square&logo=python&logoColor=3776AB&labelColor=050202" alt="Python" />
-  <img src="https://img.shields.io/badge/TensorFlow_Lite-2.17-black?style=flat-square&logo=tensorflow&logoColor=FF6F00&labelColor=050202" alt="TensorFlow Lite" />
-  <img src="https://img.shields.io/badge/Textual-TUI-black?style=flat-square&logo=terminal&logoColor=white&labelColor=050202" alt="Textual TUI" />
-  <img src="https://img.shields.io/badge/FastAPI-0.111-black?style=flat-square&logo=fastapi&logoColor=009688&labelColor=050202" alt="FastAPI" />
-  <img src="https://img.shields.io/badge/React-19-black?style=flat-square&logo=react&logoColor=61DAFB&labelColor=050202" alt="React" />
-  <img src="https://img.shields.io/badge/Tailwind_CSS-v4.0-black?style=flat-square&logo=tailwindcss&logoColor=38BDF8&labelColor=050202" alt="Tailwind CSS" />
-  <img src="https://img.shields.io/badge/Discord.py--self-v2.0-black?style=flat-square&logo=discord&logoColor=5865F2&labelColor=050202" alt="Discord.py-self" />
+  <img src="docs/architecture.svg" alt="Oracle v3 Data Flow Pipeline" width="100%" style="border-radius: 8px; border: 1px solid rgba(168, 85, 247, 0.1);" />
 </p>
 
----
+### Pipeline Execution Stages
+1. **Ingest/Listen**: The Discord Gateway websocket captures guild messages using `discord.py-self`.
+2. **Deconstruct/Parse**: Command parsers extract events, cooldown times, and prompt parameters.
+3. **Lock Resolution**: Captchas trigger frame cropping and local processing using OpenCV, resolving symbols via the **TensorFlow Lite** model without relying on external APIs.
+4. **Humanize**: Commands pass through a delay generator introducing random intervals, simulated typing typos, and scheduled coffee/sleep cycles.
+5. **Expose/Telemetry**: Session analytics are piped to the Textual TUI and FastAPI websockets to feed remote clients.
 
-> [!NOTE]
-> 🇧🇷 **Para ler a documentação em Português, acesse: [README.pt-BR.md](docs/README.pt-BR.md).**
+───────────────────────────────────────── ▪ ─────────────────────────────────────────
 
----
+## ⚙️ Core Technical Specifications
 
-## Overview
+```ini
+[system-specification]
+runtime      = Python 3.12 + Node.js v20
+gateway_lib  = Discord.py-self v2.0 (Stealth Client)
+ai_solver    = TensorFlow Lite 2.17 (Captcha CNN)
+console_ui   = Textual TUI + Rich styling
+web_backend  = FastAPI + Uvicorn + WebSockets
+web_frontend = React 19 + Vite + Tailwind CSS v4 + Zustand
+installers   = PyInstaller wrapper + Inno Setup package
+```
 
-**Oracle v3** is a state-of-the-art automation suite for Epic RPG. Designed with stealth, scalability, and ease of use in mind, it integrates a convolutional neural network (CNN) via TensorFlow Lite to solve captchas dynamically, features an anti-detection layer simulating human behaviors, and introduces a dual-interface system containing an interactive console **Terminal User Interface (TUI)** and a premium web-based **Control Dashboard**.
-
----
-
-## Architecture and Data Flow
-
-The diagram below illustrates the live data loop and interaction flow between the Discord websocket gateway, the automation state machine, and the local AI processing pipeline:
-
-<p align="center">
-  <img src="docs/architecture.svg" alt="Oracle v3 Data Flow Architecture" width="100%" style="border-radius: 8px; border: 1px solid rgba(168, 85, 247, 0.08);" />
-</p>
-
-### The Automation & AI Lifecycle
-
-1. **Gateway Listening**: The bot establishes a secure websocket stream with Discord using `discord.py-self` to intercept incoming messages and events.
-2. **State Monitoring**: The Parser monitors cool-downs and events. When a command is triggered, it enqueues actions into a priority queue.
-3. **AI Captcha Solving**: If the game prompts a captcha verification, the bot isolates the raw image, crops it, and runs it through a local **TensorFlow Lite** CNN model to instantly predict symbols and solve the lock.
-4. **Telemetry Broadcast**: The FastAPI server streams real-time execution statistics, logs, and state changes to the React Web Dashboard and the local Textual TUI.
-5. **Human Shield Layer**: Every outbound action is evaluated by the humanization engine, which appends randomized micro-delays, schedules organic coffee breaks, and enforces nightly sleep cycles to avoid platform flags.
-
----
-
-## Architectural Components and Technologies
-
-The following table presents the technical details and responsibilities of each module within the ecosystem:
-
-| Module / Component | Technologies Used | Role in the System |
+| Component Module | Technologies | Operational Scope |
 | :--- | :--- | :--- |
-| **Automation Core (Bot)** | Python 3.12, discord.py-self, asyncio, Textual | Manages bot states, websocket listeners, priority command enqueuing, and local configuration reloading. |
-| **AI Captcha Engine** | TensorFlow Lite, OpenCV, NumPy | Automates image preprocessing, crop segmentation, and CNN classification to solve the Epic Guard captcha. |
-| **Terminal Console (TUI)** | Textual, Rich | A console-based terminal interface featuring dynamic telemetry, mascot animations, theme selectors, and an autocomplete CLI. |
-| **Dashboard Backend** | FastAPI, Uvicorn, WebSockets | Exposes API endpoints and live websocket feeds to pipe stats, manage configurations (`options.ini`), and switch profiles. |
-| **Dashboard Frontend** | React 19, Vite, Tailwind CSS v4, Zustand | Premium glassmorphic web app that acts as a remote dashboard control room with integrated mini-terminal. |
-| **Build & Setup Wrappers** | PyInstaller, Inno Setup, Bash Shell | Bundles dependencies, generates standalone Windows `.exe` installers, and installs global terminal command shortcuts. |
+| **Automation Daemon** | Python, asyncio | Process loop management, profile configurations, enqueuing routines. |
+| **AI Captcha Core** | TF Lite, OpenCV | Captcha detection, scaling, denoising, symbol classification. |
+| **Textual Terminal** | Textual, TUI themes | High-speed telemetry, animated eye mascot, theme selector, inline shell. |
+| **Telemetry Endpoint** | FastAPI, WebSockets | Exposes dashboard parameters, writes modifications to config storage files. |
+| **Web Dashboard** | React 19, Zustand | Remote telemetry dashboard, settings tuning, custom terminal commands. |
+| **Packaging Tools** | PyInstaller, Inno | Compilation of binary packages and system installers. |
 
----
+───────────────────────────────────────── ▪ ─────────────────────────────────────────
 
-## How to Get Started
-
-### Prerequisites
-* **Python 3.11 or 3.12**
-* **Node.js v20+** (only required if building/modifying the React frontend)
-* **Discord Account Token**
-* **Telegram Bot Token** (optional, for remote notifications)
+## 🚀 Deployment Pipeline
 
 <details>
-<summary><b>1. Create and Activate Virtual Environment</b></summary>
+<summary><b>[1] Initialize Local Virtual Workspace</b></summary>
 <br />
 
-Create a virtual environment (`venv`) to isolate python packages:
+Isolate environment binaries and activate the console session:
 
 ```bash
-# Create the environment:
+# Create local virtual workspace:
 python3 -m venv venv
 
-# Activate on Linux/macOS:
+# Activate (Linux/macOS):
 source venv/bin/activate
 
-# Activate on Windows:
-venv\Scripts\activate
+# Activate (Windows CMD):
+venv\Scripts\activate.bat
 ```
 </details>
 
 <details>
-<summary><b>2. Install Dependencies</b></summary>
+<summary><b>[2] Install Dependencies</b></summary>
 <br />
 
-Install core dependencies and upgrade pip package manager:
+Download execution libraries:
 
 ```bash
 pip install --upgrade pip
@@ -99,22 +131,31 @@ pip install -r requirements.txt
 </details>
 
 <details>
-<summary><b>3. Configure Settings</b></summary>
+<summary><b>[3] Setup Profile Credentials</b></summary>
 <br />
 
-Rename the options example file to `options.ini` and edit it with your discord token, telegram notifications, and target macros:
+Initialize the system configuration parameters by copying the sample template:
 
 ```bash
 cp options_example.ini options.ini
 ```
-*Open `options.ini` in any editor to customize your credentials and cooldown variables.*
+
+Open `options.ini` and provide your parameters:
+```ini
+language=en
+user_token=your_discord_account_token_here
+channel_id=target_discord_channel_id
+guild_id=target_discord_server_id
+do_hunt=true
+do_adv=true
+```
 </details>
 
 <details>
-<summary><b>4. Run the Bot (Console TUI)</b></summary>
+<summary><b>[4] Boot Oracle Console (TUI Mode)</b></summary>
 <br />
 
-Start the classic Textual terminal user interface:
+Fire up the dynamic terminal monitor:
 
 ```bash
 python main.py
@@ -122,126 +163,137 @@ python main.py
 </details>
 
 <details>
-<summary><b>5. Run the Web Dashboard (Desktop App)</b></summary>
+<summary><b>[5] Deploy Dashboard Web Controller</b></summary>
 <br />
 
-Launch the FastAPI backend server and default controller app:
+Host the FastAPI server and browse local statistics:
 
 ```bash
 python launch_dashboard.py
 ```
-*(Note: Ensure the compiled frontend is present in `dashboard/dist`. Otherwise, compile it using the instructions below).*
+*Browse stats locally or connect remote dashboards to the listening websocket.*
 </details>
 
 <details>
-<summary><b>6. Compiling Frontend & Building Executables (Optional)</b></summary>
+<summary><b>[6] Build Standalone Executables</b></summary>
 <br />
 
-If you modify the Dashboard or want to package a standalone Windows Installer:
+Compile assets and bundle Python files into single binaries:
 
-**Compile the React frontend:**
 ```bash
+# Compile React Dashboard Bundle:
 cd dashboard
 npm install
 npm run build
 cd ..
-```
 
-**Generate Windows executable (.exe):**
-```bash
+# Build Portable EXE:
 python build_windows.py
 ```
 </details>
 
 <details>
-<summary><b>7. Setup Global CLI Shortcut (Linux/macOS - Optional)</b></summary>
+<summary><b>[7] Register Global Terminal Command (Linux)</b></summary>
 <br />
 
-Install the `oracle` command globally:
+Install local CLI wrappers:
 
 ```bash
 chmod +x setup.sh && ./setup.sh
-source ~/.bashrc  # or ~/.zshrc
+source ~/.bashrc
 ```
-After setup, run the macro from any directory by typing:
+Launch the bot from any folder at any time by typing:
 ```bash
 oracle
 ```
 </details>
 
----
+───────────────────────────────────────── ▪ ─────────────────────────────────────────
 
-## Repository Structure
+## 📂 Repository Layout
 
 ```path
 Oracle-V2/
-├── bot/              # Python automation core, handlers, and TUI implementation
-├── dashboard/        # React Web Dashboard (Vite, Tailwind, CSS)
-├── docs/             # Visual documentation resources and diagrams
-│   ├── banner.svg    # High-tech animated project banner
-│   └── architecture.svg # System architecture and data flow diagram
-├── requirements.txt  # Python package dependencies
-├── main.py           # Application entry point (TUI launcher)
-├── launch_dashboard.py # Dashboard web server launcher
-├── build_windows.py  # Automation script for building portable EXE wrappers
-└── setup.sh          # Global terminal shortcut setup script
+├── bot/                # Python daemon, handlers, TUI core
+│   ├── tui.py          # Main Textual application
+│   ├── tui_eye.py      # Core animated eye and cat mascots
+│   └── tui_splash_art.py # Giant Braille splash art definitions
+├── dashboard/          # React Web Dashboard (Vite, CSS)
+├── docs/               # Technical graphics, charts, localization
+│   ├── banner.svg      # Pure visual cybernetic eye banner
+│   └── architecture.svg # Pipeline schematic
+├── options_example.ini # Reference config template
+├── requirements.txt    # Application requirements
+├── main.py             # App entrypoint
+├── launch_dashboard.py # Backend launcher
+└── setup.sh            # Global CLI installation script
 ```
 
----
+───────────────────────────────────────── ▪ ─────────────────────────────────────────
 
-## CLI & Discord Commands
+## ⌨️ CLI & Discord Commands
 
-You can interact with Oracle using the TUI console CLI, the Dashboard mini-terminal, or directly via Discord chat (restricted to configured administrators):
+Control execution via the TUI console interface, web browser shell, or administrative Discord messages:
 
-| Command | Description |
-| :--- | :--- |
-| **`help`** / **`/help`** | Shows the keyboard shortcut modal and lists all commands. |
-| **`start`** / **`resume`** | Starts or resumes the automation loops. |
-| **`pause`** / **`stop`** | Pauses all active automation tasks. |
-| **`reset`** | Resets command queues, cooldowns, and internal states. |
-| **`stats [range]`** | Shows session telemetry metrics (e.g. `stats 1h`, `stats 30m`). |
-| **`queue`** | Displays the current size and items in priority queues. |
-| **`say <message>`** | Sends a custom message or raw command directly to the current channel. |
-| **`tc start [c] [m]`** | Triggers Time Cookie mode (e.g. `tc start 4c 60m`). |
-| **`tc stop`** | Disables Time Cookie mode. |
-| **`g start`** | Activates the Fibonacci strategy coinflip/gambling macro. |
-| **`g pause`** / **`g stop`** | Pauses or stops gambling tasks. |
-| **`sleepet start`** | Activates the Pet Adventure loops (focuses on pet rescue tasks). |
-| **`sleepet stop`** | Deactivates Pet Adventure mode and restores normal queue cycles. |
-| **`<enchant/refine/transmute/transcend> <a/s> <enchant_name>`** | Automatically rolls weapon (`s`) or armor (`a`) enchantments until matching target level (e.g. `refine s godly`). |
-| **`<enchant/refine/transmute/transcend> stop`** | Halts the active auto-enchant loop. |
-| **`export [ini/txt]`** | Exports your current `options.ini` profile as a Discord message attachment. |
-| **`log`** | Uploads the active session log file (up to 5MB). |
-| **`cfg <key> <value>`** | Modifies any configuration variable on the fly and writes to `options.ini` (e.g. `cfg do_hunt false`). |
-| **`theme`** | Opens the visual theme selector overlay in the TUI. |
-| **`exit`** / **`quit`** | Safely terminates the bot process and UI. |
+```text
+  COMMAND             DESCRIPTION
+  -----------------------------------------------------------------------------
+  help                Displays shortcuts, command palettes, and manual modals.
+  start / resume      Wakes up automation tasks and resumes queue listeners.
+  pause / stop        Suspends commands and enqueuing threads.
+  reset               Flushes state maps, command history, and queue tasks.
+  stats [range]       Returns telemetry records (e.g. stats 1h, stats 45m).
+  queue               Displays enqueued priority events.
+  say <msg>           Sends a custom string to the configured Discord channel.
+  tc start [c] [m]    Initiates Time Cookie mode (e.g. tc start 5c 60m).
+  tc stop             Aborts current Time Cookie sessions.
+  g start             Launches Fibonacci gambling sequence.
+  g pause             Stops gambling routines.
+  sleepet start       Switches execution focus to Pet Adventures.
+  sleepet stop        Disables Pet Adventure loops and resumes default queue.
+  theme               Loads the TUI styling palette overlay.
+  exit                Gracefully shuts down services and saves logs.
+```
 
-### Discord Chat Uptime & UIs Shortcuts
-If typing from the authorized main Discord account inside the bot's channel:
-* **`rpg s`**: Prints current session metrics locally in the logs.
-* **`rpg s t`**: Sends session metrics directly to the Discord channel.
-* **`rpg s p`**: Prints marriage partner metrics locally in the logs.
-* **`rpg u`**: Prints bot Uptime locally in the logs.
-* **`rpg u t`**: Sends bot Uptime directly to the Discord channel.
+### Discord Remote Integrations
+Send queries from authorized admin accounts directly within the bot's channel:
+* `rpg s`: Prints session stats directly into local logs.
+* `rpg s t`: Broadcasts stats directly into the chat channel.
+* `rpg u`: Prints daemon Uptime into local logs.
+* `rpg u t`: Broadcasts daemon Uptime into the chat channel.
 
----
+───────────────────────────────────────── ▪ ─────────────────────────────────────────
 
-## Security & Best Practices
+## 🛡️ Operational Stealth & Safety Protocols
 
-To safeguard your accounts from platform-level analysis:
-* **Organic Interaction**: Do not leave the account solely automated. Occasionally message friends, join channels, and use regular Discord client features.
-* **Residential IP Ranges**: Do not host the bot on major VPS providers (AWS, Google Cloud, DigitalOcean). Run it on residential internet connections or mobile hotspots.
-* **Coffee Breaks**: Do not disable the built-in periodic breaks (5-15 minutes of random idling every 1-2 hours).
-* **Sleep Mode**: Configure the daily Night Sleep window (`night_sleep`) to disconnect the bot during standard sleeping hours.
-* **Telegram Alerts**: Always keep Telegram alerts active so you can immediately respond to manual captcha prompts if the AI solver is unsure.
+```text
+  [!] USE A RESIDENTIAL CONNECTION: Avoid cloud providers (AWS, GCP, Hetzner).
+  [!] TYPING TYPOS ENFORCED: Emulates human writing quirks (typo_chance=0.05).
+  [!] AUTOMATED COFFEE BREAKS: Random breaks (5-15 mins) occur every 1.5h.
+  [!] SLEEP DEEP SESSIONS: Sets nightly offline periods (sleep_at, wake_up_at).
+  [!] TELEGRAM NOTIFIER: Sends captcha errors to remote handlers instantly.
+```
 
----
+───────────────────────────────────────── ▪ ─────────────────────────────────────────
 
-## Disclaimer
-Using self-bots violates the Discord Terms of Service. This software is designed for educational and research purposes only. The creators hold no responsibility for bans or suspensions incurred. Use at your own discretion.
+## ⚠️ Legal Warning
 
----
+```text
+  [WARNING]
+  This application interacts with Discord using custom client APIs. This action 
+  violates the Discord Terms of Service. This package is built exclusively for 
+  educational, scientific, and testing purposes. The authors accept no 
+  liability for account suspensions or bans. Use at your own risk.
+```
 
-## License
+───────────────────────────────────────── ▪ ─────────────────────────────────────────
 
-This project is open-source and licensed under the terms of the [MIT License](LICENSE). Feel free to inspect, study, adapt, and build upon it.
+## 📄 Licensing
+
+Licensed under the terms of the **[MIT License](LICENSE)**. Open to modification, research, and redistribution. 
+
+```text
+  Copyright (c) 2026 Oracle Devs
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files...
+```
