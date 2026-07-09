@@ -223,12 +223,24 @@ Controle o andamento das tarefas e gerencie filas utilizando o terminal da TUI, 
   exit                Encerra processos e persiste arquivos de log.
 ```
 
-### Integrações Remotas via Chat
-Envie comandos diretamente de contas administradoras autorizadas no canal do bot:
-* `rpg s`: Imprime estatísticas da sessão nos logs internos locais.
-* `rpg s t`: Envia as estatísticas de sessão formatadas diretamente no chat.
-* `rpg u`: Grava informações de uptime do daemon nos logs internos locais.
-* `rpg s p`: Imprime informações do parceiro de casamento nos logs.
+### Comandos de Controle Remoto no Discord (Prefixo `sb `)
+Contas administradoras autorizadas podem controlar o daemon enviando comandos diretamente no canal configurado:
+
+* `sb help` / `sb ajuda`: Exibe a ajuda dos comandos administrativos.
+* `sb status`: Envia uma mensagem de status em tempo real para o Discord e Telegram (com atualização automática a cada 30 segundos).
+* `sb config`: Exibe o painel de configurações dinâmicas e os valores atuais dos parâmetros.
+* `sb config <parametro> <valor>`: Altera dinamicamente um parâmetro do arquivo `options.ini` (ex: `sb config typo_chance 0.08`).
+* `sb toggle <parametro>`: Alterna rapidamente o valor de um parâmetro booleano (ex: `sb toggle hunt`, `sb toggle delay`).
+* `sb log`: Envia o arquivo de log da sessão atual diretamente no chat.
+* `sb export [txt/ini]`: Exporta o arquivo de configurações atual.
+* `sb pause` / `sb stop`: Pausa a execução dos loops de automação.
+* `sb start` / `sb resume`: Retoma o envio de comandos e loops de automação.
+* `sb reset`: Limpa as filas de comandos, timers de cooldown e reseta o estado geral do bot.
+* `sb sleepet start` / `sb sleepet stop`: Ativa ou desativa o modo sleepet (automação focada em Pet Adventures).
+* `sb tc start [c] [m]`: Inicia o modo Time Cookie (ex: `sb tc start 5c 60m`).
+* `sb tc stop` / `sb tc pause`: Encerra o modo Time Cookie ativo.
+* `sb g start` / `sb g stop` / `sb g pause`: Ativa ou desativa as rotinas do módulo de gambling/apostas Fibonacci.
+* `sb say <mensagem>`: Envia uma mensagem personalizada no canal ativo.
 
 ─────── ▪ ───────
 

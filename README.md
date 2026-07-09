@@ -223,12 +223,24 @@ Control execution via the TUI console interface, web browser shell, or administr
   exit                Gracefully shuts down services and saves logs.
 ```
 
-### Discord Remote Integrations
-Send queries from authorized admin accounts directly within the bot's channel:
-* `rpg s`: Prints session stats directly into local logs.
-* `rpg s t`: Broadcasts stats directly into the chat channel.
-* `rpg u`: Prints daemon Uptime into local logs.
-* `rpg u t`: Broadcasts daemon Uptime into the chat channel.
+### Discord Remote Admin Commands (`sb ` prefix)
+Authorized administrator accounts can send control commands directly in the bot's configured channel:
+
+* `sb help` / `sb ajuda`: Displays administrative commands help.
+* `sb status`: Sends a live-updating session status message to Discord & Telegram (auto-updates every 30s).
+* `sb config`: Displays the interactive configuration editor and current values.
+* `sb config <param> <value>`: Updates a setting dynamically (e.g. `sb config typo_chance 0.08`).
+* `sb toggle <param>`: Quickly toggles a boolean configuration option (e.g. `sb toggle hunt`, `sb toggle delay`).
+* `sb log`: Uploads the current session log file directly to the chat.
+* `sb export [txt/ini]`: Exports current configuration settings as a file.
+* `sb pause` / `sb stop`: Suspends bot automation task loops.
+* `sb start` / `sb resume`: Resumes execution loops.
+* `sb reset`: Flushes execution queues, cooldown timers, and resets state maps.
+* `sb sleepet start` / `sb sleepet stop`: Starts or stops sleepet mode (dedicated Pet Adventure automation).
+* `sb tc start [c] [m]`: Initiates Time Cookie mode (e.g., `sb tc start 5c 60m`).
+* `sb tc stop` / `sb tc pause`: Disables Time Cookie mode.
+* `sb g start` / `sb g stop` / `sb g pause`: Starts or stops the Fibonacci gambling sequence.
+* `sb say <message>`: Sends a custom string to the active channel.
 
 ─────── ▪ ───────
 
