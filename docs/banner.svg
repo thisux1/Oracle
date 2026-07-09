@@ -18,7 +18,8 @@
       </stop>
     </linearGradient>
 
-    <linearGradient id="glitch-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+    <!-- UserSpaceOnUse maps the gradient from start coordinate x1=180 to end coordinate x2=820 -->
+    <linearGradient id="glitch-grad" x1="180" y1="0" x2="820" y2="0" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#00ffaa">
         <animate attributeName="stop-color" values="#00ffaa;#00f2ff;#00ffaa" dur="4s" repeatCount="indefinite" />
       </stop>
