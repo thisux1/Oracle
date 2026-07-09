@@ -81,6 +81,33 @@ async def send_telegram_raw(text, reply_to=None):
     return None
 
 
+async def send_telegram_html(text):
+    """Send an HTML-formatted message to Telegram. Returns the message_id."""
+    text = append_profile_info(text)
+    if not config.TelegramBotToken or not config.TelegramChatID:
+        return None
+
+    url = f"https://api.telegram.org/bot{config.TelegramBotToken}/sendMessage"
+    payload = {
+        "chat_id": config.TelegramChatID,
+        "text": text,
+        "parse_mode": "HTML",
+    }
+    try:
+        session = _get_session()
+        async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=10)) as response:
+            if response.status != 200:
+                resp_text = await response.text()
+                logger.error(f"Failed to send Telegram HTML message: {resp_text}")
+                return None
+            else:
+                data = await response.json()
+                return data.get("result", {}).get("message_id")
+    except Exception as e:
+        logger.error(f"Error sending Telegram HTML message: {e}")
+    return None
+
+
 async def send_telegram_photo(photo_path, caption, reply_to=None):
     caption = append_profile_info(caption)
     if not config.TelegramBotToken or not config.TelegramChatID:

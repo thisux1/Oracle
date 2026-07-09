@@ -1569,11 +1569,8 @@ class DiscordClient(discord.Client):
                 HUD.cardhand(f"Neon Bot Helper atualizou análise do Card Hand.")
                 logger.info(f"Neon edit detected (rec: {rec})...")
 
-                needs_immediate_send = (
-                    config.card_hand_action == "legacy_auto"
-                    or not bot_state.cardhand_in_progress
-                )
-                if config.card_hand_action in ["auto", "legacy_auto"] and needs_immediate_send:
+                needs_immediate_send = not bot_state.cardhand_in_progress
+                if config.card_hand_action == "auto" and needs_immediate_send:
                     try:
                         await send_telegram_raw(formatted)
                     except Exception as e:

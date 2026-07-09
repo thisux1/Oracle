@@ -10,6 +10,7 @@ import bot.config as config
 from bot.state import (
     bot_state,
     sessionData,
+    initialSessionData,
     coinflip_strategy,
     runtimeErrors,
     add_to_low_priority_queue,
@@ -25,6 +26,7 @@ from bot.parsers import (
 from bot.telegram import (
     send_telegram_notification,
     send_telegram_raw,
+    send_telegram_html,
     make_channel_link,
     send_telegram_keyboard,
     edit_telegram_message,
@@ -49,6 +51,167 @@ MINIGAME_PAUSE_DURATION = 16
 PET_TIMER_BUFFER_SECONDS = 30
 PET_COMMAND_RECENCY_WINDOW = 6.0
 NEON_HISTORY_LIMIT = 5
+STATUS_UPDATE_INTERVAL = 30
+
+
+def _get_uptime_str():
+    elapsed = int(time.time() - config.startTime)
+    h, m = elapsed // 3600, (elapsed % 3600) // 60
+    return f"{h}h {m}m"
+
+
+def _get_state_label():
+    from bot.utils import is_sleep_time
+    if is_sleep_time():
+        return "💤 Sleeping", "sleep"
+    if bot_state.paused:
+        if bot_state.watchdog_paused_until > time.monotonic():
+            remaining = max(0, int(bot_state.watchdog_paused_until - time.monotonic()))
+            mm, ss = remaining // 60, remaining % 60
+            return f"⏸️ Watchdog Pause ({mm:02d}:{ss:02d})", "watchdog"
+        return "⏸️ Paused", "paused"
+    if bot_state.is_on_coffee_break:
+        remaining = max(0, int(bot_state.coffee_break_end_time - time.monotonic()))
+        mm, ss = remaining // 60, remaining % 60
+        return f"☕ Coffee Break ({mm:02d}:{ss:02d})", "coffee"
+    if bot_state.cardhand_in_progress:
+        return "🃏 Card Hand", "minigame"
+    if bot_state.dungeon_in_progress:
+        return "⚔️ Dungeon", "minigame"
+    if bot_state.duel_in_progress:
+        step = bot_state.duel_step or "init"
+        return f"🤺 Duel ({step})", "minigame"
+    if bot_state.auto_enchant_active:
+        return f"✨ Enchanting ({bot_state.auto_enchant_attempts})", "minigame"
+    if bot_state.sleepet_mode:
+        return f"🐾 Sleepet ({bot_state.sleepet_state or 'init'})", "special"
+    if bot_state.time_cookie_mode:
+        if bot_state.tc_end_time > time.monotonic():
+            remaining = max(0, int(bot_state.tc_end_time - time.monotonic()))
+            mm, ss = remaining // 60, remaining % 60
+            return f"🍪 Time Cookie ({mm:02d}:{ss:02d})", "special"
+        return f"🍪 Time Cookie (∞ × {bot_state.tc_quantity})", "special"
+    if not bot_state.gambling_paused:
+        return "🎰 Gambling", "special"
+    return "🟢 Online", "online"
+
+
+def _session_stats():
+    hunts = sessionData["command_data"].get("hunt", 0) - initialSessionData["command_data"].get("hunt", 0)
+    advs = sessionData["command_data"].get("adventure", 0) - initialSessionData["command_data"].get("adventure", 0)
+    farms = sessionData["command_data"].get("farm", 0) - initialSessionData["command_data"].get("farm", 0)
+    lb_drops = sessionData["loot_data"].get("lootbox_drops", {})
+    init_lb_drops = initialSessionData["loot_data"].get("lootbox_drops", {})
+    lboxes = sum(v - init_lb_drops.get(k, 0) for k, v in lb_drops.items())
+    coins = sessionData["progress_data"].get("coins", 0) - initialSessionData["progress_data"].get("coins", 0)
+    xp = sessionData["progress_data"].get("xp", 0) - initialSessionData["progress_data"].get("xp", 0)
+    return hunts, advs, farms, lboxes, coins, xp
+
+
+def build_status_discord():
+    from bot.state import highPriorityQueue, lowPriorityQueue
+    state_label, _ = _get_state_label()
+    uptime = _get_uptime_str()
+    hunts, advs, farms, lboxes, coins, xp = _session_stats()
+    profile = os.path.basename(config.active_profile_path)
+    user = config.user_name_lower or "unknown"
+    last_cmd = bot_state.last_sent_command or "—"
+    if len(last_cmd) > 25:
+        last_cmd = last_cmd[:22] + "..."
+    ts = int(time.time())
+
+    lines = [
+        f"```ansi",
+        f"\x1b[1;36m╔══════════════════════════════════╗\x1b[0m",
+        f"\x1b[1;36m║\x1b[0m   \x1b[1;37m🔮 O R A C L E   S T A T U S\x1b[0m    \x1b[1;36m║\x1b[0m",
+        f"\x1b[1;36m╚══════════════════════════════════╝\x1b[0m",
+        f"",
+        f"\x1b[1;33m▸ Profile:\x1b[0m  {profile}",
+        f"\x1b[1;33m▸ Account:\x1b[0m  @{user}",
+        f"\x1b[1;33m▸ State:\x1b[0m    {state_label}",
+        f"\x1b[1;33m▸ Uptime:\x1b[0m   {uptime}",
+        f"",
+        f"\x1b[1;34m┌─── Session Stats ───────────────┐\x1b[0m",
+        f"\x1b[1;34m│\x1b[0m  Hunts: {hunts:<6} Advs: {advs:<6}  \x1b[1;34m│\x1b[0m",
+        f"\x1b[1;34m│\x1b[0m  Farms: {farms:<6} Lbx:  {lboxes:<6}  \x1b[1;34m│\x1b[0m",
+        f"\x1b[1;34m│\x1b[0m  Coins: +{coins:<14,}     \x1b[1;34m│\x1b[0m",
+        f"\x1b[1;34m│\x1b[0m  XP:    +{xp:<14,}     \x1b[1;34m│\x1b[0m",
+        f"\x1b[1;34m└────────────────────────────────-┘\x1b[0m",
+        f"",
+        f"\x1b[1;35m▸ Queues:\x1b[0m   HPQ: {len(highPriorityQueue)}  │  LPQ: {len(lowPriorityQueue)}",
+        f"\x1b[1;35m▸ Last Cmd:\x1b[0m {last_cmd}",
+        f"```",
+        f"-# 🔄 Updated <t:{ts}:R>",
+    ]
+    return "\n".join(lines)
+
+
+def build_status_telegram():
+    from bot.state import highPriorityQueue, lowPriorityQueue
+    state_label, _ = _get_state_label()
+    uptime = _get_uptime_str()
+    hunts, advs, farms, lboxes, coins, xp = _session_stats()
+    last_cmd = bot_state.last_sent_command or "—"
+    if len(last_cmd) > 25:
+        last_cmd = last_cmd[:22] + "..."
+
+    lines = [
+        "<b>🔮 ORACLE STATUS</b>",
+        "━━━━━━━━━━━━━━━━━━━━━━",
+        f"<b>State:</b>  {state_label}",
+        f"<b>Uptime:</b> {uptime}",
+        "",
+        "<b>📊 Session Stats</b>",
+        f"  Hunts: {hunts}  •  Advs: {advs}",
+        f"  Farms: {farms}  •  Lbx: {lboxes}",
+        f"  Coins: +{coins:,}",
+        f"  XP: +{xp:,}",
+        "",
+        f"<b>⚡ Queues:</b> HPQ: {len(highPriorityQueue)}  |  LPQ: {len(lowPriorityQueue)}",
+        f"<b>▸ Last:</b> <code>{last_cmd}</code>",
+    ]
+    return "\n".join(lines)
+
+
+async def update_status_messages(channel):
+    try:
+        # Update Discord message
+        if bot_state.status_discord_msg_id and channel:
+            try:
+                msg = await channel.fetch_message(bot_state.status_discord_msg_id)
+                await msg.edit(content=build_status_discord())
+            except Exception as e:
+                logger.debug(f"Status Discord edit failed: {e}")
+                bot_state.status_discord_msg_id = 0
+
+        # Update Telegram message
+        if bot_state.status_telegram_msg_id:
+            try:
+                await edit_telegram_message(
+                    bot_state.status_telegram_msg_id,
+                    build_status_telegram(),
+                    parse_mode="HTML",
+                )
+            except Exception as e:
+                logger.debug(f"Status Telegram edit failed: {e}")
+                bot_state.status_telegram_msg_id = 0
+    except Exception as e:
+        logger.error(f"Error in update_status_messages: {e}")
+
+
+async def _status_update_loop(channel):
+    while True:
+        await asyncio.sleep(STATUS_UPDATE_INTERVAL)
+        if not bot_state.status_discord_msg_id and not bot_state.status_telegram_msg_id:
+            break
+        await update_status_messages(channel)
+
+
+def start_status_loop(channel):
+    if bot_state.status_update_task and not bot_state.status_update_task.done():
+        bot_state.status_update_task.cancel()
+    bot_state.status_update_task = asyncio.create_task(_status_update_loop(channel))
+
 
 async def handleCoinflipResponse(message) -> bool:
     if not bot_state.coinflip_pending:
@@ -306,6 +469,9 @@ async def check_and_forward_cardhand_image(message) -> None:
     """
     global _sent_cardhand_images
     if not bot_state.cardhand_in_progress:
+        return
+    # Legacy mode: no Telegram notifications
+    if config.card_hand_action == "legacy_auto":
         return
     cardhand_chan_id = getattr(bot_state, "cardhand_channel_id", config.channelID)
     if message.channel.id != cardhand_chan_id and message.channel.id != config.channelID:
@@ -1383,6 +1549,7 @@ async def responseResolver(message) -> None:
                 "life_boost_before_adv: Buy life boost before adventure\n"
                 "sb language [pt|en] : Change bot language\n"
                 "sb export [ini|txt] : Export active config file\n"
+                "sb status           : Send live status to Discord + Telegram\n"
                 "sb config           : Dynamic interactive configuration editor\n"
             )
             logger.info(help_text)
@@ -1433,6 +1600,23 @@ async def responseResolver(message) -> None:
                     await message.channel.send("⚠️ Arquivo de configuração não encontrado.")
                 except Exception:
                     pass
+            return
+        elif msg == "sb status":
+            discord_text = build_status_discord()
+            try:
+                sent = await message.channel.send(discord_text)
+                bot_state.status_discord_msg_id = sent.id
+                bot_state.status_discord_channel_id = message.channel.id
+            except Exception as e:
+                logger.error(f"Error sending status to Discord: {e}")
+
+            tg_text = build_status_telegram()
+            tg_id = await send_telegram_html(tg_text)
+            if tg_id:
+                bot_state.status_telegram_msg_id = tg_id
+
+            start_status_loop(message.channel)
+            HUD.system("Live status message sent. Auto-updating every 30s.")
             return
         elif msg == "sb g pause":
             bot_state.gambling_paused = True
@@ -2132,7 +2316,15 @@ async def responseResolver(message) -> None:
             # Only reset here if the interactive loop hasn't started yet;
             # otherwise let the loop handle it to avoid concurrent state resets.
             if bot_state.cardhand_in_progress and "goldened" in embed_text and check_user_matches(embed_dict, config.user_name_lower, config.userID):
-                if not bot_state.cardhand_first_pass_done:
+                if config.card_hand_action == "legacy_auto":
+                    # Legacy mode: reset state directly, no loop to notify
+                    bot_state.cardhand_in_progress = False
+                    bot_state.cardhand_first_pass_done = False
+                    bot_state.cardhand_turn_count = 1
+                    bot_state.cardhand_message = None
+                    _sent_cardhand_images.clear()
+                    HUD.system("Card Hand (legacy) concluído! Filas liberadas.")
+                elif not bot_state.cardhand_first_pass_done:
                     bot_state.cardhand_in_progress = False
                     bot_state.cardhand_first_pass_done = False
                     bot_state.cardhand_turn_count = 1
@@ -2148,9 +2340,23 @@ async def responseResolver(message) -> None:
             if (
                 target_name in embed_text
                 and "card hand" in embed_text
-                and bot_state.cardhand_in_progress
             ):
-                if config.card_hand_action == "auto":
+                # ─── Legacy Auto: detect game start from embed, send pass immediately ───
+                if config.card_hand_action == "legacy_auto":
+                    if not bot_state.cardhand_in_progress:
+                        # First detection — game just started
+                        bot_state.cardhand_in_progress = True
+                        bot_state.cardhand_first_pass_done = True
+                        bot_state.cardhand_start_time = time.monotonic()
+                        bot_state.cardhand_turn_count = 1
+                        bot_state.cardhand_channel_id = message.channel.id
+                        add_to_high_priority_queue("pass")
+                        HUD.system("Card Hand (legacy) iniciado! Pass enfileirado. Filas bloqueadas.")
+                    # Subsequent turns: Neon handles via on_message/on_message_edit
+                    return
+
+                # ─── Auto mode: interactive loop with Telegram + delays ───
+                if config.card_hand_action == "auto" and bot_state.cardhand_in_progress:
                     if not bot_state.cardhand_first_pass_done:
                         bot_state.cardhand_first_pass_done = True
                         asyncio.create_task(interactive_card_hand_loop(message))

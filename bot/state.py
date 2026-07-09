@@ -169,6 +169,11 @@ class BotState:
         self.auto_enchant_attempts = 0
         self.last_auto_enchant_time = 0.0
         self.auto_enchant_withdrawn = False
+        # Live Status Message
+        self.status_discord_msg_id = 0
+        self.status_discord_channel_id = 0
+        self.status_telegram_msg_id = 0
+        self.status_update_task = None
 
 
     @property

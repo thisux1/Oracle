@@ -41,6 +41,7 @@ COMMANDS = {
     "/g pause": "Pausa o gambling",
     "/theme": "Abre seletor de temas",
     "/config": "Abre o painel de configurações interativo",
+    "/status": "Envia status live para Discord + Telegram",
     "/exit": "Encerramento seguro",
     "/language": "Altera o idioma (pt ou en)",
     "/lang": "Altera o idioma (pt ou en)",
@@ -277,7 +278,7 @@ class CommandInput(Input):
             return False
 
         base = parts[0].lower()
-        if base in ["help", "ajuda", "tutorial", "/help", "?", "play", "start", "resume", "pause", "stop", "sleep", "reset", "stats", "queue", "theme", "themes", "exit", "quit"]:
+        if base in ["help", "ajuda", "tutorial", "/help", "?", "play", "start", "resume", "pause", "stop", "sleep", "reset", "stats", "queue", "theme", "themes", "exit", "quit", "status"]:
             return True
         if base == "say":
             return len(parts) > 1
@@ -576,6 +577,11 @@ class CommandInput(Input):
         elif base in ["theme", "themes"]:
             self.app.push_screen(ThemeModal())
             self._notify_system("Seletor de temas aberto.", severity="information")
+
+        elif base == "status":
+            HUD.system("Sending live status to Discord + Telegram...")
+            add_to_high_priority_queue("sb status")
+            self._notify_system("Status enviado.", severity="information")
 
         elif base in ["language", "lang"]:
             if len(parts) > 1:
