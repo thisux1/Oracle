@@ -1,0 +1,229 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 380" width="100%" height="100%">
+  <defs>
+    <!-- Background grid pattern -->
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(168, 85, 247, 0.05)" stroke-width="1"/>
+      <circle cx="40" cy="0" r="1" fill="rgba(168, 85, 247, 0.15)"/>
+    </pattern>
+
+    <!-- Glow filters for the Oracle Eye and text -->
+    <filter id="glow-purple" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="12" result="blur1"/>
+      <feGaussianBlur stdDeviation="24" result="blur2"/>
+      <feMerge>
+        <feMergeNode in="blur2"/>
+        <feMergeNode in="blur1"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="glow-magenta" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="15" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="glow-cyan" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Linear Gradients -->
+    <linearGradient id="grad-accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a855f7"/>
+      <stop offset="50%" stop-color="#ec4899"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+
+    <linearGradient id="grad-eye" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#c084fc"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+
+  <style>
+    /* CSS Animations for high-fidelity interactive elements */
+    @keyframes orbit-cw {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    @keyframes orbit-ccw {
+      0% { transform: rotate(360deg); }
+      100% { transform: rotate(0deg); }
+    }
+
+    @keyframes pulse-core {
+      0% { transform: scale(0.92); opacity: 0.85; }
+      100% { transform: scale(1.08); opacity: 1; }
+    }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.2; }
+      50% { opacity: 0.9; }
+    }
+
+    @keyframes scanner {
+      0% { transform: translateY(-10px); opacity: 0; }
+      10% { opacity: 0.8; }
+      90% { opacity: 0.8; }
+      100% { transform: translateY(390px); opacity: 0; }
+    }
+
+    @keyframes glitch-text {
+      0%, 100% { transform: translate(0); }
+      92% { transform: translate(0); }
+      93% { transform: translate(-2px, 1px); }
+      94% { transform: translate(1px, -1px); }
+      95% { transform: translate(0); }
+    }
+
+    /* Target classes */
+    .bg-main { fill: #050204; }
+    .grid-bg { fill: url(#grid); }
+    
+    .eye-core {
+      transform-origin: 300px 190px;
+      animation: pulse-core 2s ease-in-out infinite alternate;
+    }
+
+    .ring-outer {
+      transform-origin: 300px 190px;
+      animation: orbit-cw 20s linear infinite;
+    }
+
+    .ring-inner {
+      transform-origin: 300px 190px;
+      animation: orbit-ccw 12s linear infinite;
+    }
+
+    .star {
+      animation: twinkle 4s ease-in-out infinite;
+    }
+    .star-delay-1 { animation-delay: 1.2s; }
+    .star-delay-2 { animation-delay: 2.8s; }
+
+    .scan-line {
+      animation: scanner 7s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+    }
+
+    .glitch-active {
+      animation: glitch-text 6s infinite;
+    }
+
+    .font-tech {
+      font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    }
+
+    .font-title {
+      font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
+      font-weight: 800;
+      letter-spacing: 14px;
+    }
+  </style>
+
+  <!-- BACKGROUND -->
+  <rect class="bg-main" width="100%" height="100%"/>
+  <rect class="grid-bg" width="100%" height="100%"/>
+
+  <!-- GLOWING TECH PARTICLES -->
+  <g opacity="0.65">
+    <circle class="star" cx="120" cy="70" r="1.5" fill="#fff" />
+    <circle class="star star-delay-1" cx="90" cy="240" r="1" fill="#c084fc" />
+    <circle class="star star-delay-2" cx="210" cy="300" r="1.5" fill="#38bdf8" />
+    <circle class="star star-delay-1" cx="490" cy="80" r="1" fill="#fff" />
+    <circle class="star star-delay-2" cx="440" cy="290" r="2" fill="#ec4899" />
+    <circle class="star" cx="1120" cy="80" r="1" fill="#fff" />
+    <circle class="star star-delay-1" cx="1060" cy="280" r="1.5" fill="#38bdf8" />
+    <circle class="star star-delay-2" cx="940" cy="120" r="1" fill="#c084fc" />
+  </g>
+
+  <!-- SCANNER LINE EFFECT -->
+  <rect class="scan-line" x="0" y="0" width="1200" height="2" fill="rgba(168, 85, 247, 0.3)" filter="url(#glow-purple)" />
+
+  <!-- DECAL CORNER BORDERS -->
+  <path d="M 20,40 L 20,20 L 40,20" fill="none" stroke="rgba(168, 85, 247, 0.35)" stroke-width="2"/>
+  <path d="M 1180,40 L 1180,20 L 1160,20" fill="none" stroke="rgba(168, 85, 247, 0.35)" stroke-width="2"/>
+  <path d="M 20,340 L 20,360 L 40,360" fill="none" stroke="rgba(168, 85, 247, 0.35)" stroke-width="2"/>
+  <path d="M 1180,340 L 1180,360 L 1160,360" fill="none" stroke="rgba(168, 85, 247, 0.35)" stroke-width="2"/>
+
+  <!-- DECAL TECH MEASURES -->
+  <text x="30" y="45" class="font-tech" fill="rgba(255,255,255,0.2)" font-size="9" letter-spacing="1">SELF_MODE: ADMIN</text>
+  <text x="30" y="60" class="font-tech" fill="rgba(255,255,255,0.2)" font-size="9" letter-spacing="1">TFLITE_CV: ACTIVE</text>
+  <text x="1080" y="45" class="font-tech" fill="rgba(255,255,255,0.2)" font-size="9" letter-spacing="1" text-anchor="end">MASCOT: ACTIVE_EYE</text>
+  <text x="1170" y="45" class="font-tech" fill="#c084fc" font-size="9" font-weight="bold" letter-spacing="1" text-anchor="end">● SYS_READY</text>
+  
+  <!-- LEFT: THE ORACLE EYE (CYBERNETIC AI MASCOT) -->
+  <g transform="translate(0, 0)">
+    <!-- Outer Glow -->
+    <circle cx="300" cy="190" r="130" fill="url(#grad-accent)" opacity="0.08" filter="url(#glow-magenta)" />
+    
+    <!-- Outer Bounding Tech Box -->
+    <rect x="180" y="70" width="240" height="240" fill="none" stroke="rgba(255, 255, 255, 0.05)" stroke-width="1" stroke-dasharray="4 8"/>
+    <!-- Compass ticks -->
+    <path d="M 300,60 L 300,70 M 300,310 L 300,320 M 170,190 L 180,190 M 420,190 L 430,190" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+    
+    <!-- Cybernetic Eye Outline -->
+    <path d="M 160,190 Q 300,80 440,190 Q 300,300 160,190 Z" fill="none" stroke="rgba(168, 85, 247, 0.3)" stroke-width="2"/>
+    <path d="M 180,190 Q 300,100 420,190 Q 300,280 180,190 Z" fill="rgba(168, 85, 247, 0.02)" stroke="url(#grad-eye)" stroke-width="3" filter="url(#glow-purple)"/>
+
+    <!-- Concentric Interactive Tech Rings inside Eye Perspective -->
+    <g transform="translate(300, 190) scale(1, 0.9) translate(-300, -190)">
+      <!-- Ring 1 (Outer Iris) -->
+      <circle class="ring-outer" cx="300" cy="190" r="75" fill="none" stroke="#ec4899" stroke-width="1.5" stroke-dasharray="80 15 30 10 120 20" filter="url(#glow-magenta)" opacity="0.8"/>
+      <!-- Ring 2 (Inner Iris) -->
+      <circle class="ring-inner" cx="300" cy="190" r="55" fill="none" stroke="#38bdf8" stroke-width="1" stroke-dasharray="40 20 60 10" filter="url(#glow-cyan)" opacity="0.9"/>
+    </g>
+
+    <!-- Pupil Core (Glowing AI Center) -->
+    <circle class="eye-core" cx="300" cy="190" r="28" fill="#000" stroke="#a855f7" stroke-width="3" filter="url(#glow-purple)"/>
+    <circle cx="300" cy="190" r="16" fill="#000"/>
+    <circle class="star" cx="294" cy="184" r="5" fill="#fff" />
+  </g>
+
+  <!-- CENTER DIVIDER -->
+  <line x1="530" y1="80" x2="530" y2="300" stroke="rgba(255, 255, 255, 0.06)" stroke-width="1" stroke-dasharray="6 6" />
+  
+  <!-- RIGHT: BRANDING & HEADLINE -->
+  <g transform="translate(580, 0)">
+    <!-- Category decal -->
+    <rect x="0" y="90" width="135" height="18" fill="rgba(168, 85, 247, 0.08)" stroke="rgba(168, 85, 247, 0.25)" stroke-width="1"/>
+    <text x="8" y="102" class="font-tech" fill="#c084fc" font-size="9" font-weight="bold" letter-spacing="1.5">INTELLIGENT BOT v3.0</text>
+
+    <!-- Title "ORACLE v3" -->
+    <text x="0" y="165" class="font-title glitch-active" fill="#ffffff" font-size="52" filter="drop-shadow(0px 4px 12px rgba(0,0,0,0.8))">ORACLE v3</text>
+    
+    <!-- Neon Accent Dot -->
+    <circle cx="410" cy="148" r="4" fill="#a855f7" filter="url(#glow-purple)" />
+
+    <!-- Subtitle -->
+    <text x="0" y="208" class="font-tech" fill="rgba(255, 255, 255, 0.85)" font-size="16" font-weight="600" letter-spacing="0.5">Epic RPG Automation &amp; AI Captcha Engine</text>
+    
+    <!-- Description / Tech Features -->
+    <g transform="translate(0, 242)">
+      <!-- Feature 1 -->
+      <rect x="0" y="0" width="6" height="6" fill="#38bdf8" filter="url(#glow-cyan)"/>
+      <text x="18" y="8" class="font-tech" fill="rgba(255,255,255,0.6)" font-size="11" letter-spacing="0.5">AI Captcha Solver (TFLite CNN Color/Gray Engine)</text>
+      
+      <!-- Feature 2 -->
+      <rect x="0" y="22" width="6" height="6" fill="#a855f7" filter="url(#glow-purple)"/>
+      <text x="18" y="30" class="font-tech" fill="rgba(255,255,255,0.6)" font-size="11" letter-spacing="0.5">Dual Mode UI (Rich TUI Console &amp; React Web Dashboard)</text>
+      
+      <!-- Feature 3 -->
+      <rect x="0" y="44" width="6" height="6" fill="#ec4899" />
+      <text x="18" y="52" class="font-tech" fill="rgba(255,255,255,0.6)" font-size="11" letter-spacing="0.5">Anti-Detection Shields (Human Cycles, Breaks &amp; Night Sleep)</text>
+    </g>
+  </g>
+
+  <!-- BOTTOM DECAL STATS BAR -->
+  <rect x="20" y="325" width="1160" height="1" fill="rgba(255, 255, 255, 0.06)"/>
+  <text x="30" y="342" class="font-tech" fill="rgba(255,255,255,0.3)" font-size="9" letter-spacing="1">ENGINE: DISCORD.PY-SELF</text>
+  <text x="280" y="342" class="font-tech" fill="rgba(255,255,255,0.3)" font-size="9" letter-spacing="1">DB: CONFIG_INI / SQ_JSON</text>
+  <text x="560" y="342" class="font-tech" fill="rgba(255,255,255,0.3)" font-size="9" letter-spacing="1">AI: TENSORFLOW_LITE</text>
+  <text x="1170" y="342" class="font-tech" fill="rgba(255,255,255,0.3)" font-size="9" letter-spacing="1" text-anchor="end">SECTOR_LOC: [0x03_ORACLE_EYE]</text>
+</svg>
