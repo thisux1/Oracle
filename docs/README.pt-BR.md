@@ -3,9 +3,9 @@
   <img src="banner.svg" alt="Banner do Olho Cibernético do Oracle v3" width="100%" style="border-radius: 8px; border: 1px solid rgba(168, 85, 247, 0.18);" />
 </p>
 
-· · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
+
 🇺🇸 **For the English version of this document, see: [README.md](../README.md).**
-· · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
+
 
 ```text
  ██████╗ ██████╗  █████╗  ██████╗██╗     ███████╗   ██╗   ██╗██████╗ 
@@ -17,13 +17,13 @@
 ```
 
 
-───────────────────────────────────────── ▪ ─────────────────────────────────────────
+─────── ▪ ───────
 
 ## 📡 Diagnósticos do Sistema
 
 O **Oracle v3** é um assistente de automação de baixa latência construído sob medida para o Epic RPG. Otimizado para execução em segundo plano com foco em segurança de conta, ele roda uma **Rede Neural Convolucional (CNN) local via TensorFlow Lite** para resolver verifações de captchas, gerencia filas inteligentes de comandos e fornece métricas de monitoramento em tempo real através de um console interativo (**TUI**) e de um **Web Dashboard** baseado no navegador.
 
-───────────────────────────────────────── ▪ ─────────────────────────────────────────
+─────── ▪ ───────
 
 ## 🧠 Arquitetura do Sistema e Fluxos de Dados
 
@@ -40,7 +40,7 @@ O diagrama abaixo detalha a estrutura de execução contínua, manipulando a tra
 4. **Humanização**: As macros e ações passam pelo gerador de atraso que injeta desvios aleatórios de tempo, emulação de erros de digitação e pausa para ciclos de café e sono profundo.
 5. **Telemetria**: Métricas de progresso de sessão são repassadas via sockets para atualizar a TUI do console e painéis web de forma simultânea.
 
-───────────────────────────────────────── ▪ ─────────────────────────────────────────
+─────── ▪ ───────
 
 ## ⚙️ Especificações Técnicas de Ambiente
 
@@ -64,7 +64,7 @@ installers   = PyInstaller wrapper + Pacotes Inno Setup
 | **Web Dashboard** | React 19, Zustand | Painel visual de controle remoto, alteração de opções e acionamento de comandos de console. |
 | **Empacotadores** | PyInstaller, Inno | Geração de pacotes executáveis de instalação autônoma e portabilidade. |
 
-───────────────────────────────────────── ▪ ─────────────────────────────────────────
+─────── ▪ ───────
 
 ## 🚀 Linha de Implantação
 
@@ -176,7 +176,7 @@ oracle
 ```
 </details>
 
-───────────────────────────────────────── ▪ ─────────────────────────────────────────
+─────── ▪ ───────
 
 ## 📂 Organização das Pastas
 
@@ -197,7 +197,7 @@ Oracle-V2/
 └── setup.sh            # Script de registro CLI global
 ```
 
-───────────────────────────────────────── ▪ ─────────────────────────────────────────
+─────── ▪ ───────
 
 ## ⌨️ Comandos da CLI & Discord
 
@@ -230,7 +230,7 @@ Envie comandos diretamente de contas administradoras autorizadas no canal do bot
 * `rpg u`: Grava informações de uptime do daemon nos logs internos locais.
 * `rpg s p`: Imprime informações do parceiro de casamento nos logs.
 
-───────────────────────────────────────── ▪ ─────────────────────────────────────────
+─────── ▪ ───────
 
 ## 🛡️ Protocolos de Segurança e Anti-Detecção
 
@@ -242,7 +242,7 @@ Envie comandos diretamente de contas administradoras autorizadas no canal do bot
   [!] NOTIFICAÇÃO TELEGRAM: Alertas imediatos em captchas duvidosos.
 ```
 
-───────────────────────────────────────── ▪ ─────────────────────────────────────────
+─────── ▪ ───────
 
 ## ⚠️ Aviso Legal
 
@@ -254,7 +254,7 @@ Envie comandos diretamente de contas administradoras autorizadas no canal do bot
   qualquer responsabilidade por suspensões de contas ou bans. Use por sua conta.
 ```
 
-───────────────────────────────────────── ▪ ─────────────────────────────────────────
+─────── ▪ ───────
 
 ## 📄 Termos de Licenciamento
 

@@ -3,9 +3,9 @@
   <img src="docs/banner.svg" alt="Oracle v3 Cybernetic Eye Banner" width="100%" style="border-radius: 8px; border: 1px solid rgba(168, 85, 247, 0.18);" />
 </p>
 
-· · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
+
 🇧🇷 **Para ler a documentação em Português, acesse: [README.pt-BR.md](docs/README.pt-BR.md).**
-· · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
+
 
 ```text
  ██████╗ ██████╗  █████╗  ██████╗██╗     ███████╗   ██╗   ██╗██████╗ 
@@ -17,13 +17,13 @@
 ```
 
 
-───────────────────────────────────────── ▪ ─────────────────────────────────────────
+─────── ▪ ───────
 
 ## 📡 System Diagnostics
 
 **Oracle v3** is a low-latency automation companion built specifically for Epic RPG. Optimized for deep background performance and security, it runs a local **TensorFlow Lite Convolutional Neural Network (CNN)** to solve verification guards, executes a humanized action queue, and keeps you fully updated via a terminal interface (**TUI**) and a browser-based **Control Dashboard**.
 
-───────────────────────────────────────── ▪ ─────────────────────────────────────────
+─────── ▪ ───────
 
 ## 🧠 System Architecture & Pipelines
 
@@ -40,7 +40,7 @@ The diagram below details the continuous execution pipeline, handling data trans
 4. **Humanize**: Commands pass through a delay generator introducing random intervals, simulated typing typos, and scheduled coffee/sleep cycles.
 5. **Expose/Telemetry**: Session analytics are piped to the Textual TUI and FastAPI websockets to feed remote clients.
 
-───────────────────────────────────────── ▪ ─────────────────────────────────────────
+─────── ▪ ───────
 
 ## ⚙️ Core Technical Specifications
 
@@ -64,7 +64,7 @@ installers   = PyInstaller wrapper + Inno Setup package
 | **Web Dashboard** | React 19, Zustand | Remote telemetry dashboard, settings tuning, custom terminal commands. |
 | **Packaging Tools** | PyInstaller, Inno | Compilation of binary packages and system installers. |
 
-───────────────────────────────────────── ▪ ─────────────────────────────────────────
+─────── ▪ ───────
 
 ## 🚀 Deployment Pipeline
 
@@ -176,7 +176,7 @@ oracle
 ```
 </details>
 
-───────────────────────────────────────── ▪ ─────────────────────────────────────────
+─────── ▪ ───────
 
 ## 📂 Repository Layout
 
@@ -197,7 +197,7 @@ Oracle-V2/
 └── setup.sh            # Global CLI installation script
 ```
 
-───────────────────────────────────────── ▪ ─────────────────────────────────────────
+─────── ▪ ───────
 
 ## ⌨️ CLI & Discord Commands
 
@@ -230,7 +230,7 @@ Send queries from authorized admin accounts directly within the bot's channel:
 * `rpg u`: Prints daemon Uptime into local logs.
 * `rpg u t`: Broadcasts daemon Uptime into the chat channel.
 
-───────────────────────────────────────── ▪ ─────────────────────────────────────────
+─────── ▪ ───────
 
 ## 🛡️ Operational Stealth & Safety Protocols
 
@@ -242,7 +242,7 @@ Send queries from authorized admin accounts directly within the bot's channel:
   [!] TELEGRAM NOTIFIER: Sends captcha errors to remote handlers instantly.
 ```
 
-───────────────────────────────────────── ▪ ─────────────────────────────────────────
+─────── ▪ ───────
 
 ## ⚠️ Legal Warning
 
@@ -254,7 +254,7 @@ Send queries from authorized admin accounts directly within the bot's channel:
   liability for account suspensions or bans. Use at your own risk.
 ```
 
-───────────────────────────────────────── ▪ ─────────────────────────────────────────
+─────── ▪ ───────
 
 ## 📄 Licensing
 
