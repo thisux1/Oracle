@@ -176,13 +176,25 @@ def build_status_telegram():
 async def update_status_messages(channel):
     try:
         # Update Discord message
-        if bot_state.status_discord_msg_id and channel:
-            try:
-                msg = await channel.fetch_message(bot_state.status_discord_msg_id)
-                await msg.edit(content=build_status_discord())
-            except Exception as e:
-                logger.debug(f"Status Discord edit failed: {e}")
-                bot_state.status_discord_msg_id = 0
+        if bot_state.status_discord_msg_id:
+            resolved_chan = channel
+            if not resolved_chan:
+                import bot
+                if bot.UserBot and bot.UserBot.is_ready() and not bot.UserBot.is_closed():
+                    resolved_chan = bot.UserBot.get_channel(bot_state.status_discord_channel_id)
+                    if not resolved_chan:
+                        try:
+                            resolved_chan = await bot.UserBot.fetch_channel(bot_state.status_discord_channel_id)
+                        except Exception:
+                            pass
+
+            if resolved_chan:
+                try:
+                    msg = await resolved_chan.fetch_message(bot_state.status_discord_msg_id)
+                    await msg.edit(content=build_status_discord())
+                except Exception as e:
+                    logger.debug(f"Status Discord edit failed: {e}")
+                    bot_state.status_discord_msg_id = 0
 
         # Update Telegram message
         if bot_state.status_telegram_msg_id:
@@ -211,6 +223,46 @@ def start_status_loop(channel):
     if bot_state.status_update_task and not bot_state.status_update_task.done():
         bot_state.status_update_task.cancel()
     bot_state.status_update_task = asyncio.create_task(_status_update_loop(channel))
+
+
+async def trigger_status_command(channel=None):
+    import bot
+    resolved_channel = channel
+    if not resolved_channel:
+        if bot.UserBot and bot.UserBot.is_ready() and not bot.UserBot.is_closed():
+            resolved_channel = bot.UserBot.get_channel(config.channelID)
+            if not resolved_channel:
+                try:
+                    resolved_channel = await bot.UserBot.fetch_channel(config.channelID)
+                except Exception:
+                    pass
+
+    discord_sent = False
+    if resolved_channel:
+        discord_text = build_status_discord()
+        try:
+            sent = await resolved_channel.send(discord_text)
+            bot_state.status_discord_msg_id = sent.id
+            bot_state.status_discord_channel_id = resolved_channel.id
+            discord_sent = True
+        except Exception as e:
+            logger.error(f"Error sending status to Discord: {e}")
+
+    tg_text = build_status_telegram()
+    tg_id = await send_telegram_html(tg_text)
+    if tg_id:
+        bot_state.status_telegram_msg_id = tg_id
+
+    start_status_loop(resolved_channel)
+
+    if discord_sent and tg_id:
+        HUD.system("Live status message sent to Discord & Telegram. Auto-updating every 30s.")
+    elif discord_sent:
+        HUD.system("Live status message sent to Discord. Auto-updating every 30s (Telegram skipped).")
+    elif tg_id:
+        HUD.system("Live status message sent to Telegram. Auto-updating every 30s (Discord offline/skipped).")
+    else:
+        HUD.system("Live status failed to send on both Discord and Telegram.")
 
 
 async def handleCoinflipResponse(message) -> bool:
@@ -1602,21 +1654,7 @@ async def responseResolver(message) -> None:
                     pass
             return
         elif msg == "sb status":
-            discord_text = build_status_discord()
-            try:
-                sent = await message.channel.send(discord_text)
-                bot_state.status_discord_msg_id = sent.id
-                bot_state.status_discord_channel_id = message.channel.id
-            except Exception as e:
-                logger.error(f"Error sending status to Discord: {e}")
-
-            tg_text = build_status_telegram()
-            tg_id = await send_telegram_html(tg_text)
-            if tg_id:
-                bot_state.status_telegram_msg_id = tg_id
-
-            start_status_loop(message.channel)
-            HUD.system("Live status message sent. Auto-updating every 30s.")
+            await trigger_status_command(message.channel)
             return
         elif msg == "sb g pause":
             bot_state.gambling_paused = True

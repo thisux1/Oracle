@@ -580,7 +580,8 @@ class CommandInput(Input):
 
         elif base == "status":
             HUD.system("Sending live status to Discord + Telegram...")
-            add_to_high_priority_queue("sb status")
+            from bot.handlers import trigger_status_command
+            asyncio.create_task(trigger_status_command())
             self._notify_system("Status enviado.", severity="information")
 
         elif base in ["language", "lang"]:
