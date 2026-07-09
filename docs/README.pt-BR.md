@@ -21,13 +21,13 @@
 
 ## 📡 Diagnósticos do Sistema
 
-O **Oracle v3** é um assistente de automação de baixa latência construído sob medida para o Epic RPG. Otimizado para execução em segundo plano com foco em segurança de conta, ele roda uma **Rede Neural Convolucional (CNN) local via TensorFlow Lite** para resolver verifações de captchas, gerencia filas inteligentes de comandos e fornece métricas de monitoramento em tempo real através de um console interativo (**TUI**) e de um **Web Dashboard** baseado no navegador.
+O **Oracle v3** é um assistente de automação baseado em máquinas de estados de baixa latência construído sob medida para o Epic RPG. Otimizado para execução precisa de loops de jogo e segundo plano seguro, ele gerencia uma fila inteligente de comandos humanizados. O sistema utiliza inteligência artificial local (**Rede Neural Convolucional via TensorFlow Lite**) exclusivamente para a resolução de captchas e verificações de segurança, exibindo a telemetria do console via interface de terminal (**TUI**) e um **Web Dashboard** interativo.
 
 ─────── ▪ ───────
 
 ## 🧠 Arquitetura do Sistema e Fluxos de Dados
 
-O diagrama abaixo detalha a estrutura de execução contínua, manipulando a transmissão de dados entre servidores Discord, nosso motor de filas de comando e o classificador de captchas por IA local:
+O diagrama abaixo detalha a estrutura de execução contínua, manipulando a transmissão de dados entre servidores Discord, nosso motor de filas de comando e o classificador de captchas local:
 
 <p align="center">
   <img src="architecture.svg" alt="Pipeline de Fluxo de Dados Oracle v3" width="100%" style="border-radius: 8px; border: 1px solid rgba(168, 85, 247, 0.1);" />

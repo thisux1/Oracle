@@ -21,7 +21,7 @@
 
 ## 📡 System Diagnostics
 
-**Oracle v3** is a low-latency automation companion built specifically for Epic RPG. Optimized for deep background performance and security, it runs a local **TensorFlow Lite Convolutional Neural Network (CNN)** to solve verification guards, executes a humanized action queue, and keeps you fully updated via a terminal interface (**TUI**) and a browser-based **Control Dashboard**.
+**Oracle v3** is a low-latency, state-machine driven automation companion built specifically for Epic RPG. Optimized for precise state loops, queue scheduling, and background security, it manages a humanized command pipeline. A local **TensorFlow Lite Convolutional Neural Network (CNN)** is utilized exclusively to solve verification guards and text captchas, keeping you fully updated via a terminal interface (**TUI**) and a browser-based **Control Dashboard**.
 
 ─────── ▪ ───────
 

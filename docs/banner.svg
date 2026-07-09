@@ -2744,7 +2744,7 @@
 
   <!-- SUBTITLE -->
   <text x="240" y="380" class="term-text" font-size="12" fill="#ffffff" xml:space="preserve" text-anchor="middle" font-weight="bold" letter-spacing="1">
-    Epic RPG AI Terminal
+    Epic RPG Automation CLI
   </text>
 
   <!-- SPLIT COLUMN DASHED SEPARATOR -->
