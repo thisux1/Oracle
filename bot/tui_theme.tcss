@@ -403,8 +403,8 @@ ConfigModal {
 }
 
 #config_buttons_container Button {
-    margin: 0 2;
-    width: 18;
+    margin: 0;
+    width: 12;
 }
 
 #config_footer {

@@ -641,11 +641,10 @@ class ConfigModal(ModalScreen):
             body,
             Static("[dim]Foque ou passe o mouse sobre uma configuração para ver detalhes.[/]", id="config_help_panel"),
             Horizontal(
-                Button("Salvar", variant="success", id="config_save_btn"),
-                Button("Cancelar", variant="error", id="config_cancel_btn"),
+                Button("Fechar", variant="primary", id="config_close_btn"),
                 id="config_buttons_container"
             ),
-            Static("[dim]Tab para navegar • Enter no Botão para Executar • Esc para Sair[/]", id="config_footer"),
+            Static("[dim]Tab para navegar • Enter/Clique em Fechar para Salvar • Esc para Sair sem Salvar[/]", id="config_footer"),
             id="config_box"
         )
 
@@ -749,11 +748,8 @@ class ConfigModal(ModalScreen):
             pass
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "config_save_btn":
+        if event.button.id == "config_close_btn":
             self.action_confirm_save()
-        elif event.button.id == "config_cancel_btn":
-            HUD.resume()
-            self.dismiss()
 
     def action_confirm_save(self) -> None:
         errors = []
