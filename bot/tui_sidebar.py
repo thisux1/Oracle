@@ -34,7 +34,7 @@ class EyeWidget(Static):
         self.sequence = list(IDLE_SEQ)
         self.seq_idx = 0
         self._current_frame = self.sequence[0]
-        self.set_interval(0.25, self._tick_anim)
+        self.set_interval(0.5, self._tick_anim)
         self._show_frame(self._current_frame)
 
     def on_resize(self, event) -> None:
@@ -162,7 +162,7 @@ class HeaderPane(Static):
     def on_mount(self) -> None:
         self._runes = ["▪", "▫", "▪", "▫"]
         self._title = "O R A C L E   V 3"
-        self.set_interval(0.30, self._tick)
+        self.set_interval(1.5, self._tick)
 
     def _tick(self) -> None:
         self.rune_idx = (self.rune_idx + 1) % len(self._runes)
@@ -235,8 +235,7 @@ class SidebarPane(Static):
         self._steam = ["︵", " ︵", "  ︵"]
         self._ornaments = ["▪", "▫", "▪"]
         self._eye_mode = None
-        self.set_interval(1.0, self._tick)
-        self.set_interval(0.4, self._tick_steam)
+        self.set_interval(1.5, self._tick)
         self._sync_eye_mode()
 
     @staticmethod
@@ -294,14 +293,10 @@ class SidebarPane(Static):
             pass
 
     def _tick(self) -> None:
+        self.steam_idx = (self.steam_idx + 1) % len(self._steam)
         elapsed = int(time.time() - config.startTime)
         h, m = elapsed // 3600, (elapsed % 3600) // 60
         self.uptime = f"{h}h {m}m"
-        self._sync_eye_mode()
-        self.refresh()
-
-    def _tick_steam(self) -> None:
-        self.steam_idx = (self.steam_idx + 1) % len(self._steam)
         self._sync_eye_mode()
         self.refresh()
 
@@ -439,7 +434,7 @@ class StatusBar(Static):
 
     def on_mount(self) -> None:
         self._spinners = ["◐", "◓", "◑", "◒"]
-        self.set_interval(0.2, self._tick)
+        self.set_interval(1.0, self._tick)
 
     def _tick(self) -> None:
         self.pulse_idx = (self.pulse_idx + 1) % len(self._spinners)

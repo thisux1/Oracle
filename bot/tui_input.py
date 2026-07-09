@@ -243,7 +243,7 @@ class CommandInput(Input):
         self.history_idx = -1
         self._suppress_autocomplete = False
         self._feedback_timer = None
-        self.set_interval(0.25, self._tick_spinner)
+        self._spinner_timer = None
         self._spinners = ["◐", "◓", "◑", "◒"]
 
     def _clear_feedback_flash(self) -> None:
@@ -301,6 +301,15 @@ class CommandInput(Input):
             self.app.notify(message, title="Sistema", severity=severity, timeout=timeout)
         except Exception:
             pass
+
+    def watch_is_processing(self, is_processing: bool) -> None:
+        if is_processing:
+            if not self._spinner_timer:
+                self._spinner_timer = self.set_interval(0.25, self._tick_spinner)
+        else:
+            if self._spinner_timer:
+                self._spinner_timer.stop()
+                self._spinner_timer = None
 
     def _tick_spinner(self) -> None:
         if self.is_processing:
