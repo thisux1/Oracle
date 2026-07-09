@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 660" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 780" width="100%" height="100%">
   <defs>
     <!-- Background subtle grid pattern -->
     <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
@@ -103,8 +103,8 @@
   <rect class="bg-terminal" width="100%" height="100%"/>
   <rect class="grid-bg" width="100%" height="100%"/>
 
-  <!-- CYBER EYE: MATHEMATICALLY CENTERED VIA ATTRIBUTE TRANSFORMS -->
-  <g class="eye-group" transform="translate(90.0, 30.0) scale(4.6512)" fill="url(#eye-grad)">
+  <!-- CYBER EYE: MATHEMATICALLY CENTERED AND PLACED ABOVE TITLE -->
+  <g class="eye-group" transform="translate(290.0, 30.0) scale(2.3823)" fill="url(#eye-grad)">
       <circle cx="88.8" cy="0.0" r="1.1" />
   <circle cx="88.8" cy="1.1" r="1.1" />
   <circle cx="88.8" cy="2.3" r="1.1" />
@@ -2708,9 +2708,9 @@
   <circle cx="87.5" cy="145.1" r="1.1" />
   </g>
 
-  <!-- GLITCH TITLE ORACLE V3: Left-aligned with text-anchor="start" at x="180" to ensure column consistency -->
+  <!-- GLITCH TITLE ORACLE V3: Centered below the eye in Y axis -->
   <g class="glitch-title">
-    <text x="180" y="365" class="term-text" font-size="15" fill="url(#glitch-grad)" xml:space="preserve" text-anchor="start" font-weight="bold">
+    <text x="180" y="425" class="term-text" font-size="15" fill="url(#glitch-grad)" xml:space="preserve" text-anchor="start" font-weight="bold">
       <tspan x="180" dy="0"> ██████╗ ██████╗  █████╗  ██████╗██╗     ███████╗   ██╗   ██╗██████╗ </tspan>
       <tspan x="180" dy="18">██╔═══██╗██╔══██╗██╔══██╗██╔════╝██║     ██╔════╝   ██║   ██║╚════██╗</tspan>
       <tspan x="180" dy="18">██║   ██║██████╔╝███████║██║     ██║     █████╗     ██║   ██║ █████╔╝</tspan>
@@ -2721,21 +2721,26 @@
   </g>
 
   <!-- SUBTITLE -->
-  <text x="500" y="525" class="term-text" font-size="14" fill="#ffffff" xml:space="preserve" text-anchor="middle" font-weight="bold" letter-spacing="1">
+  <text x="500" y="595" class="term-text" font-size="14" fill="#ffffff" xml:space="preserve" text-anchor="middle" font-weight="bold" letter-spacing="1">
     Terminal de IA do Epic RPG
   </text>
 
-  <!-- VECTOR PROGRESS BAR GROUP: CENTERED AT X=295 (Group Width: 410) -->
-  <g transform="translate(295, 548)">
+  <!-- VECTOR PROGRESS BAR GROUP: Discrete step fill animation (calcMode="discrete" + keyTimes) -->
+  <g transform="translate(295, 620)">
     <!-- Left Border -->
     <text x="0" y="15" class="term-text" font-size="15" fill="#3f4e5a">│</text>
     
     <!-- Progress Bar Track -->
     <rect x="18" y="1" width="310" height="17" fill="#141923" rx="2" stroke="rgba(255,255,255,0.05)" stroke-width="1" />
     
-    <!-- Progress Bar Fill (Animated width) -->
+    <!-- Progress Bar Fill (Discrete width jumps to match percentage updates) -->
     <rect x="20" y="3" height="13" fill="#00ffaa" rx="1">
-      <animate attributeName="width" values="0;87;167;254;306;306" dur="8s" repeatCount="indefinite" />
+      <animate attributeName="width" 
+               values="0;87;167;254;306;306" 
+               keyTimes="0;0.101;0.351;0.601;0.851;1"
+               calcMode="discrete" 
+               dur="8s" 
+               repeatCount="indefinite" />
     </rect>
     
     <!-- Right Border -->
@@ -2752,14 +2757,14 @@
   </g>
 
   <!-- CONNECTING STATUS STAGES -->
-  <g transform="translate(500, 605)">
+  <g transform="translate(500, 680)">
     <text x="0" y="0" class="term-text status-text s-0" font-size="13" fill="#ffffff" opacity="0.8" xml:space="preserve" text-anchor="middle">Conectando...</text>
     <text x="0" y="0" class="term-text status-text s-1" font-size="13" fill="#ffffff" opacity="0.8" xml:space="preserve" text-anchor="middle">Autenticando sessão de gateway...</text>
     <text x="0" y="0" class="term-text status-text s-2" font-size="13" fill="#00ffaa" opacity="1" xml:space="preserve" text-anchor="middle" font-weight="bold">Conexão Estabelecida: ONLINE</text>
   </g>
 
   <!-- SEPARATOR -->
-  <text x="500" y="635" class="term-text" font-size="12" fill="#3f4e5a" xml:space="preserve" text-anchor="middle">
+  <text x="500" y="720" class="term-text" font-size="12" fill="#3f4e5a" xml:space="preserve" text-anchor="middle">
     ---------------------
   </text>
 </svg>
