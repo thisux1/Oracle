@@ -306,7 +306,7 @@ ConfigModal {
     width: 60%;
     min-width: 55;
     max-width: 80;
-    height: 75%;
+    height: 85%;
     background: $surface;
     color: $foreground;
     border: tall $accent;
@@ -404,7 +404,8 @@ ConfigModal {
 
 #config_buttons_container Button {
     margin: 0;
-    width: 12;
+    width: 10;
+    height: 1;
 }
 
 #config_footer {
