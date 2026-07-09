@@ -106,13 +106,26 @@ def _coerce_int(value: Any) -> int | None:
         return None
 
 
+_json_file_cache: dict[Path, tuple[float, int, dict[str, Any]]] = {}
+
+
 def _load_json_file(path: Path) -> dict[str, Any] | None:
     if not path.exists():
         return None
     try:
+        stat = path.stat()
+        mtime = stat.st_mtime
+        size = stat.st_size
+
+        if path in _json_file_cache:
+            cached_mtime, cached_size, cached_content = _json_file_cache[path]
+            if cached_mtime == mtime and cached_size == size:
+                return cached_content
+
         with path.open("r", encoding="utf-8") as handle:
             parsed = json.load(handle)
         if isinstance(parsed, dict):
+            _json_file_cache[path] = (mtime, size, parsed)
             return parsed
     except Exception:
         pass
@@ -783,18 +796,43 @@ async def get_stats(profile: str = Query(default=DEFAULT_PROFILE), mode: str = Q
     return stats
 
 
+def _read_last_lines(file_path: Path, num_lines: int) -> list[str]:
+    # Efficiently read the last N lines of a file by seeking backwards
+    chunk_size = 8192
+    lines: list[str] = []
+    buffer = ""
+    try:
+        with open(file_path, "r", encoding="utf-8", errors="replace") as f:
+            f.seek(0, os.SEEK_END)
+            file_size = f.tell()
+            position = file_size
+            while len(lines) <= num_lines and position > 0:
+                to_read = min(chunk_size, position)
+                position -= to_read
+                f.seek(position, os.SEEK_SET)
+                chunk = f.read(to_read)
+                buffer = chunk + buffer
+                lines = buffer.splitlines()
+    except Exception:
+        try:
+            with open(file_path, "r", encoding="utf-8", errors="replace") as f:
+                lines = f.readlines()
+        except Exception:
+            return []
+
+    return [line.strip() for line in lines[-num_lines:]]
+
+
 @app.get("/api/logs")
 async def get_logs(profile: str = Query(default=DEFAULT_PROFILE), limit: int = 50):
     profile_name = normalize_and_validate_profile(profile)
     log_path = Path(options_resolver.USER_DATA_DIR) / f"{Path(profile_name).stem}.log"
-    
+
     if not log_path.exists():
         return {"profile": profile_name, "lines": []}
-        
+
     try:
-        with open(log_path, "r", encoding="utf-8", errors="replace") as f:
-            lines = f.readlines()
-        lines = [line.strip() for line in lines[-limit:]]
+        lines = _read_last_lines(log_path, limit)
         return {"profile": profile_name, "lines": lines}
     except Exception as exc:
         api_error(500, "read_logs_failed", f"Failed to read logs: {str(exc)}")

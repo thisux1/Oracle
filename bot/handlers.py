@@ -190,7 +190,7 @@ async def update_status_messages(channel):
 
             if resolved_chan:
                 try:
-                    msg = await resolved_chan.fetch_message(bot_state.status_discord_msg_id)
+                    msg = resolved_chan.get_partial_message(bot_state.status_discord_msg_id)
                     await msg.edit(content=build_status_discord())
                 except Exception as e:
                     logger.debug(f"Status Discord edit failed: {e}")
