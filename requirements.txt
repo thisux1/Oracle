@@ -1,0 +1,15 @@
+discord.py-self
+tflite-runtime; sys_platform != "win32" and python_version < "3.12"
+tensorflow; sys_platform == "win32"
+numpy
+Pillow
+colorama
+aiohttp
+textual
+fastapi
+uvicorn[standard]
+python-multipart
+pywinpty; sys_platform == "win32"
+# Build dependencies (install separately or use build_windows.py)
+# pyinstaller
+# node (for frontend build)

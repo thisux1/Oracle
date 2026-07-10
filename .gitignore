@@ -1,0 +1,45 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignorar o ambiente virtual
+venv/
+.venv/
+.venv_build/
+env/
+ENV/
+
+# Ignorar arquivos de dados locais e opcoes
+*.ini
+!options_example.ini
+*.png
+session_data.json
+opencode.json
+stats*.json
+stats_*.json
+session_baseline*.json
+TUI_PLAN.md
+
+AGENTS.md
+
+# Build artifacts
+build_windows/
+Output/
+*.spec
+
+# Ignorar arquivos auxiliares e temporarios de animacao
+gatinho.asciimtn
+gatinho.tsx
+final.asciimtn
+final2.asciimtn
+
+# Logs e arquivos dinamicos de execucao
+*.log
+
+# Claude & Graphify
+.claude/
+CLAUDE.md
+.graphify*
+graphify-out/
+.agents/

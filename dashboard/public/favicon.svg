@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <radialGradient id="bg-glow" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+      <stop offset="0%" stop-color="#06b6d4" stop-opacity="1" />
+      <stop offset="50%" stop-color="#a78bfa" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#06060a" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="cyber-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#06b6d4" />
+      <stop offset="100%" stop-color="#a78bfa" />
+    </linearGradient>
+  </defs>
+  <!-- Background Glow -->
+  <circle cx="50" cy="50" r="45" fill="url(#bg-glow)" opacity="0.6" />
+  <!-- Outer Tech Ring -->
+  <circle cx="50" cy="50" r="35" fill="none" stroke="url(#cyber-grad)" stroke-width="4" stroke-dasharray="14 8 4 8" />
+  <!-- Inner Tech Ring -->
+  <circle cx="50" cy="50" r="24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-dasharray="30 10" opacity="0.8" />
+  <!-- Central Diamond Core -->
+  <polygon points="50,28 66,50 50,72 34,50" fill="url(#cyber-grad)" />
+  <circle cx="50" cy="50" r="6" fill="#06060a" />
+  <circle cx="50" cy="50" r="3" fill="#06b6d4" />
+</svg>
