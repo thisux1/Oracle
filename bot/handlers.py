@@ -864,6 +864,8 @@ async def handle_sleepet_summary(embed_dict: dict, embed_text: str) -> None:
         logger.debug("Sleepet summary ignored: Username mismatch.")
         return
 
+    bot_state.sleepet_timeouts = 0
+
     # Parse ready to claim and pet count
     ready_claim_match = re.search(r'ready to claim:\s*(\d+)/(\d+)', embed_text)
     pet_count_match = re.search(r'pet count:\s*(\d+)/(\d+)', embed_text)
@@ -911,6 +913,8 @@ async def handle_sleepet_claim(embed_dict: dict, embed_text: str) -> None:
     if not check_user_matches(embed_dict, config.user_name_lower, config.userID):
         return
 
+    bot_state.sleepet_timeouts = 0
+
     # Check if pet inventory is full (Purrency check)
     if "purrency" in embed_text.lower():
         bot_state.sleepet_mode = False
@@ -954,8 +958,27 @@ async def handle_sleepet_adv(message, msg) -> None:
     elif bot_state.sleepet_mode and bot_state.sleepet_state == "waiting_adventure" and time_since_last_cmd < PET_COMMAND_RECENCY_WINDOW:
         is_for_us = True
 
-    if not is_for_us:
+    # Ensure the message is actually for us (mentions us or contains our username)
+    user_name_clean = config.user_name_lower.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+    msg_clean = msg.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+    is_user_mentioned = (
+        config.user_name_lower in msg 
+        or f"<@{config.userID}>" in msg 
+        or (user_name_clean and user_name_clean in msg_clean)
+    )
+
+    if not is_user_mentioned:
         logger.debug("handle_sleepet_adv ignored: not for us.")
+        return
+
+    bot_state.sleepet_timeouts = 0
+
+    # Check for limit reached
+    if "cannot send another pet to an adventure" in msg:
+        HUD.system("[Sleepet] Limite de aventuras atingido! Prosseguindo para usar poção sleepet...")
+        bot_state.sleepet_state = "waiting_potion"
+        bot_state.last_sleepet_cmd_time = time.monotonic()
+        add_to_high_priority_queue("rpg use sleepet potion")
         return
 
     # Check for instant returns
@@ -1930,6 +1953,7 @@ async def responseResolver(message) -> None:
                         add_to_high_priority_queue("rpg rd")
                     else:
                         HUD.system("Sleepet potion usada com sucesso! Resgatando recompensas...")
+                        bot_state.sleepet_timeouts = 0
                         bot_state.sleepet_state = "waiting_claim"
                         bot_state.last_sleepet_cmd_time = time.monotonic()
                         add_to_high_priority_queue("rpg pet claim")
@@ -1940,7 +1964,7 @@ async def responseResolver(message) -> None:
                     ref = message.reference.resolved
                     if hasattr(ref, "author") and ref.author.id == config.userID:
                         is_our_error = True
-                if config.user_name_lower in msg or str(config.userID) in msg or (user_name_clean and user_name_clean in msg_clean):
+                if config.user_name_lower in msg or f"<@{config.userID}>" in msg or (user_name_clean and user_name_clean in msg_clean):
                     is_our_error = True
                 if bot_state.last_sent_command:
                     last_cmd = bot_state.last_sent_command.lower()
@@ -2377,7 +2401,7 @@ async def responseResolver(message) -> None:
 
             if (
                 target_name in embed_text
-                and "card hand" in embed_text
+                and ("card hand" in author_name or "card hand" in embed_dict.get("title", "").lower())
             ):
                 # ─── Legacy Auto: detect game start from embed, send pass immediately ───
                 if config.card_hand_action == "legacy_auto":
@@ -2404,7 +2428,7 @@ async def responseResolver(message) -> None:
                     return
 
             # ─── Pet Embeds (Summary / Reward / Status) ───
-            if config.do_pet and ("— pets" in embed_text or "pet adventure rewards" in embed_text):
+            if (config.do_pet or bot_state.sleepet_mode) and ("— pets" in embed_text or "pet adventure rewards" in embed_text):
                 from random import randint
                 bot_state.next_pet_summary_check = time.monotonic() + randint(5400, 10800)
                 
@@ -2584,10 +2608,13 @@ async def responseResolver(message) -> None:
 
         # ─── Plain-text Responses ───
         else:
-            # Pet Adventure started confirmation
-            if "started an adventure" in msg:
+            # Pet Adventure started confirmation or limit reached error
+            if "started an adventure" in msg or "cannot send another pet to an adventure" in msg:
                 if bot_state.sleepet_mode:
                     await handle_sleepet_adv(message, msg)
+                    return
+                elif "cannot send another pet to an adventure" in msg:
+                    HUD.system("Limite de aventuras de pet atingido (fora do sleepet mode).")
                     return
                 elif "started an adventure and will be back in" in msg:
                     clean_msg = msg.replace('*', '')

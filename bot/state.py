@@ -150,6 +150,7 @@ class BotState:
         self.sleepet_mode = False
         self.sleepet_state = None  # None, "init", "waiting_summary", "waiting_claim", "waiting_adventure", "waiting_potion"
         self.last_sleepet_cmd_time = 0
+        self.sleepet_timeouts = 0
         self.latest_neon_recommendation = None  # Tuple of (rec, formatted, timestamp)
         # Cooldown override/Dungeon
         self.ruby_dragon_state = None
@@ -482,6 +483,7 @@ def reset_bot_state() -> None:
     bot_state.sleepet_mode = False
     bot_state.sleepet_state = None
     bot_state.last_sleepet_cmd_time = 0
+    bot_state.sleepet_timeouts = 0
     bot_state.next_pet_summary_check = time.monotonic() + randint(5400, 10800)
     bot_state.ruby_dragon_state = None
     bot_state.duel_in_progress = False

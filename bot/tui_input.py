@@ -30,6 +30,7 @@ COMMANDS = {
     "/start": "Inicia ou retoma o bot",
     "/pause": "Pausa o bot (alias: stop, sleep)",
     "/reset": "Limpa estado e filas",
+    "/restart": "Limpa estado e reinicia a conexão com o Discord",
     "/stats": "Exibe estatísticas da sessão",
     "/queue": "Mostra filas HPQ e LPQ",
     "/say": "Envia mensagem ao canal",
@@ -278,7 +279,7 @@ class CommandInput(Input):
             return False
 
         base = parts[0].lower()
-        if base in ["help", "ajuda", "tutorial", "/help", "?", "play", "start", "resume", "pause", "stop", "sleep", "reset", "stats", "queue", "theme", "themes", "exit", "quit", "status"]:
+        if base in ["help", "ajuda", "tutorial", "/help", "?", "play", "start", "resume", "pause", "stop", "sleep", "reset", "restart", "stats", "queue", "theme", "themes", "exit", "quit", "status"]:
             return True
         if base == "say":
             return len(parts) > 1
@@ -445,6 +446,16 @@ class CommandInput(Input):
             reset_bot_state()
             HUD.oracle("Filas, Estados e Cooldowns RESETADOS. Bot despausado!")
             self._notify_system("Filas e estado resetados.", severity="warning")
+
+        elif base == "restart":
+            import bot
+            HUD.oracle("🔄 Restart solicitado via TUI. Limpando estado e reconectando...")
+            self._notify_system("Reiniciando (reset completo)...", severity="warning")
+            highPriorityQueue.clear()
+            highPriorityQueueSet.clear()
+            reset_bot_state()
+            if bot.UserBot:
+                asyncio.create_task(bot.UserBot.close())
 
         elif base == "stats":
             from bot.parsers import format_session_data

@@ -511,10 +511,19 @@ class DiscordClient(discord.Client):
                                 add_to_high_priority_queue("rpg pet summary")
                                 HUD.system("[Sleepet] State machine started with summary command.")
                             elif current_time - bot_state.last_sleepet_cmd_time > SLEEPET_STATE_TIMEOUT:
-                                HUD.alert(f"[Sleepet] State '{bot_state.sleepet_state}' timed out! Re-syncing with pet summary...")
-                                bot_state.sleepet_state = "waiting_summary"
-                                bot_state.last_sleepet_cmd_time = current_time
-                                add_to_high_priority_queue("rpg pet summary")
+                                bot_state.sleepet_timeouts += 1
+                                if bot_state.sleepet_timeouts >= 3:
+                                    bot_state.sleepet_mode = False
+                                    bot_state.sleepet_state = None
+                                    bot_state.sleepet_timeouts = 0
+                                    HUD.alert("[Sleepet] Desativado: Muitos timeouts consecutivos na máquina de estados!")
+                                    await send_telegram_notification("⚠️ *Sleepet Mode desativado:* Excedeu o limite de timeouts consecutivos na máquina de estados! O bot pode estar travado.")
+                                    add_to_high_priority_queue("rpg rd")
+                                else:
+                                    HUD.alert(f"[Sleepet] State '{bot_state.sleepet_state}' timed out ({bot_state.sleepet_timeouts}/3)! Re-syncing with pet summary...")
+                                    bot_state.sleepet_state = "waiting_summary"
+                                    bot_state.last_sleepet_cmd_time = current_time
+                                    add_to_high_priority_queue("rpg pet summary")
                         elif bot_state.time_cookie_mode:
                             if 0 < bot_state.tc_end_time < current_time:
                                 bot_state.time_cookie_mode = False
@@ -637,6 +646,14 @@ class DiscordClient(discord.Client):
                     await message.channel.send(
                         "🔄 **Filas, Estados e Cooldowns Resetados. Bot Despausado!**"
                     )
+                    return
+                elif cmd == "restart":
+                    HUD.alert("🔄 RESTART solicitado via Discord. Limpando estado e reconectando...")
+                    await message.channel.send("🔄 **Bot reiniciando (reset completo de estado)...**")
+                    highPriorityQueue.clear()
+                    highPriorityQueueSet.clear()
+                    reset_bot_state()
+                    await self.close()
                     return
                 # Auto Enchant command check
                 parts = cmd.split()
@@ -1742,6 +1759,15 @@ class DiscordClient(discord.Client):
             bot_state.tc_end_time = 0
             HUD.system("📲 COMANDO TELEGRAM: Modo Time Cookie DESATIVADO.")
             await send_telegram_notification("🛑 *Modo Time Cookie Desativado.*")
+
+        elif cmd in ["/restart", "restart", "/sb restart", "sb restart"]:
+            HUD.alert("📲 COMANDO TELEGRAM: Restart solicitado. Limpando estado e reconectando...")
+            await send_telegram_notification("🔄 Reiniciando bot (reset completo de estado)...")
+            highPriorityQueue.clear()
+            highPriorityQueueSet.clear()
+            reset_bot_state()
+            await self.close()
+            return
 
         # Auto Enchant command check
         else:
