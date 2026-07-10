@@ -879,6 +879,14 @@ async def handle_sleepet_summary(embed_dict: dict, embed_text: str) -> None:
     total_pets = int(pet_count_match.group(1))
     idle_pets = total_pets - total_on_adventure
 
+    # Parse epic skill count to determine max concurrent adventure slots.
+    # Without epic skill: max 1 pet on adventure at a time.
+    # With epic skill: each epic-skilled pet can go independently (slots = epic count).
+    epic_skill_match = re.search(r'(?:^|\s)epic:\s*(\d+)', embed_text)
+    epic_count = int(epic_skill_match.group(1)) if epic_skill_match else 0
+    max_adventure_slots = max(1, epic_count)
+    available_slots = max_adventure_slots - total_on_adventure
+
     if total_pets == 0:
         bot_state.sleepet_mode = False
         bot_state.sleepet_state = None
@@ -887,24 +895,28 @@ async def handle_sleepet_summary(embed_dict: dict, embed_text: str) -> None:
         add_to_high_priority_queue("rpg rd")
         return
 
-    HUD.system(f"[Sleepet] Summary parsed: Ready={ready_to_claim}, OnAdv={total_on_adventure}, Total={total_pets}, Idle={idle_pets}")
+    HUD.system(f"[Sleepet] Summary parsed: Ready={ready_to_claim}, OnAdv={total_on_adventure}, Total={total_pets}, Idle={idle_pets}, Epic={epic_count}, Slots={available_slots}/{max_adventure_slots}")
 
     if ready_to_claim > 0:
         bot_state.sleepet_state = "waiting_claim"
         bot_state.last_sleepet_cmd_time = time.monotonic()
         add_to_high_priority_queue("rpg pet claim")
         HUD.system("[Sleepet] Queued claim.")
-    elif idle_pets > 0:
+    elif available_slots > 0 and idle_pets > 0:
+        # There are free adventure slots AND idle pets — try sending them
         bot_state.sleepet_state = "waiting_adventure"
         bot_state.last_sleepet_cmd_time = time.monotonic()
         add_to_high_priority_queue(config.pet_adventure_command)
         HUD.system(f"[Sleepet] Queued adventure: {config.pet_adventure_command}")
     else:
-        # All on adventure
+        # All adventure slots full OR no idle pets — use sleepet potion
+        if available_slots <= 0:
+            HUD.system(f"[Sleepet] Todos os {max_adventure_slots} slots de aventura ocupados. Usando poção sleepet...")
+        else:
+            HUD.system("[Sleepet] Nenhum pet idle disponível. Usando poção sleepet...")
         bot_state.sleepet_state = "waiting_potion"
         bot_state.last_sleepet_cmd_time = time.monotonic()
         add_to_high_priority_queue("rpg use sleepet potion")
-        HUD.system("[Sleepet] Queued use sleepet potion.")
 
 
 async def handle_sleepet_claim(embed_dict: dict, embed_text: str) -> None:
@@ -959,6 +971,8 @@ async def handle_sleepet_adv(message, msg) -> None:
         is_for_us = True
 
     # Ensure the message is actually for us (mentions us or contains our username)
+    # Some responses (like "no pets met the requirement") don't contain the username,
+    # so for those short system-like responses we rely on the temporal is_for_us check.
     user_name_clean = config.user_name_lower.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
     msg_clean = msg.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
     is_user_mentioned = (
@@ -967,7 +981,11 @@ async def handle_sleepet_adv(message, msg) -> None:
         or (user_name_clean and user_name_clean in msg_clean)
     )
 
-    if not is_user_mentioned:
+    # Short responses without usernames (e.g. ", no pets met the requirement")
+    # are validated by temporal proximity only (is_for_us from command timing)
+    is_short_system_response = any(term in msg for term in ["no pets met the requirement", "cannot send another pet"])
+
+    if not is_user_mentioned and not (is_for_us and is_short_system_response):
         logger.debug("handle_sleepet_adv ignored: not for us.")
         return
 
@@ -976,6 +994,14 @@ async def handle_sleepet_adv(message, msg) -> None:
     # Check for limit reached
     if "cannot send another pet to an adventure" in msg:
         HUD.system("[Sleepet] Limite de aventuras atingido! Prosseguindo para usar poção sleepet...")
+        bot_state.sleepet_state = "waiting_potion"
+        bot_state.last_sleepet_cmd_time = time.monotonic()
+        add_to_high_priority_queue("rpg use sleepet potion")
+        return
+
+    # Check for no qualifying pets (all idle pets don't meet the adventure command requirements)
+    if "no pets met the requirement" in msg:
+        HUD.system("[Sleepet] Nenhum pet atende ao requisito! Prosseguindo para usar poção sleepet...")
         bot_state.sleepet_state = "waiting_potion"
         bot_state.last_sleepet_cmd_time = time.monotonic()
         add_to_high_priority_queue("rpg use sleepet potion")
@@ -2609,7 +2635,7 @@ async def responseResolver(message) -> None:
         # ─── Plain-text Responses ───
         else:
             # Pet Adventure started confirmation or limit reached error
-            if "started an adventure" in msg or "cannot send another pet to an adventure" in msg:
+            if "started an adventure" in msg or "cannot send another pet to an adventure" in msg or "no pets met the requirement" in msg:
                 if bot_state.sleepet_mode:
                     await handle_sleepet_adv(message, msg)
                     return
