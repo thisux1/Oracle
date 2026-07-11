@@ -2410,6 +2410,8 @@ async def responseResolver(message) -> None:
                     bot_state.cardhand_first_pass_done = False
                     bot_state.cardhand_turn_count = 1
                     bot_state.cardhand_message = None
+                    bot_state.legacy_cardhand_waiting = False
+                    bot_state.legacy_cardhand_waiting_since = 0.0
                     _sent_cardhand_images.clear()
                     HUD.system("Card Hand (legacy) concluído! Filas liberadas.")
                 elif not bot_state.cardhand_first_pass_done:
@@ -2438,8 +2440,14 @@ async def responseResolver(message) -> None:
                         bot_state.cardhand_start_time = time.monotonic()
                         bot_state.cardhand_turn_count = 1
                         bot_state.cardhand_channel_id = message.channel.id
+                        bot_state.legacy_cardhand_waiting = False
+                        bot_state.legacy_cardhand_waiting_since = 0.0
                         add_to_high_priority_queue("pass")
                         HUD.system("Card Hand (legacy) iniciado! Pass enfileirado. Filas bloqueadas.")
+                    else:
+                        bot_state.legacy_cardhand_waiting = True
+                        bot_state.legacy_cardhand_waiting_since = time.monotonic()
+                        HUD.system("Card Hand (legacy): Novo turno detectado! Aguardando recomendação do Neon...")
                     # Subsequent turns: Neon handles via on_message/on_message_edit
                     return
 

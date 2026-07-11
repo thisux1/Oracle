@@ -43,3 +43,7 @@ CLAUDE.md
 .graphify*
 graphify-out/
 .agents/
+
+# Planos e Documentação de Desenvolvimento
+docs/
+
