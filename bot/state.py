@@ -135,6 +135,8 @@ class BotState:
         self.cardhand_user_choice = None
         self.cardhand_message = None
         self.cardhand_channel_id = 0
+        self.legacy_cardhand_waiting = False
+        self.legacy_cardhand_waiting_since = 0.0
         # Pet Adventure
         self.pet_adventure_return_time = 0
         self.next_pet_summary_check = time.monotonic() + randint(5400, 10800)
@@ -170,6 +172,7 @@ class BotState:
         self.auto_enchant_attempts = 0
         self.last_auto_enchant_time = 0.0
         self.auto_enchant_withdrawn = False
+        self.auto_enchant_queue = []
         # Live Status Message
         self.status_discord_msg_id = 0
         self.status_discord_channel_id = 0
@@ -468,6 +471,8 @@ def reset_bot_state() -> None:
     bot_state.cardhand_user_choice = None
     bot_state.cardhand_message = None
     bot_state.cardhand_channel_id = 0
+    bot_state.legacy_cardhand_waiting = False
+    bot_state.legacy_cardhand_waiting_since = 0.0
     if hasattr(bot_state, '_cardhand_updated_event') and bot_state._cardhand_updated_event is not None:
         bot_state._cardhand_updated_event.clear()
     bot_state.dungeon_waiting_confirmation = False
@@ -505,6 +510,7 @@ def reset_bot_state() -> None:
     bot_state.auto_enchant_attempts = 0
     bot_state.last_auto_enchant_time = 0.0
     bot_state.auto_enchant_withdrawn = False
+    bot_state.auto_enchant_queue = []
     lowPriorityQueue.clear()
     lowPriorityQueueSet.clear()
     logger.info("Bot state reset to initial values.")
