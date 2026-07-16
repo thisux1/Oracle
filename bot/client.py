@@ -1124,6 +1124,12 @@ class DiscordClient(discord.Client):
             if message.channel.id == config.channelID:
                 bot_state.last_epic_rpg_channel_message_time = time.monotonic()
                 bot_state.response_pending_until = 0
+                if message.components:
+                    logger.debug(f"[Scraper] Botões encontrados em message {message.id} (Epic RPG):")
+                    for idx, row in enumerate(message.components):
+                        buttons = [f"Label='{c.label}' (ID: {c.custom_id}, Disabled: {c.disabled})" for c in row.children if isinstance(c, discord.Button)]
+                        if buttons:
+                            logger.debug(f"  Row {idx}: " + " | ".join(buttons))
             # Plain text errors for Auto Enchant
             if bot_state.auto_enchant_active and message.channel.id == bot_state.auto_enchant_channel_id:
                 if "don't have enough money" in combined_content.lower() or "don't have enough coin" in combined_content.lower():
@@ -1711,6 +1717,13 @@ class DiscordClient(discord.Client):
             return
         if after.channel.id != config.channelID:
             return
+
+        if after.components:
+            logger.debug(f"[Scraper] [EDITED] Botões encontrados em message {after.id} (author={after.author.id}):")
+            for idx, row in enumerate(after.components):
+                buttons = [f"Label='{c.label}' (ID: {c.custom_id}, Disabled: {c.disabled})" for c in row.children if isinstance(c, discord.Button)]
+                if buttons:
+                    logger.debug(f"  Row {idx}: " + " | ".join(buttons))
 
         # Forward cardhand image if applicable on message edit
         from bot.handlers import check_and_forward_cardhand_image
