@@ -613,8 +613,8 @@ class DiscordClient(discord.Client):
                             if bot_state.gather_state in ["init", None]:
                                 bot_state.gather_state = "waiting_map"
                                 bot_state.last_gather_cmd_time = current_time_g
-                                add_to_high_priority_queue("rpg gx map")
-                                HUD.system("[Gather] State machine started: rpg gx map enviado.")
+                                add_to_high_priority_queue("rpg gx map gather planet")
+                                HUD.system("[Gather] State machine started: rpg gx map gather planet enviado.")
                             elif current_time_g - bot_state.last_gather_cmd_time > GATHER_STATE_TIMEOUT:
                                 bot_state.gather_timeouts += 1
                                 if bot_state.gather_timeouts >= 3:
@@ -622,13 +622,13 @@ class DiscordClient(discord.Client):
                                     bot_state.gather_state = None
                                     bot_state.gather_timeouts = 0
                                     HUD.alert("[Gather] Desativado: Muitos timeouts consecutivos!")
-                                    await send_telegram_notification("\u26a0\ufe0f *Gather Mode desativado:* Excedeu o limite de timeouts!")
+                                    await send_telegram_notification("⚠️ *Gather Mode desativado:* Excedeu o limite de timeouts!")
                                     add_to_high_priority_queue("rpg rd")
                                 else:
-                                    HUD.alert(f"[Gather] State '{bot_state.gather_state}' timeout ({bot_state.gather_timeouts}/3)! Re-enviando rpg gx map...")
+                                    HUD.alert(f"[Gather] State '{bot_state.gather_state}' timeout ({bot_state.gather_timeouts}/3)! Re-enviando rpg gx map gather planet...")
                                     bot_state.gather_state = "waiting_map"
                                     bot_state.last_gather_cmd_time = current_time_g
-                                    add_to_high_priority_queue("rpg gx map")
+                                    add_to_high_priority_queue("rpg gx map gather planet")
 
                     # Coinflip State: timeout safety
                     if bot_state.coinflip_pending and current_time - bot_state.last_coinflip_time > COINFLIP_TIMEOUT:
