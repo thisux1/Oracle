@@ -1199,6 +1199,84 @@ async def handle_gather_error(msg: str) -> None:
             logger.debug(f"[Gather] handle_gather_error: nenhum padrão de erro encontrado no estado '{bot_state.gather_state}'.")
 
 
+NEON_INSTALL_RE = re.compile(
+    r'`(rpg\s+(?:gx|galaxy)\s+install\s+\d+[^`]*)`',
+    re.IGNORECASE
+)
+
+async def handle_gather_neon_msg(message) -> None:
+    """Interage com botões do Neon Util para equipar módulos de Gather e executa os comandos sugeridos."""
+    if not bot_state.gather_mode:
+        return
+
+    if bot_state.gather_state not in ["checking_modules", "swapping_modules"]:
+        logger.debug(f"[Gather] Neon msg ignorada: gather_state='{bot_state.gather_state}'")
+        return
+
+    content = message.content or ""
+    if message.embeds:
+        embed_dict = message.embeds[0].to_dict()
+        content += " " + str(embed_dict)
+    content = content.lower()
+
+    logger.debug(f"[Gather] Processando mensagem do Neon. State={bot_state.gather_state}. Content length={len(content)}")
+
+    if "ready to gather" in content or "pronto para coletar" in content:
+        logger.info("[Gather] Neon Util indicou que os módulos de Gather estão prontos!")
+        bot_state.gather_state = "waiting_map"
+        bot_state.gather_timeouts = 0
+        bot_state.last_gather_cmd_time = time.monotonic()
+        add_to_low_priority_queue("rpg gx map gather planet")
+        HUD.system("[Gather] Módulos configurados! Iniciando mapa: rpg gx map gather planet")
+        return
+
+    # 2. Se estiver em "checking_modules", verifica se tem botões para selecionar Gather
+    if bot_state.gather_state == "checking_modules" and message.components:
+        gather_button = None
+        for idx, row in enumerate(message.components):
+            for comp in row.children:
+                if isinstance(comp, discord.Button) and comp.label and "gather" in comp.label.lower():
+                    gather_button = comp
+                    break
+            if gather_button:
+                break
+        
+        if gather_button:
+            logger.info(f"[Gather] Botão 'Gather' encontrado na mensagem do Neon. Clicando...")
+            bot_state.gather_state = "swapping_modules"
+            bot_state.last_gather_cmd_time = time.monotonic()
+            bot_state.gather_timeouts = 0
+            try:
+                await gather_button.click()
+                HUD.system("[Gather] Clicou no botão 'Gather' do Neon Util.")
+            except Exception as e:
+                logger.error(f"[Gather] Erro ao clicar no botão 'Gather': {e}")
+            return
+
+    # 3. Caso contrário, verifica se tem comandos sugeridos para trocar módulos
+    matches = NEON_INSTALL_RE.findall(content)
+    if matches:
+        cmd = matches[0].strip()
+        
+        # Evita loops de spam duplicado no mesmo comando
+        last_sent = getattr(bot_state, "last_neon_sent_cmd", None)
+        last_sent_time = getattr(bot_state, "last_neon_sent_time", 0)
+        if last_sent == cmd and time.monotonic() - last_sent_time < 5:
+            logger.debug(f"[Gather] Ignorando comando de módulo repetido do Neon em curto intervalo: {cmd}")
+            return
+            
+        bot_state.last_neon_sent_cmd = cmd
+        bot_state.last_neon_sent_time = time.monotonic()
+        
+        bot_state.gather_state = "swapping_modules"
+        bot_state.last_gather_cmd_time = time.monotonic()
+        bot_state.gather_timeouts = 0
+        
+        add_to_low_priority_queue(cmd)
+        HUD.system(f"[Gather] Neon sugeriu troca: {cmd}")
+        logger.info(f"[Gather] Enfileirando comando do Neon Util: {cmd}")
+
+
 # [ignoring loop detection]
 CONFIG_CATEGORIES = {
     "commands": {
