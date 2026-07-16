@@ -13,6 +13,7 @@ from bot.hud import logger
 EPIC_RPG_ID = 555955826880413696
 NAVI_LITE_ID = 1213487623688167494
 NEON_BOT_IDS = [754276211302088704, 787861783143637032, 851436490415931422]
+ARMY_BOT_ID = 902703931275247637  # Helper army bot (Galaxy Gather) — ID fixo, nunca muda
 # ─── Oracle Model ───
 img_height, img_width = 128, 128
 language = "pt"
@@ -272,6 +273,7 @@ do_duel      = get_opt_bool("do_duel", False)
 win_duel     = get_opt_bool("win_duel", True)
 duel_partner_id = get_opt("duel_partner_id", "")
 do_pet       = get_opt_bool("do_pet", False)
+do_gather    = get_opt_bool("do_gather", False)
 
 # ─── ULTR / Training ───
 do_ultr = get_opt_bool("do_ultr", False)
@@ -349,7 +351,7 @@ def reload_config(profile_path: Optional[str] = None) -> None:
     global training_command_sequence, is_eternal, life_boost_before_adv, adventure_area
     global current_area, ADMIN_IDS, ALLOWED_IDS, eternal_tier, pet_adventure_command
     global max_area, active_profile_path, do_duel, win_duel, duel_partner_id, do_pet
-    global language
+    global language, do_gather
 
     if profile_path is not None:
         active_profile_path = profile_path
@@ -412,6 +414,7 @@ def reload_config(profile_path: Optional[str] = None) -> None:
     win_duel     = get_opt_bool("win_duel", True)
     duel_partner_id = get_opt("duel_partner_id", "")
     do_pet       = get_opt_bool("do_pet", False)
+    do_gather    = get_opt_bool("do_gather", False)
 
     do_ultr = get_opt_bool("do_ultr", False)
     card_hand_action = get_opt("card_hand_action", "auto").lower()

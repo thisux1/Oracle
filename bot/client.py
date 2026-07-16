@@ -15,7 +15,9 @@ import bot.config as config
 from bot.state import (
     bot_state,
     sessionData,
+    initialSessionData,
     coinflip_strategy,
+    runtimeErrors,
     highPriorityQueue,
     highPriorityQueueSet,
     lowPriorityQueue,
@@ -26,6 +28,7 @@ from bot.state import (
     reset_bot_state,
     queue_tc_commands,
     is_sleepet_command,
+    is_gather_command,
     ENCHANT_TIERS_ORDER,
     AUTO_ENCHANT_MAX_ATTEMPTS,
 )
@@ -49,6 +52,7 @@ CARD_HAND_TIMEOUT = 120
 RESPONSE_PENDING_DURATION = 5.0
 ANTI_SPAM_WINDOW = 5.0
 SLEEPET_STATE_TIMEOUT = 20
+GATHER_STATE_TIMEOUT = 30  # 30s — maior que sleepet pois viagens podem demorar
 TC_REUSE_INTERVAL = 2
 DUNGEON_TIMEOUT = 60
 AUTO_ENCHANT_TIMEOUT = 60
@@ -603,6 +607,29 @@ class DiscordClient(discord.Client):
                                 add_to_low_priority_queue("rpg rd", suppress_log=True)
                                 HUD.tc(f"Ciclo: use tc {bot_state.tc_quantity} -> rd")
 
+                        # ─── Gather Mode watchdog ───
+                        elif bot_state.gather_mode:
+                            current_time_g = time.monotonic()
+                            if bot_state.gather_state in ["init", None]:
+                                bot_state.gather_state = "waiting_map"
+                                bot_state.last_gather_cmd_time = current_time_g
+                                add_to_high_priority_queue("rpg gx map")
+                                HUD.system("[Gather] State machine started: rpg gx map enviado.")
+                            elif current_time_g - bot_state.last_gather_cmd_time > GATHER_STATE_TIMEOUT:
+                                bot_state.gather_timeouts += 1
+                                if bot_state.gather_timeouts >= 3:
+                                    bot_state.gather_mode = False
+                                    bot_state.gather_state = None
+                                    bot_state.gather_timeouts = 0
+                                    HUD.alert("[Gather] Desativado: Muitos timeouts consecutivos!")
+                                    await send_telegram_notification("\u26a0\ufe0f *Gather Mode desativado:* Excedeu o limite de timeouts!")
+                                    add_to_high_priority_queue("rpg rd")
+                                else:
+                                    HUD.alert(f"[Gather] State '{bot_state.gather_state}' timeout ({bot_state.gather_timeouts}/3)! Re-enviando rpg gx map...")
+                                    bot_state.gather_state = "waiting_map"
+                                    bot_state.last_gather_cmd_time = current_time_g
+                                    add_to_high_priority_queue("rpg gx map")
+
                     # Coinflip State: timeout safety
                     if bot_state.coinflip_pending and current_time - bot_state.last_coinflip_time > COINFLIP_TIMEOUT:
                         bot_state.gambling_paused = True
@@ -684,17 +711,47 @@ class DiscordClient(discord.Client):
                 elif cmd == "sleepet start":
                     lowPriorityQueue.clear()
                     lowPriorityQueueSet.clear()
+                    # Exclusão mútua: desativa gather se ativo
+                    if bot_state.gather_mode:
+                        bot_state.gather_mode = False
+                        bot_state.gather_state = None
+                        bot_state.gather_timeouts = 0
+                        HUD.system("[Sleepet] Gather Mode desativado automaticamente.")
                     bot_state.sleepet_mode = True
                     bot_state.sleepet_state = "init"
                     bot_state.last_sleepet_cmd_time = time.monotonic()
                     HUD.system("Sleepet Mode ATIVADO via Discord.")
                     await message.channel.send("😴 **Sleepet Mode Ativado. LPQ limpa e loop de pets iniciado!**")
                     return
-                elif cmd == "sleepet stop":
+                elif cmd in ["sleepet stop", "sleepet pause"]:
                     bot_state.sleepet_mode = False
                     bot_state.sleepet_state = None
                     HUD.system("Sleepet Mode DESATIVADO via Discord.")
-                    await message.channel.send("🛑 **Sleepet Mode Desavtivado. Filas normais liberadas.**")
+                    await message.channel.send("🛑 **Sleepet Mode Desativado. Filas normais liberadas.**")
+                    return
+                elif cmd == "gather start":
+                    lowPriorityQueue.clear()
+                    lowPriorityQueueSet.clear()
+                    # Exclusão mútua
+                    if bot_state.sleepet_mode:
+                        bot_state.sleepet_mode = False
+                        bot_state.sleepet_state = None
+                        HUD.system("[Gather] Sleepet Mode desativado automaticamente.")
+                    bot_state.time_cookie_mode = False
+                    bot_state.tc_end_time = 0
+                    bot_state.gather_mode = True
+                    bot_state.gather_state = "init"
+                    bot_state.last_gather_cmd_time = time.monotonic()
+                    bot_state.gather_timeouts = 0
+                    HUD.system("Gather Mode ATIVADO via Discord.")
+                    await message.channel.send("🌌 **Gather Mode Ativado. LPQ limpa e navegação galáctica iniciada!**")
+                    return
+                elif cmd in ["gather stop", "gather pause"]:
+                    bot_state.gather_mode = False
+                    bot_state.gather_state = None
+                    bot_state.gather_timeouts = 0
+                    HUD.system("Gather Mode DESATIVADO via Discord.")
+                    await message.channel.send("🛑 **Gather Mode Desativado. Filas normais liberadas.**")
                     return
                 elif cmd == "force":
                     await responseResolver(message)
@@ -1022,6 +1079,17 @@ class DiscordClient(discord.Client):
                 )
 
         content_to_log = combined_content.strip()
+
+        # ─── Army Bot Helper: Galaxy Gather ───
+        if bot_state.gather_mode:
+            if message.author.id == config.ARMY_BOT_ID:
+                if message.channel.id == config.channelID:
+                    logger.debug(f"[Gather] Army detectado (author_id={message.author.id}). Roteando para handle_gather_army_msg.")
+                    from bot.handlers import handle_gather_army_msg
+                    await handle_gather_army_msg(message)
+                    return
+                else:
+                    logger.debug(f"[Gather] Army msg ignorada: channel {message.channel.id} ≠ config.channelID {config.channelID}.")
 
         # ─── 2. Channel Filter ───
         is_invite = False
@@ -1367,6 +1435,20 @@ class DiscordClient(discord.Client):
                 HUD.alert("Time Cookies esgotados! Modo TC desativado.")
                 await send_telegram_notification("🚨 Fim dos Time Cookies! Modo Time Cookie desativado automaticamente.")
                 return
+
+            # ─── Galaxy Gather: Epic RPG error responses ───
+            if bot_state.gather_mode:
+                logger.debug(f"[Gather] Epic RPG msg processada pelo gather (state={bot_state.gather_state}). Preview: {repr(combined_content[:200])}")
+                from bot.handlers import (
+                    handle_gather_error,
+                    handle_gather_travel_response,
+                    handle_gather_collected,
+                    handle_gather_poi_response,
+                )
+                await handle_gather_error(combined_content)
+                await handle_gather_travel_response(combined_content)
+                await handle_gather_collected(combined_content)
+                await handle_gather_poi_response(combined_content)
 
             # Financial & Quest Error Handling
             if bot_state.pending_trade_letter and (
@@ -1818,25 +1900,64 @@ class DiscordClient(discord.Client):
                 elif opt in ["cf", "coinflip", "gamble"]:
                     bot_state.gambling_paused = not bot_state.gambling_paused
                     await send_telegram_notification(f"🔄 Coinflip (Cassino) alterado para: {'Pausado' if bot_state.gambling_paused else 'Jogando'}")
+                elif opt == "gather":
+                    bot_state.gather_mode = not bot_state.gather_mode
+                    if bot_state.gather_mode:
+                        bot_state.gather_state = "init"
+                        bot_state.last_gather_cmd_time = time.monotonic()
+                        bot_state.gather_timeouts = 0
+                    else:
+                        bot_state.gather_state = None
+                    await send_telegram_notification(f"🌌 Gather Mode alterado para: {'Ativado' if bot_state.gather_mode else 'Desativado'}")
                 else:
                     await send_telegram_notification(f"❌ Opção desconhecida: {opt}")
             else:
-                await send_telegram_notification("⚠️ Use: `/toggle [hunt/adv/farm/work/cf]`")
+                await send_telegram_notification("⚠️ Use: `/toggle [hunt/adv/farm/work/cf/gather]`")
                 
         elif cmd == "/sleepet start" or cmd == "sleepet start":
             lowPriorityQueue.clear()
             lowPriorityQueueSet.clear()
+            # Exclusão mútua
+            if bot_state.gather_mode:
+                bot_state.gather_mode = False
+                bot_state.gather_state = None
+                bot_state.gather_timeouts = 0
+                HUD.system("[Sleepet] Gather Mode desativado automaticamente.")
             bot_state.sleepet_mode = True
             bot_state.sleepet_state = "init"
             bot_state.last_sleepet_cmd_time = time.monotonic()
             HUD.system("📲 COMANDO TELEGRAM: Sleepet Mode ATIVADO.")
             await send_telegram_notification("😴 *Sleepet Mode Ativado.* LPQ limpa e loop de pets iniciado!")
 
-        elif cmd.startswith("/sleepet stop") or cmd == "sleepet stop":
+        elif cmd.startswith("/sleepet stop") or cmd in ["sleepet stop", "sleepet pause", "/sleepet pause"]:
             bot_state.sleepet_mode = False
             bot_state.sleepet_state = None
             HUD.system("📲 COMANDO TELEGRAM: Sleepet Mode DESATIVADO.")
             await send_telegram_notification("🛑 *Sleepet Mode Desativado. Filas normais liberadas.*")
+
+        elif cmd == "/gather start" or cmd == "gather start":
+            lowPriorityQueue.clear()
+            lowPriorityQueueSet.clear()
+            # Exclusão mútua
+            if bot_state.sleepet_mode:
+                bot_state.sleepet_mode = False
+                bot_state.sleepet_state = None
+                HUD.system("[Gather] Sleepet Mode desativado automaticamente.")
+            bot_state.time_cookie_mode = False
+            bot_state.tc_end_time = 0
+            bot_state.gather_mode = True
+            bot_state.gather_state = "init"
+            bot_state.last_gather_cmd_time = time.monotonic()
+            bot_state.gather_timeouts = 0
+            HUD.system("📲 COMANDO TELEGRAM: Gather Mode ATIVADO.")
+            await send_telegram_notification("🌌 *Gather Mode Ativado.* LPQ limpa e navegação galáctica iniciada!")
+
+        elif cmd.startswith("/gather stop") or cmd in ["gather stop", "gather pause", "/gather pause"]:
+            bot_state.gather_mode = False
+            bot_state.gather_state = None
+            bot_state.gather_timeouts = 0
+            HUD.system("📲 COMANDO TELEGRAM: Gather Mode DESATIVADO.")
+            await send_telegram_notification("🛑 *Gather Mode Desativado. Filas normais liberadas.*")
 
         elif cmd.startswith("/tc start") or cmd.startswith("tc start"):
             parts = cmd.split()
@@ -2028,12 +2149,14 @@ class DiscordClient(discord.Client):
                 "• `pause` ou `/pause` - Pausa todas as ações do bot\n"
                 "• `resume` ou `/resume` - Retoma as ações do bot\n"
                 "• `sleepet start` ou `/sleepet start` - Inicia Sleepet Mode\n"
-                "• `sleepet stop` ou `/sleepet stop` - Para Sleepet Mode\n"
+                "• `sleepet stop/pause` ou `/sleepet stop` - Para Sleepet Mode\n"
+                "• `gather start` ou `/gather start` - Inicia Gather Mode (Galaxy)\n"
+                "• `gather stop/pause` ou `/gather stop` - Para Gather Mode\n"
                 "• `tc start [Xc] [Xm]` ou `/tc start [Xc] [Xm]` - Inicia Time Cookie Mode (ex: `/tc start 1c 5m`)\n"
                 "• `tc stop` ou `/tc stop` - Desativa Time Cookie Mode\n"
                 "• `enchant/refine/transmute/transcend <a/s> <enchant_name>` - Inicia Auto Enchant (ex: `/refine s godly`)\n"
                 "• `enchant/refine/transmute/transcend stop` - Para Auto Enchant\n"
-                "• `toggle [hunt/adv/farm/work/cf]` - Alterna configurações em tempo real (cf = coinflip/gambling)\n"
+                "• `toggle [hunt/adv/farm/work/cf/gather]` - Alterna configurações em tempo real\n"
                 "• `language [pt/en]` ou `/language [pt/en]` - Altera o idioma do bot / Change bot language\n"
                 "• `config [categoria/parametro] [valor]` ou `/config [categoria/parametro] [valor]` - Gerenciamento dinâmico de configuração\n"
                 "• `export [ini/txt]` ou `/export [ini/txt]` - Exporta o arquivo de configuração atual\n"

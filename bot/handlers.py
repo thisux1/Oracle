@@ -1,4 +1,5 @@
 import os
+import html
 import discord
 import re
 import time
@@ -83,6 +84,8 @@ def _get_state_label():
         return f"🤺 Duel ({step})", "minigame"
     if bot_state.auto_enchant_active:
         return f"✨ Enchanting ({bot_state.auto_enchant_attempts})", "minigame"
+    if bot_state.gather_mode:
+        return f"🌌 Gather ({bot_state.gather_state or 'init'})", "special"
     if bot_state.sleepet_mode:
         return f"🐾 Sleepet ({bot_state.sleepet_state or 'init'})", "special"
     if bot_state.time_cookie_mode:
@@ -1021,6 +1024,181 @@ async def handle_sleepet_adv(message, msg) -> None:
     add_to_high_priority_queue("rpg use sleepet potion")
 
 
+# ─── Gather Mode (Galaxy) ───
+
+ARMY_COMMAND_RE = re.compile(
+    r'`(rpg\s+(?:galaxy\s+travel|gx\s+travel|gx\s+gather|galaxy\s+poi|gx\s+poi|gx\s+map|galaxy\s+map)[^`]*)`',
+    re.IGNORECASE
+)
+GATHER_TRAVEL_RE = re.compile(
+    r'\*\*(.+?)\*\*\s+used\s+(\d+)\s+.+?\*\*dragon fuel\*\*\s+and\s+traveled\s+to\s+\*\*(-?\d+),\s*(-?\d+)\*\*',
+    re.IGNORECASE
+)
+GATHER_LANDED_RE = re.compile(
+    r'\*\*(.+?)\*\*\s+landed\s+on\s+\*\*(ASTEROID|PLANETOID|PLANET)\s+(\d+)\*\*!',
+    re.IGNORECASE
+)
+GATHER_COLLECTED_RE = re.compile(
+    r'\*\*(.+?)\*\*\s+gathered\s+the\s+\*\*(ASTEROID|PLANETOID|PLANET)\s+(\d+)\*\*\s+and\s+got\s+(.+)',
+    re.IGNORECASE
+)
+
+
+async def handle_gather_army_msg(message) -> None:
+    """Processa mensagem do army e enfileira o comando sugerido na LPQ."""
+    if not bot_state.gather_mode:
+        return
+    if bot_state.gather_state not in ["waiting_army", "waiting_map", "traveling", "waiting_poi", "gathering", "init"]:
+        logger.debug(f"[Gather] Army msg ignorada: gather_state='{bot_state.gather_state}' não é esperado.")
+        return
+
+    msg = message.content
+    logger.debug(f"[Gather] Mensagem do army recebida (author={message.author.id}, state={bot_state.gather_state}): {repr(msg[:200])}")
+
+    match = ARMY_COMMAND_RE.search(msg)
+    if not match:
+        logger.debug(f"[Gather] ARMY_COMMAND_RE não encontrou comando em backticks. Mensagem: {repr(msg[:300])}")
+        return
+
+    command = match.group(1).strip()
+    cmd_lower = command.lower()
+    logger.debug(f"[Gather] Comando extraído do army: '{command}'")
+
+    bot_state.gather_timeouts = 0
+
+    if "travel" in cmd_lower:
+        logger.debug(f"[Gather] Ação: TRAVEL → state=traveling, cmd='{command}'")
+        bot_state.gather_state = "traveling"
+        bot_state.last_gather_cmd_time = time.monotonic()
+        add_to_low_priority_queue(command)
+        HUD.system(f"[Gather] Army: viagem → {command}")
+    elif "poi" in cmd_lower:
+        logger.debug(f"[Gather] Ação: POI → state=waiting_poi, cmd='{command}'")
+        bot_state.gather_state = "waiting_poi"
+        bot_state.last_gather_cmd_time = time.monotonic()
+        add_to_low_priority_queue(command)
+        HUD.system(f"[Gather] Army: POI desconhecido → {command}")
+    elif "gather" in cmd_lower:
+        logger.debug(f"[Gather] Ação: GATHER → state=gathering, cmd='{command}'")
+        bot_state.gather_state = "gathering"
+        bot_state.last_gather_cmd_time = time.monotonic()
+        add_to_low_priority_queue(command)
+        HUD.system(f"[Gather] Army: coleta → {command}")
+    elif "map" in cmd_lower:
+        logger.debug(f"[Gather] Ação: MAP → state=waiting_map, cmd='{command}'")
+        # Army pode mandar rpg gx map de volta; re-enfileira
+        bot_state.gather_state = "waiting_map"
+        bot_state.last_gather_cmd_time = time.monotonic()
+        add_to_low_priority_queue(command)
+        HUD.system(f"[Gather] Army: mapa → {command}")
+    else:
+        logger.debug(f"[Gather] Comando do army não classificado (travel/poi/gather/map): '{command}'")
+
+
+async def handle_gather_travel_response(msg: str) -> None:
+    """Processa resposta de viagem do Epic RPG."""
+    if not bot_state.gather_mode or bot_state.gather_state != "traveling":
+        return
+
+    logger.debug(f"[Gather] Tentando parsear TRAVEL_RE. Preview: {repr(msg[:300])}")
+    travel_match = GATHER_TRAVEL_RE.search(msg)
+    if not travel_match:
+        logger.debug("[Gather] GATHER_TRAVEL_RE: sem match. Mensagem não contém padrão de viagem.")
+        return
+
+    bot_state.gather_timeouts = 0
+    fuel_used = int(travel_match.group(2))
+    x, y = int(travel_match.group(3)), int(travel_match.group(4))
+    logger.debug(f"[Gather] TRAVEL_RE match: user='{travel_match.group(1)}', fuel={fuel_used}, x={x}, y={y}")
+    HUD.system(f"[Gather] Viajou para ({x}, {y}) — {fuel_used} dragon fuel usado.")
+
+    landed_match = GATHER_LANDED_RE.search(msg)
+    if landed_match:
+        poi_type = landed_match.group(2)
+        poi_id = landed_match.group(3)
+        logger.debug(f"[Gather] LANDED_RE match: poi_type='{poi_type}', poi_id='{poi_id}'")
+        HUD.system(f"[Gather] Aterrissou em {poi_type} {poi_id}!")
+    else:
+        logger.debug("[Gather] LANDED_RE: sem aterrissagem nesta viagem (espaço vazio).")
+
+    # Aguarda o army mandar o próximo passo
+    logger.debug("[Gather] Transição: traveling → waiting_army")
+    bot_state.gather_state = "waiting_army"
+    bot_state.last_gather_cmd_time = time.monotonic()
+
+
+async def handle_gather_collected(msg: str) -> None:
+    """Processa resposta de coleta do Epic RPG."""
+    if not bot_state.gather_mode or bot_state.gather_state != "gathering":
+        return
+
+    logger.debug(f"[Gather] Tentando parsear COLLECTED_RE. Preview: {repr(msg[:300])}")
+    gathered_match = GATHER_COLLECTED_RE.search(msg)
+    if not gathered_match:
+        logger.debug("[Gather] GATHER_COLLECTED_RE: sem match. Possível falha no padrão ou mensagem inesperada.")
+        return
+
+    bot_state.gather_timeouts = 0
+    poi_type = gathered_match.group(2)
+    poi_id = gathered_match.group(3)
+    rewards = gathered_match.group(4)
+    logger.debug(f"[Gather] COLLECTED_RE match: poi_type='{poi_type}', poi_id='{poi_id}', rewards='{rewards[:100]}'")
+    HUD.system(f"[Gather] Coletou {poi_type} {poi_id}! Rewards: {rewards}")
+
+    # Volta a aguardar o army (que pode mandar outra viagem ou parar)
+    logger.debug("[Gather] Transição: gathering → waiting_army")
+    bot_state.gather_state = "waiting_army"
+    bot_state.last_gather_cmd_time = time.monotonic()
+
+
+async def handle_gather_poi_response(msg: str) -> None:
+    """Processa confirmação do rpg gx poi pelo Epic RPG."""
+    if not bot_state.gather_mode or bot_state.gather_state != "waiting_poi":
+        return
+
+    logger.debug(f"[Gather] POI response check. user_name_lower='{config.user_name_lower}'. Preview: {repr(msg[:200])}")
+    # Qualquer resposta após o poi é suficiente; basta ter algo mencionando nosso username
+    if config.user_name_lower and config.user_name_lower not in msg.lower():
+        logger.debug(f"[Gather] POI response ignorada: username '{config.user_name_lower}' não encontrado na mensagem.")
+        return
+
+    bot_state.gather_timeouts = 0
+    logger.debug("[Gather] POI response aceita! Transição: waiting_poi → waiting_army")
+    HUD.system("[Gather] POI registrado! Aguardando próximo comando do army...")
+    bot_state.gather_state = "waiting_army"
+    bot_state.last_gather_cmd_time = time.monotonic()
+
+
+async def handle_gather_error(msg: str) -> None:
+    """Detecta erros de combustível/pontos e desativa o Gather Mode."""
+    if not bot_state.gather_mode:
+        return
+
+    fuel_match = re.search(r"don'?t have enough dragon fuel", msg, re.IGNORECASE)
+    points_match = re.search(r"don'?t have any point", msg, re.IGNORECASE)
+
+    if fuel_match:
+        logger.debug(f"[Gather] ERRO detectado: sem dragon fuel. Match: '{fuel_match.group()}'")
+        bot_state.gather_mode = False
+        bot_state.gather_state = None
+        bot_state.gather_timeouts = 0
+        HUD.alert("[Gather] Combustível insuficiente! Mode desativado.")
+        await send_telegram_notification("⛽ *Gather Mode desativado:* Sem dragon fuel!")
+        add_to_high_priority_queue("rpg rd")
+    elif points_match:
+        logger.debug(f"[Gather] ERRO detectado: sem POInts. Match: '{points_match.group()}'")
+        bot_state.gather_mode = False
+        bot_state.gather_state = None
+        bot_state.gather_timeouts = 0
+        HUD.alert("[Gather] POInts esgotados! Mode desativado.")
+        await send_telegram_notification("📍 *Gather Mode desativado:* Sem POInts disponíveis!")
+        add_to_high_priority_queue("rpg rd")
+    else:
+        # Só loga se estivermos em estado onde erros são esperados (pós-comando)
+        if bot_state.gather_state in ["traveling", "gathering", "waiting_poi"]:
+            logger.debug(f"[Gather] handle_gather_error: nenhum padrão de erro encontrado no estado '{bot_state.gather_state}'.")
+
+
 # [ignoring loop detection]
 CONFIG_CATEGORIES = {
     "commands": {
@@ -1039,6 +1217,7 @@ CONFIG_CATEGORIES = {
             "do_card_hand": {"desc": "Joga/alerta minigame card hand.", "type": "bool", "syntax": "do_card_hand <true/false>"},
             "do_duel": {"desc": "Ativa automação de duelos.", "type": "bool", "syntax": "do_duel <true/false>"},
             "do_pet": {"desc": "Ativa envios de aventuras de pet.", "type": "bool", "syntax": "do_pet <true/false>"},
+            "do_gather": {"desc": "Ativa Gather Mode (Galaxy).", "type": "bool", "syntax": "do_gather <true/false>"},
             "do_ultr": {"desc": "Ativa sequência de treino ULTR.", "type": "bool", "syntax": "do_ultr <true/false>"}
         }
     },
@@ -1110,6 +1289,7 @@ TOGGLE_ALIASES = {
     "do_card_hand": "card",
     "do_duel": "duel",
     "do_pet": "pet",
+    "do_gather": "gather",
     "do_ultr": "ultr",
     "is_married": "married",
     "is_ascended": "ascended",
@@ -1220,6 +1400,7 @@ def find_bool_param(name: str) -> str | None:
         "card": "do_card_hand", "hand": "do_card_hand", "cardhand": "do_card_hand", "docardhand": "do_card_hand", "do_card_hand": "do_card_hand",
         "duel": "do_duel", "doduel": "do_duel",
         "pet": "do_pet", "dopet": "do_pet",
+        "gather": "do_gather", "dogather": "do_gather", "galaxy": "do_gather",
         "ultr": "do_ultr", "doultr": "do_ultr",
         "married": "is_married", "ismarried": "is_married", "marry": "is_married",
         "ascended": "is_ascended", "isascended": "is_ascended", "ascend": "is_ascended",
@@ -1265,6 +1446,7 @@ def resolve_parameter_and_value(text: str) -> tuple[str, str, dict] | None:
             "card": "do_card_hand", "hand": "do_card_hand", "cardhand": "do_card_hand", "docardhand": "do_card_hand", "do_card_hand": "do_card_hand",
             "duel": "do_duel", "doduel": "do_duel",
             "pet": "do_pet", "dopet": "do_pet",
+            "gather": "do_gather", "dogather": "do_gather", "galaxy": "do_gather",
             "ultr": "do_ultr", "doultr": "do_ultr",
             "token": "user_token", "discordtoken": "user_token",
             "channel": "channel_id",
@@ -1292,7 +1474,7 @@ def resolve_parameter_and_value(text: str) -> tuple[str, str, dict] | None:
             "eternal": "is_eternal",
             "eternaltier": "eternal_tier",
             "winduel": "win_duel", "winduels": "win_duel",
-            "partnerid": "duel_partner_id"
+            "partnerid": "duel_partner_id",
         }
         
         for alias, canonical in aliases.items():
@@ -1338,6 +1520,7 @@ def resolve_parameter_and_value(text: str) -> tuple[str, str, dict] | None:
         "card": "do_card_hand", "hand": "do_card_hand", "cardhand": "do_card_hand", "docardhand": "do_card_hand", "do_card_hand": "do_card_hand",
         "duel": "do_duel", "doduel": "do_duel",
         "pet": "do_pet", "dopet": "do_pet",
+        "gather": "do_gather", "dogather": "do_gather", "galaxy": "do_gather",
         "ultr": "do_ultr", "doultr": "do_ultr",
         "token": "user_token", "discordtoken": "user_token",
         "channel": "channel_id",
@@ -1365,7 +1548,7 @@ def resolve_parameter_and_value(text: str) -> tuple[str, str, dict] | None:
         "eternal": "is_eternal",
         "eternaltier": "eternal_tier",
         "winduel": "win_duel", "winduels": "win_duel",
-        "partnerid": "duel_partner_id"
+        "partnerid": "duel_partner_id",
     }
     
     if norm_param in aliases:
@@ -2642,6 +2825,40 @@ async def responseResolver(message) -> None:
 
         # ─── Plain-text Responses ───
         else:
+            # ─── Death and Level Loss Detection ───
+            user_name_clean = config.user_name_lower.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip() if config.user_name_lower else ""
+            msg_clean = msg.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+            
+            is_user_mention = (
+                (config.user_name_lower and config.user_name_lower in msg)
+                or f"<@{config.userID}>" in msg
+                or (user_name_clean and user_name_clean in msg_clean)
+            )
+            
+            if is_user_mention:
+                is_death = False
+                if "but lost fighting" in msg or "lost fighting" in msg:
+                    is_death = True
+                elif "losing a level" in msg or "lost a level" in msg or "lost 1 level" in msg or "lost one level" in msg:
+                    is_death = True
+                elif "part of your plan or not" in msg:
+                    is_death = True
+                elif "was dying and losing" in msg:
+                    is_death = True
+                    
+                if is_death:
+                    if "horse saved" in msg:
+                        logger.info("Horse saved the player from death.")
+                        escaped_content = html.escape(message.content)
+                        await send_telegram_html(f"🐴 <b>SEU CAVALO TE SALVOU DA MORTE!</b>\n\n{escaped_content}")
+                    else:
+                        logger.warning("Player died and lost a level!")
+                        if "level" in msg or "losing" in msg or "lost" in msg:
+                            if "levels" in sessionData["progress_data"]:
+                                sessionData["progress_data"]["levels"] = max(0, sessionData["progress_data"]["levels"] - 1)
+                        escaped_content = html.escape(message.content)
+                        await send_telegram_html(f"💀 <b>VOCÊ MORREU E PERDEU UM NÍVEL!</b>\n\n{escaped_content}")
+
             # Pet Adventure started confirmation or limit reached error
             if "started an adventure" in msg or "cannot send another pet to an adventure" in msg or "no pets met the requirement" in msg:
                 if bot_state.sleepet_mode:
