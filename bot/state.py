@@ -153,6 +153,11 @@ class BotState:
         self.sleepet_state = None  # None, "init", "waiting_summary", "waiting_claim", "waiting_adventure", "waiting_potion"
         self.last_sleepet_cmd_time = 0
         self.sleepet_timeouts = 0
+        # Gather Mode (Galaxy)
+        self.gather_mode = False
+        self.gather_state = None  # None, "init", "waiting_map", "waiting_army", "traveling", "waiting_poi", "gathering"
+        self.last_gather_cmd_time = 0
+        self.gather_timeouts = 0
         self.latest_neon_recommendation = None  # Tuple of (rec, formatted, timestamp)
         # Cooldown override/Dungeon
         self.ruby_dragon_state = None
@@ -348,6 +353,20 @@ def is_sleepet_command(command: str) -> bool:
     return cmd_clean.startswith("rpg pet") or "sleepet" in cmd_clean or "rpg use sleepet" in cmd_clean
 
 
+def is_gather_command(command: str) -> bool:
+    """Verifica se um comando é permitido durante o Gather Mode."""
+    if bot_state.captcha_pending or bot_state.jailed:
+        return True
+    cmd_clean = command.strip().lower()
+    # Emergency and jail/protest commands
+    if cmd_clean in ["protest", "rpg jail", "fight", "move", "cry"] or any(x in cmd_clean for x in ["jail", "protest"]):
+        return True
+    # Captcha short answers
+    if len(cmd_clean) <= CAPTCHA_SHORT_CMD_MAX_LEN and not cmd_clean.startswith("rpg"):
+        return True
+    return any(x in cmd_clean for x in ["rpg gx", "rpg galaxy", "galaxy travel", "gx gather", "gx poi", "gx map"])
+
+
 def _get_base_action(command: str) -> Optional[str]:
     cmd = command.lower().strip()
     if cmd.startswith("rpg "):
@@ -392,6 +411,8 @@ def add_to_low_priority_queue(command: str, suppress_log: bool = False) -> None:
 
     if bot_state.sleepet_mode and not is_sleepet_command(command):
         return
+    if bot_state.gather_mode and not is_gather_command(command):
+        return
     # Block low-priority rpg commands if duel or auto-enchant is active
     if (bot_state.duel_in_progress or bot_state.auto_enchant_active) and command.lower().strip().startswith("rpg"):
         return
@@ -414,6 +435,8 @@ def add_to_high_priority_queue(command: str) -> None:
             return
 
     if bot_state.sleepet_mode and not is_sleepet_command(command):
+        return
+    if bot_state.gather_mode and not is_gather_command(command):
         return
     # Check if this action is already in HPQ
     base_action = _get_base_action(command)
@@ -489,6 +512,10 @@ def reset_bot_state() -> None:
     bot_state.sleepet_state = None
     bot_state.last_sleepet_cmd_time = 0
     bot_state.sleepet_timeouts = 0
+    bot_state.gather_mode = False
+    bot_state.gather_state = None
+    bot_state.last_gather_cmd_time = 0
+    bot_state.gather_timeouts = 0
     bot_state.next_pet_summary_check = time.monotonic() + randint(5400, 10800)
     bot_state.ruby_dragon_state = None
     bot_state.duel_in_progress = False
