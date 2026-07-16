@@ -364,7 +364,7 @@ def is_gather_command(command: str) -> bool:
     # Captcha short answers
     if len(cmd_clean) <= CAPTCHA_SHORT_CMD_MAX_LEN and not cmd_clean.startswith("rpg"):
         return True
-    return any(x in cmd_clean for x in ["rpg gx", "rpg galaxy", "galaxy travel", "gx gather", "gx poi", "gx map"])
+    return any(x in cmd_clean for x in ["rpg gx", "rpg galaxy", "galaxy travel", "gx gather", "gx poi", "gx map", "rpg i", "rpg info", "modules"])
 
 
 def _get_base_action(command: str) -> Optional[str]:
