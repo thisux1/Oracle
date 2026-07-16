@@ -155,7 +155,7 @@ class BotState:
         self.sleepet_timeouts = 0
         # Gather Mode (Galaxy)
         self.gather_mode = False
-        self.gather_state = None  # None, "init", "waiting_map", "waiting_army", "traveling", "waiting_poi", "gathering"
+        self.gather_state = None  # None, "init", "checking_modules", "swapping_modules", "waiting_map", "waiting_army", "traveling", "waiting_poi", "gathering"
         self.last_gather_cmd_time = 0
         self.gather_timeouts = 0
         self.latest_neon_recommendation = None  # Tuple of (rec, formatted, timestamp)

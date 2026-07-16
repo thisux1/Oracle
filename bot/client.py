@@ -611,10 +611,10 @@ class DiscordClient(discord.Client):
                         elif bot_state.gather_mode:
                             current_time_g = time.monotonic()
                             if bot_state.gather_state in ["init", None]:
-                                bot_state.gather_state = "waiting_map"
+                                bot_state.gather_state = "checking_modules"
                                 bot_state.last_gather_cmd_time = current_time_g
-                                add_to_high_priority_queue("rpg gx map gather planet")
-                                HUD.system("[Gather] State machine started: rpg gx map gather planet enviado.")
+                                add_to_high_priority_queue("rpg i modules")
+                                HUD.system("[Gather] Iniciando checagem de módulos: rpg i modules enviado.")
                             elif current_time_g - bot_state.last_gather_cmd_time > GATHER_STATE_TIMEOUT:
                                 bot_state.gather_timeouts += 1
                                 if bot_state.gather_timeouts >= 3:
@@ -625,10 +625,16 @@ class DiscordClient(discord.Client):
                                     await send_telegram_notification("⚠️ *Gather Mode desativado:* Excedeu o limite de timeouts!")
                                     add_to_high_priority_queue("rpg rd")
                                 else:
-                                    HUD.alert(f"[Gather] State '{bot_state.gather_state}' timeout ({bot_state.gather_timeouts}/3)! Re-enviando rpg gx map gather planet...")
-                                    bot_state.gather_state = "waiting_map"
-                                    bot_state.last_gather_cmd_time = current_time_g
-                                    add_to_high_priority_queue("rpg gx map gather planet")
+                                    if bot_state.gather_state in ["checking_modules", "swapping_modules"]:
+                                        HUD.alert(f"[Gather] State '{bot_state.gather_state}' timeout ({bot_state.gather_timeouts}/3)! Re-enviando rpg i modules...")
+                                        bot_state.gather_state = "checking_modules"
+                                        bot_state.last_gather_cmd_time = current_time_g
+                                        add_to_high_priority_queue("rpg i modules")
+                                    else:
+                                        HUD.alert(f"[Gather] State '{bot_state.gather_state}' timeout ({bot_state.gather_timeouts}/3)! Re-enviando rpg gx map gather planet...")
+                                        bot_state.gather_state = "waiting_map"
+                                        bot_state.last_gather_cmd_time = current_time_g
+                                        add_to_high_priority_queue("rpg gx map gather planet")
 
                     # Coinflip State: timeout safety
                     if bot_state.coinflip_pending and current_time - bot_state.last_coinflip_time > COINFLIP_TIMEOUT:
@@ -1090,6 +1096,15 @@ class DiscordClient(discord.Client):
                     return
                 else:
                     logger.debug(f"[Gather] Army msg ignorada: channel {message.channel.id} ≠ config.channelID {config.channelID}.")
+            
+            elif message.author.id in config.NEON_BOT_IDS:
+                if message.channel.id == config.channelID:
+                    logger.debug(f"[Gather] Neon detectado (author_id={message.author.id}). Roteando para handle_gather_neon_msg.")
+                    from bot.handlers import handle_gather_neon_msg
+                    await handle_gather_neon_msg(message)
+                    return
+                else:
+                    logger.debug(f"[Gather] Neon msg ignorada: channel {message.channel.id} ≠ config.channelID {config.channelID}.")
 
         # ─── 2. Channel Filter ───
         is_invite = False
@@ -1778,6 +1793,12 @@ class DiscordClient(discord.Client):
 
         # Neon Bot Helper edit — handle based on card_hand_action mode
         if after.author.id in config.NEON_BOT_IDS:
+            if bot_state.gather_mode:
+                logger.debug(f"[Gather] Neon edit detectado (author_id={after.author.id}). Roteando para handle_gather_neon_msg.")
+                from bot.handlers import handle_gather_neon_msg
+                await handle_gather_neon_msg(after)
+                return
+
             embed_dict = after.embeds[0].to_dict()
             rec = parse_neon_recommendation(embed_dict)
             if rec:
