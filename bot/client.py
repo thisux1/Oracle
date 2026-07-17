@@ -615,26 +615,28 @@ class DiscordClient(discord.Client):
                                 bot_state.last_gather_cmd_time = current_time_g
                                 add_to_high_priority_queue("rpg i modules")
                                 HUD.system("[Gather] Iniciando checagem de módulos: rpg i modules enviado.")
-                            elif current_time_g - bot_state.last_gather_cmd_time > GATHER_STATE_TIMEOUT:
-                                bot_state.gather_timeouts += 1
-                                if bot_state.gather_timeouts >= 3:
-                                    bot_state.gather_mode = False
-                                    bot_state.gather_state = None
-                                    bot_state.gather_timeouts = 0
-                                    HUD.alert("[Gather] Desativado: Muitos timeouts consecutivos!")
-                                    await send_telegram_notification("⚠️ *Gather Mode desativado:* Excedeu o limite de timeouts!")
-                                    add_to_high_priority_queue("rpg rd")
-                                else:
-                                    if bot_state.gather_state in ["checking_modules", "swapping_modules"]:
-                                        HUD.alert(f"[Gather] State '{bot_state.gather_state}' timeout ({bot_state.gather_timeouts}/3)! Re-enviando rpg i modules...")
-                                        bot_state.gather_state = "checking_modules"
-                                        bot_state.last_gather_cmd_time = current_time_g
-                                        add_to_high_priority_queue("rpg i modules")
+                            else:
+                                timeout_limit = 120 if bot_state.gather_state == "waiting_army" else GATHER_STATE_TIMEOUT
+                                if current_time_g - bot_state.last_gather_cmd_time > timeout_limit:
+                                    bot_state.gather_timeouts += 1
+                                    if bot_state.gather_timeouts >= 3:
+                                        bot_state.gather_mode = False
+                                        bot_state.gather_state = None
+                                        bot_state.gather_timeouts = 0
+                                        HUD.alert("[Gather] Desativado: Muitos timeouts consecutivos!")
+                                        await send_telegram_notification("⚠️ *Gather Mode desativado:* Excedeu o limite de timeouts!")
+                                        add_to_high_priority_queue("rpg rd")
                                     else:
-                                        HUD.alert(f"[Gather] State '{bot_state.gather_state}' timeout ({bot_state.gather_timeouts}/3)! Re-enviando rpg gx map gather planet...")
-                                        bot_state.gather_state = "waiting_map"
-                                        bot_state.last_gather_cmd_time = current_time_g
-                                        add_to_high_priority_queue("rpg gx map gather planet")
+                                        if bot_state.gather_state in ["checking_modules", "swapping_modules"]:
+                                            HUD.alert(f"[Gather] State '{bot_state.gather_state}' timeout ({bot_state.gather_timeouts}/3)! Re-enviando rpg i modules...")
+                                            bot_state.gather_state = "checking_modules"
+                                            bot_state.last_gather_cmd_time = current_time_g
+                                            add_to_high_priority_queue("rpg i modules")
+                                        else:
+                                            HUD.alert(f"[Gather] State '{bot_state.gather_state}' timeout ({bot_state.gather_timeouts}/3)! Re-enviando rpg gx map gather planet...")
+                                            bot_state.gather_state = "waiting_map"
+                                            bot_state.last_gather_cmd_time = current_time_g
+                                            add_to_high_priority_queue("rpg gx map gather planet")
 
                     # Coinflip State: timeout safety
                     if bot_state.coinflip_pending and current_time - bot_state.last_coinflip_time > COINFLIP_TIMEOUT:
@@ -1756,17 +1758,19 @@ class DiscordClient(discord.Client):
 
         if bot_state.paused:
             return
-        if not after.embeds:
+        if not after.embeds and not after.components:
             return
-        if before.embeds == after.embeds and not is_cardhand_message:
+        if before.embeds == after.embeds and not is_cardhand_message and before.components == after.components:
             return
 
         if after.author.id == config.EPIC_RPG_ID:
             # Skip if this message was already fully processed by on_message
             # (Epic RPG frequently edits embeds after sending, causing duplicate processing)
-            # EXCEPT for pet/sleepet messages because they might be loaded dynamically.
+            # EXCEPT for pet/sleepet/gather messages because they might be loaded dynamically or have edited content.
             is_pet_edit = False
             is_cardhand_edit = False
+            is_gather_edit = False
+            
             if after.embeds:
                 after_dict = after.embeds[0].to_dict()
                 after_text = str(after_dict).lower()
@@ -1778,14 +1782,22 @@ class DiscordClient(discord.Client):
                 if "card hand" in embed_header:
                     is_cardhand_edit = True
 
-            if after.id in self._processed_msg_ids and not is_pet_edit and not is_cardhand_edit:
+            if bot_state.gather_mode:
+                content_lower = after.content.lower() if after.content else ""
+                if after.embeds:
+                    content_lower += " " + str(after.embeds[0].to_dict()).lower()
+                gather_keywords = ["travel", "landed", "gather", "dragon fuel", "point", "asteroid", "planet", "galaxy"]
+                if any(kw in content_lower for kw in gather_keywords):
+                    is_gather_edit = True
+
+            if after.id in self._processed_msg_ids and not is_pet_edit and not is_cardhand_edit and not is_gather_edit:
                 logger.debug(f"Skipping already-processed Epic RPG edit: {after.id}")
                 return
             try:
                 await responseResolver(after)
                 save_session_data(sessionData)
-                # Track it now so further edits are also skipped (except if it's still a pet/cardhand message edit)
-                if after.embeds and not is_pet_edit and not is_cardhand_edit:
+                # Track it now so further edits are also skipped (except if it's still a pet/cardhand/gather message edit)
+                if after.embeds and not is_pet_edit and not is_cardhand_edit and not is_gather_edit:
                     self._track_processed_message(after.id)
             except Exception as e:
                 logger.error(f"Error processing edited message: {e}\n{traceback.format_exc()}")
@@ -1794,9 +1806,12 @@ class DiscordClient(discord.Client):
         # Neon Bot Helper edit — handle based on card_hand_action mode
         if after.author.id in config.NEON_BOT_IDS:
             if bot_state.gather_mode:
-                logger.debug(f"[Gather] Neon edit detectado (author_id={after.author.id}). Roteando para handle_gather_neon_msg.")
-                from bot.handlers import handle_gather_neon_msg
-                await handle_gather_neon_msg(after)
+                if after.channel.id == config.channelID:
+                    logger.debug(f"[Gather] Neon edit detectado (author_id={after.author.id}). Roteando para handle_gather_neon_msg.")
+                    from bot.handlers import handle_gather_neon_msg
+                    await handle_gather_neon_msg(after)
+                else:
+                    logger.debug(f"[Gather] Neon edit ignorado: channel {after.channel.id} ≠ config.channelID {config.channelID}.")
                 return
 
             embed_dict = after.embeds[0].to_dict()
