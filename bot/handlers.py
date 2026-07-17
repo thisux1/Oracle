@@ -1106,10 +1106,17 @@ async def handle_gather_travel_response(msg: str) -> None:
         logger.debug("[Gather] GATHER_TRAVEL_RE: sem match. Mensagem não contém padrão de viagem.")
         return
 
+    player_name = travel_match.group(1)
+    player_clean = player_name.lower().replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+    target_clean = config.user_name_lower.lower().replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+    if player_clean != target_clean:
+        logger.debug(f"[Gather] Viagem ignorada: player '{player_clean}' ≠ '{target_clean}'")
+        return
+
     bot_state.gather_timeouts = 0
     fuel_used = int(travel_match.group(2))
     x, y = int(travel_match.group(3)), int(travel_match.group(4))
-    logger.debug(f"[Gather] TRAVEL_RE match: user='{travel_match.group(1)}', fuel={fuel_used}, x={x}, y={y}")
+    logger.debug(f"[Gather] TRAVEL_RE match: user='{player_name}', fuel={fuel_used}, x={x}, y={y}")
     HUD.system(f"[Gather] Viajou para ({x}, {y}) — {fuel_used} dragon fuel usado.")
 
     landed_match = GATHER_LANDED_RE.search(msg)
@@ -1136,6 +1143,13 @@ async def handle_gather_collected(msg: str) -> None:
     gathered_match = GATHER_COLLECTED_RE.search(msg)
     if not gathered_match:
         logger.debug("[Gather] GATHER_COLLECTED_RE: sem match. Possível falha no padrão ou mensagem inesperada.")
+        return
+
+    player_name = gathered_match.group(1)
+    player_clean = player_name.lower().replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+    target_clean = config.user_name_lower.lower().replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+    if player_clean != target_clean:
+        logger.debug(f"[Gather] Coleta ignorada: player '{player_clean}' ≠ '{target_clean}'")
         return
 
     bot_state.gather_timeouts = 0
@@ -1172,6 +1186,21 @@ async def handle_gather_poi_response(msg: str) -> None:
 async def handle_gather_error(msg: str) -> None:
     """Detecta erros de combustível/pontos e desativa o Gather Mode."""
     if not bot_state.gather_mode:
+        return
+
+    # Evita que erros de outros players desativem o nosso modo
+    user_name_clean = config.user_name_lower.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+    msg_clean = msg.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+    is_our_error = False
+    
+    if config.user_name_lower and config.user_name_lower in msg.lower():
+        is_our_error = True
+    elif user_name_clean and user_name_clean in msg_clean:
+        is_our_error = True
+    elif config.userMentionText and config.userMentionText.lower() in msg.lower():
+        is_our_error = True
+
+    if not is_our_error:
         return
 
     fuel_match = re.search(r"don'?t have enough dragon fuel", msg, re.IGNORECASE)
