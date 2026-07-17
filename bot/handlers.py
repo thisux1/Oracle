@@ -1242,11 +1242,16 @@ async def handle_gather_neon_msg(message) -> None:
                 break
         
         if gather_button:
-            logger.info(f"[Gather] Botão 'Gather' encontrado na mensagem do Neon. Clicando...")
+            logger.info(
+                f"[Gather] Botão 'Gather' encontrado! MsgID={message.id}, "
+                f"AuthorID={message.author.id}, AppID={message.application_id}, "
+                f"CustomID={gather_button.custom_id}. Aguardando 2.0s para evitar falha de validação..."
+            )
             bot_state.gather_state = "swapping_modules"
             bot_state.last_gather_cmd_time = time.monotonic()
             bot_state.gather_timeouts = 0
             try:
+                await asyncio.sleep(2.0)
                 await gather_button.click()
                 HUD.system("[Gather] Clicou no botão 'Gather' do Neon Util.")
             except Exception as e:
