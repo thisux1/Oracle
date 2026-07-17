@@ -1261,20 +1261,31 @@ async def handle_gather_neon_msg(message) -> None:
 
     # 2. Se estiver em "checking_modules", verifica se tem botões para selecionar Gather
     if bot_state.gather_state == "checking_modules" and message.components:
-        gather_button = None
+        all_buttons = []
         for idx, row in enumerate(message.components):
             for comp in row.children:
-                if isinstance(comp, discord.Button) and comp.label and "gather" in comp.label.lower():
-                    gather_button = comp
-                    break
-            if gather_button:
+                if isinstance(comp, discord.Button):
+                    all_buttons.append(comp)
+
+        gather_button = None
+        for btn in all_buttons:
+            if btn.label and "gather" in btn.label.lower():
+                gather_button = btn
                 break
+        
+        if not gather_button and all_buttons:
+            if len(all_buttons) >= 2:
+                gather_button = all_buttons[1]  # segundo botão como fallback
+                logger.info(f"[Gather] Fallback: botão com label 'gather' não encontrado. Selecionando o segundo botão (índice 1): Label='{gather_button.label}'")
+            else:
+                gather_button = all_buttons[0]  # primeiro botão como fallback
+                logger.info(f"[Gather] Fallback: botão com label 'gather' não encontrado. Selecionando o primeiro botão (índice 0): Label='{gather_button.label}'")
         
         if gather_button:
             logger.info(
-                f"[Gather] Botão 'Gather' encontrado! MsgID={message.id}, "
-                f"AuthorID={message.author.id}, AppID={message.application_id}, "
-                f"CustomID={gather_button.custom_id}. Aguardando 2.0s para evitar falha de validação..."
+                f"[Gather] Botão para clicar selecionado! MsgID={message.id}, "
+                f"Label='{gather_button.label}', CustomID={gather_button.custom_id}. "
+                f"Aguardando 2.0s para evitar falha de validação..."
             )
             bot_state.gather_state = "swapping_modules"
             bot_state.last_gather_cmd_time = time.monotonic()
@@ -1282,9 +1293,9 @@ async def handle_gather_neon_msg(message) -> None:
             try:
                 await asyncio.sleep(2.0)
                 await gather_button.click()
-                HUD.system("[Gather] Clicou no botão 'Gather' do Neon Util.")
+                HUD.system(f"[Gather] Clicou no botão '{gather_button.label}' do Neon Util.")
             except Exception as e:
-                logger.error(f"[Gather] Erro ao clicar no botão 'Gather': {e}")
+                logger.error(f"[Gather] Erro ao clicar no botão: {e}")
             return
 
     # 3. Caso contrário, verifica se tem comandos sugeridos para trocar módulos
