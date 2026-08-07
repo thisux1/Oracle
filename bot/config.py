@@ -201,6 +201,12 @@ def get_opt_bool(key: str, default: bool) -> bool:
     default_str = "true" if default else "false"
     return get_opt(key, default_str).lower() == "true"
 
+def get_opt_int(key: str, default: int) -> int:
+    try:
+        return int(get_opt(key, str(default)))
+    except ValueError:
+        return default
+
 def parse_tc_stop_conditions(options_dict) -> list[str]:
     val = options_dict.get("tc_stop_on", "dungeon,miniboss")
     val_stripped = val.strip().lower()
@@ -274,6 +280,15 @@ win_duel     = get_opt_bool("win_duel", True)
 duel_partner_id = get_opt("duel_partner_id", "")
 do_pet       = get_opt_bool("do_pet", False)
 do_gather    = get_opt_bool("do_gather", False)
+
+# ─── Summer Event ───
+do_summer = get_opt_bool("do_summer", True)
+summer_surf_strategy = get_opt("summer_surf_strategy", "conservative").lower()
+summer_drink_choice = get_opt("summer_drink_choice", "blue").lower()
+summer_use_sleepy_potion = get_opt_bool("summer_use_sleepy_potion", False)
+
+# ─── Jail Feedback ───
+jail_notify_interval_min = get_opt_int("jail_notify_interval_min", 15)
 
 # ─── ULTR / Training ───
 do_ultr = get_opt_bool("do_ultr", False)
@@ -351,7 +366,8 @@ def reload_config(profile_path: Optional[str] = None) -> None:
     global training_command_sequence, is_eternal, life_boost_before_adv, adventure_area
     global current_area, ADMIN_IDS, ALLOWED_IDS, eternal_tier, pet_adventure_command
     global max_area, active_profile_path, do_duel, win_duel, duel_partner_id, do_pet
-    global language, do_gather
+    global language, do_gather, do_summer, summer_surf_strategy, summer_drink_choice, summer_use_sleepy_potion
+    global jail_notify_interval_min
 
     if profile_path is not None:
         active_profile_path = profile_path
@@ -415,6 +431,14 @@ def reload_config(profile_path: Optional[str] = None) -> None:
     duel_partner_id = get_opt("duel_partner_id", "")
     do_pet       = get_opt_bool("do_pet", False)
     do_gather    = get_opt_bool("do_gather", False)
+
+    # ─── Summer Event ───
+    do_summer = get_opt_bool("do_summer", True)
+    summer_surf_strategy = get_opt("summer_surf_strategy", "conservative").lower()
+    summer_drink_choice = get_opt("summer_drink_choice", "blue").lower()
+    summer_use_sleepy_potion = get_opt_bool("summer_use_sleepy_potion", False)
+
+    jail_notify_interval_min = get_opt_int("jail_notify_interval_min", 15)
 
     do_ultr = get_opt_bool("do_ultr", False)
     card_hand_action = get_opt("card_hand_action", "auto").lower()

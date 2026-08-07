@@ -13,10 +13,12 @@ if profile_stem and profile_stem != "options":
     STATS_FILE = os.path.join(options_resolver.USER_DATA_DIR, f"stats_{profile_stem}.json")
     HISTORY_FILE = os.path.join(options_resolver.USER_DATA_DIR, f"stats_history_{profile_stem}.json")
     BASELINE_FILE = os.path.join(options_resolver.USER_DATA_DIR, f"session_baseline_{profile_stem}.json")
+    LIVE_FILE = os.path.join(options_resolver.USER_DATA_DIR, f"live_{profile_stem}.json")
 else:
     STATS_FILE = os.path.join(options_resolver.USER_DATA_DIR, "stats_totals.json")
     HISTORY_FILE = os.path.join(options_resolver.USER_DATA_DIR, "stats_history.json")
     BASELINE_FILE = os.path.join(options_resolver.USER_DATA_DIR, "session_baseline.json")
+    LIVE_FILE = os.path.join(options_resolver.USER_DATA_DIR, "live.json")
 
 
 def subtract_dicts(d1, d2):
@@ -131,3 +133,28 @@ def save_session_baseline(baseline_data):
             json.dump(baseline_data, f, indent=4)
     except Exception as e:
         logger.error(f"Error saving session baseline: {e}")
+
+def save_live_status(live_data):
+    """Atomically write the live status file shared with the dashboard.
+    Writes to a temp file then renames to avoid partial reads.
+    Never raises — the bot must never crash on a status write."""
+    try:
+        temp_file = LIVE_FILE + ".tmp"
+        with open(temp_file, "w") as f:
+            json.dump(live_data, f, indent=4)
+        os.replace(temp_file, LIVE_FILE)
+    except Exception as e:
+        logger.error(f"Error saving live status: {e}")
+
+def load_live_status(default_data=None):
+    """Load the live status file (empty dict if missing/corrupt)."""
+    if default_data is None:
+        default_data = {}
+    if not os.path.exists(LIVE_FILE):
+        return default_data
+    try:
+        with open(LIVE_FILE, "r") as f:
+            return json.load(f)
+    except Exception as e:
+        logger.error(f"Error loading live status: {e}")
+    return default_data

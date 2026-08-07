@@ -90,6 +90,9 @@ class BotState:
         self._coinflip_pending = False
         self.last_coinflip_time = 0.0
         self.jailed = False
+        self.jail_started_at = 0.0
+        self.jail_repeat_task = None
+        self.jail_message_id = None
         self.captcha_pending = False
         self.captcha_user_override = None
         self.last_message_id = None
@@ -126,9 +129,14 @@ class BotState:
         self.response_pending_until = 0  # Blocks new rpg commands until Epic RPG responds
         self.cardhand_in_progress = False
         self.cardhand_first_pass_done = False
+        
+        self.arena_in_progress = False
+        self.arena_channel_id = 0
+
         self.cardhand_start_time = 0
         self.cardhand_turn_count = 1
         self.last_sent_command = ""
+        self.last_sent_channel_id = 0
         self.last_cardhand_notification_time = 0
         self.last_sent_time = 0
         self.last_sent_cardhand_image = None
@@ -164,10 +172,13 @@ class BotState:
         self.ruby_dragon_time = 0
         self.duel_in_progress = False
         self.duel_step = None  # None, "waiting_confirmation", "waiting_weapon", "finished"
+        self.surf_in_progress = False
         self.last_duel_time = 0
         self.duel_channel_id = 0
         self.duel_weapon_chosen = False
         self.duel_fail_count = 0
+        self.duel_paused_until = 0.0
+        self.duel_cancelled_count = 0
         # Auto Enchant
         self.auto_enchant_active = False
         self.auto_enchant_tier = ""
@@ -183,7 +194,57 @@ class BotState:
         self.status_discord_channel_id = 0
         self.status_telegram_msg_id = 0
         self.status_update_task = None
-
+        # ─── Summer Event ───
+        self.summer_surf_cooldown_until = 0.0
+        self.summer_drink_this_week = False
+        self.summer_color_team = None
+        self.summer_boost_renew_at = 0.0
+        self.summer_boosts_check_at = 0.0
+        self.summer_boosts_active = {}
+        self.summer_surf_rounds = 0
+        self.summer_tasks_claimed = set()
+        self.summer_pending_tasks = set()
+        self.summer_daily_date = ""
+        self.summer_rules_sent = False
+        self.inventory_ruby = 0
+        self.inventory_mermaid_hair = 0
+        self.inventory_chopped_coconut = 0
+        self.inventory_normiefish = 0
+        self.inventory_epic_fish = 0
+        self.inventory_edgy_lootbox = 0
+        self.inventory_chip = 0
+        self.inventory_epic_seed = 0
+        self.inventory_banana = 0
+        self.inventory_lottery_ticket = 0
+        self.inventory_blue_drink = 0
+        self.inventory_pink_drink = 0
+        self.inventory_green_drink = 0
+        self.inventory_yellow_drink = 0
+        self.summer_boost_exhausted = False
+        self.summer_coconut_count = 0
+        self.summer_palm_log_count = 0
+        self.summer_mega_palm_log_count = 0
+        self.summer_mega_surfboard_crafted = False
+        self.summer_fishing_attempts = 0
+        self.summer_dismantle_options = ["epic log", "super log", "golden fish", "banana"]
+        self.summer_dismantle_index = 0
+        self.summer_dismantle_qty = 3
+        self.summer_dismantle_in_progress = False
+        self.summer_dismantle_crafting_fallback = False
+        self.summer_work_original = ""
+        self.summer_work_queue = []
+        self.summer_current_work = None
+        self.summer_work_fail_count = 0
+        self.summer_craft_fail_count = 0
+        self.summer_last_craft_color = None
+        self.summer_yellow_buy_attempted = False
+        self.summer_last_task_check = 0.0
+        self.summer_last_quest_check = 0.0
+        self.summer_quest_completed = False
+        self.summer_task_stuck_since = 0.0
+        self.summer_last_action_time = 0.0
+        self.summer_last_task_list = ""
+        self.summer_beach_party_active = False
 
     @property
     def neon_updated_event(self) -> asyncio.Event:
@@ -413,9 +474,12 @@ def add_to_low_priority_queue(command: str, suppress_log: bool = False) -> None:
         return
     if bot_state.gather_mode and not is_gather_command(command):
         return
-    # Block low-priority rpg commands if duel or auto-enchant is active
-    if (bot_state.duel_in_progress or bot_state.auto_enchant_active) and command.lower().strip().startswith("rpg"):
-        return
+    # Block low-priority rpg commands if duel, auto-enchant or surf is active
+    if (bot_state.duel_in_progress or bot_state.auto_enchant_active or bot_state.surf_in_progress) and command.lower().strip().startswith("rpg"):
+        if bot_state.surf_in_progress and command.lower().strip() == "rpg smr surf":
+            pass # Permitir o proprio comando de surf
+        else:
+            return
     # Check if this action is already queued in either queue
     base_action = _get_base_action(command)
     if base_action and _is_rpg_action(base_action) and is_action_queued(command):
@@ -438,6 +502,7 @@ def add_to_high_priority_queue(command: str) -> None:
         return
     if bot_state.gather_mode and not is_gather_command(command):
         return
+
     # Check if this action is already in HPQ
     base_action = _get_base_action(command)
     if base_action and _is_rpg_action(base_action):
@@ -494,6 +559,7 @@ def reset_bot_state() -> None:
     bot_state.cardhand_user_choice = None
     bot_state.cardhand_message = None
     bot_state.cardhand_channel_id = 0
+    bot_state.last_sent_channel_id = 0
     bot_state.legacy_cardhand_waiting = False
     bot_state.legacy_cardhand_waiting_since = 0.0
     if hasattr(bot_state, '_cardhand_updated_event') and bot_state._cardhand_updated_event is not None:
@@ -522,6 +588,8 @@ def reset_bot_state() -> None:
     bot_state.duel_step = None
     bot_state.last_duel_time = 0
     bot_state.duel_channel_id = 0
+    bot_state.duel_paused_until = 0.0
+    bot_state.duel_cancelled_count = 0
     bot_state.pending_lootbox_buy = None
     bot_state.lootbox_fallback_triggered = False
     bot_state.pending_life_boost_buy = None
@@ -538,6 +606,58 @@ def reset_bot_state() -> None:
     bot_state.last_auto_enchant_time = 0.0
     bot_state.auto_enchant_withdrawn = False
     bot_state.auto_enchant_queue = []
+    # ─── Summer Event Reset ───
+    bot_state.summer_surf_cooldown_until = 0.0
+    bot_state.summer_drink_this_week = False
+    bot_state.summer_color_team = None
+    bot_state.summer_boost_renew_at = 0.0
+    bot_state.summer_boosts_check_at = 0.0
+    bot_state.summer_boosts_active = {}
+    bot_state.summer_surf_rounds = 0
+    bot_state.summer_tasks_claimed = set()
+    bot_state.summer_pending_tasks = set()
+    bot_state.summer_daily_date = ""
+    bot_state.summer_rules_sent = False
+    bot_state.inventory_ruby = 0
+    bot_state.inventory_mermaid_hair = 0
+    bot_state.inventory_chopped_coconut = 0
+    bot_state.inventory_normiefish = 0
+    bot_state.inventory_epic_fish = 0
+    bot_state.inventory_edgy_lootbox = 0
+    bot_state.inventory_chip = 0
+    bot_state.inventory_epic_seed = 0
+    bot_state.inventory_banana = 0
+    bot_state.inventory_lottery_ticket = 0
+    bot_state.inventory_blue_drink = 0
+    bot_state.inventory_pink_drink = 0
+    bot_state.inventory_green_drink = 0
+    bot_state.inventory_yellow_drink = 0
+    bot_state.summer_boost_exhausted = False
+    bot_state.summer_coconut_count = 0
+    bot_state.summer_palm_log_count = 0
+    bot_state.summer_mega_palm_log_count = 0
+    bot_state.summer_mega_surfboard_crafted = False
+    bot_state.summer_dismantle_index = 0
+    bot_state.summer_dismantle_qty = 3
+    bot_state.summer_dismantle_in_progress = False
+    bot_state.summer_dismantle_crafting_fallback = False
+    bot_state.summer_work_original = ""
+    bot_state.summer_work_queue = []
+    bot_state.summer_current_work = None
+    bot_state.summer_work_fail_count = 0
+    bot_state.summer_craft_fail_count = 0
+    bot_state.summer_last_craft_color = None
+    bot_state.summer_yellow_buy_attempted = False
+    bot_state.summer_last_task_check = 0.0
+    bot_state.summer_task_stuck_since = 0.0
+    bot_state.summer_last_action_time = 0.0
+    bot_state.summer_last_task_list = ""
+    bot_state.summer_beach_party_active = False
+    # ─── Jail Feedback Reset ───
+    from bot.jail_feedback import reset_jail_state
+    reset_jail_state()
+    if getattr(bot_state, "summer_work_original", "") and hasattr(config, "work_command"):
+        config.work_command = bot_state.summer_work_original
     lowPriorityQueue.clear()
     lowPriorityQueueSet.clear()
     logger.info("Bot state reset to initial values.")

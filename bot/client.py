@@ -8,6 +8,7 @@ import time
 import re
 import traceback
 from colorama import Fore, Style
+import random
 from random import randint
 from bot.typo import send_with_typo_chance
 from bot.hud import HUD, logger
@@ -34,6 +35,7 @@ from bot.state import (
 )
 from bot.telegram import send_telegram_notification, send_telegram_raw, send_telegram_document
 from bot.captcha import tentar_resolver_captcha, set_client
+from bot.jail_feedback import on_jail_detected, on_jail_released
 from bot.handlers import responseResolver
 from bot.parsers import format_session_data
 from bot.persistence import save_session_data, get_stats_for_period
@@ -222,6 +224,17 @@ class DiscordClient(discord.Client):
             except asyncio.CancelledError:
                 pass
         self.tg_task = self.loop.create_task(self.telegram_listener_loop())
+
+        # Ensure the main background loop is still running after a reconnect.
+        # bg_task is created once in setup_hook; if the connection dropped and
+        # `while not self.is_closed()` exited (coroutine returned), the bot would
+        # stay "online" (on_message keeps working) but never send commands again.
+        # Restart it here so reconnects do not kill the automation permanently.
+        if hasattr(self, 'bg_task') and self.bg_task and self.bg_task.done():
+            logger.warning("bg_task finalizou (provável desconexão). Recriando loop principal...")
+            self.bg_task = self.loop.create_task(self.my_background_task())
+        elif not hasattr(self, 'bg_task') or self.bg_task is None:
+            self.bg_task = self.loop.create_task(self.my_background_task())
         
         config.userID = self.user.id
         config.userMentionText = f"<@{self.user.id}>"
@@ -425,6 +438,15 @@ class DiscordClient(discord.Client):
                                 pass
                         if duel_chan:
                             active_channel = duel_chan
+                    elif bot_state.arena_in_progress and getattr(bot_state, "arena_channel_id", 0):
+                        arena_chan = self.get_channel(bot_state.arena_channel_id)
+                        if not arena_chan:
+                            try:
+                                arena_chan = await self.fetch_channel(bot_state.arena_channel_id)
+                            except Exception:
+                                pass
+                        if arena_chan:
+                            active_channel = arena_chan
 
                     if (current_time <= bot_state.minigame_pending_until or current_time <= bot_state.quest_dialog_pending_until) and not bot_state.cardhand_in_progress:
                         # During a minigame/quest dialog, only allow the answer through HPQ
@@ -526,6 +548,7 @@ class DiscordClient(discord.Client):
                                 HUD.system("Card Hand iniciado! Filas bloqueadas.")
                             track_command(cmd)
                             bot_state.last_sent_command = cmd
+                            bot_state.last_sent_channel_id = active_channel.id
                             bot_state.last_sent_time = current_time
                             if cmd.lower().startswith("rpg cf"):
                                 bot_state.last_coinflip_time = current_time
@@ -555,6 +578,8 @@ class DiscordClient(discord.Client):
                         current_time = time.monotonic()
                         if cmd == bot_state.last_sent_command and (current_time - bot_state.last_sent_time) < ANTI_SPAM_WINDOW and not cmd.startswith("rpg cf") and not is_sleepet_command(cmd) and not any(x in cmd.lower() for x in ["enchant", "refine", "transmute", "transcend"]):
                             HUD.system(f"Comando duplicado '{cmd}' ignorado (Anti-Spam).")
+                            if cmd.lower().strip() == "rpg smr surf":
+                                bot_state.surf_in_progress = False
                         else:
                             # Set card hand lock BEFORE sending the command (if queued in LPQ too)
                             if cmd.lower() == "rpg card hand" and config.card_hand_action == "auto":
@@ -564,6 +589,7 @@ class DiscordClient(discord.Client):
                                 HUD.system("Card Hand iniciado! Filas bloqueadas.")
                             track_command(cmd)
                             bot_state.last_sent_command = cmd
+                            bot_state.last_sent_channel_id = active_channel.id
                             bot_state.last_sent_time = current_time
                             if cmd.lower().startswith("rpg cf"):
                                 bot_state.last_coinflip_time = current_time
@@ -677,6 +703,17 @@ class DiscordClient(discord.Client):
                         add_to_low_priority_queue("rpg pet summary")
                         HUD.system("Verificação periódica de pets: enviando rpg pet summary...")
 
+                    # ─── Summer Event Tick ───
+                    if config.do_summer:
+                        if not hasattr(self, '_last_summer_tick'):
+                            self._last_summer_tick = 0
+                        now = time.time()
+                        if now - self._last_summer_tick >= 30:
+                            self._last_summer_tick = now
+                            from bot.summer import summer_tick, initiate_surf
+                            summer_tick()
+                            initiate_surf()
+
                     if current_time - last_check >= RD_INTERVAL:
                         last_check = current_time
                         add_to_low_priority_queue("rpg rd", suppress_log=True)
@@ -690,6 +727,16 @@ class DiscordClient(discord.Client):
                             
                         save_session_data(sessionData, save_snapshot=is_hourly)
                         bot_state.last_save_time = current_time
+
+                # Live status update — always runs, even when paused/jailed
+                if not hasattr(self, '_last_live_status_time'):
+                    self._last_live_status_time = 0
+                if current_time - self._last_live_status_time >= 30:
+                    self._last_live_status_time = current_time
+                    from bot.live_status import update_live_status
+                    update_live_status()
+
+                # Coffee break guard ends here (the block below is independent)
 
 
             except Exception as e:
@@ -759,7 +806,35 @@ class DiscordClient(discord.Client):
                     bot_state.gather_state = None
                     bot_state.gather_timeouts = 0
                     HUD.system("Gather Mode DESATIVADO via Discord.")
-                    await message.channel.send("🛑 **Gather Mode Desativado. Filas normais liberadas.**")
+                    await message.channel.send("🌌 **Gather Mode Desativado. Filas normais liberadas.**")
+                    return
+                # ─── SUMMER EVENT ───
+                elif cmd == "summer status":
+                    from bot.summer import get_summer_status
+                    status = get_summer_status()
+                    logger.info(status)
+                    channel = self.get_channel(config.channelID)
+                    if channel:
+                        try:
+                            await channel.send(f"```{status}```")
+                        except Exception:
+                            pass
+                    return
+                elif cmd == "summer sleepy":
+                    if config.summer_use_sleepy_potion:
+                        from bot.state import add_to_high_priority_queue
+                        add_to_high_priority_queue("rpg smr use sleepy potion")
+                        HUD.command("rpg smr use sleepy potion (manual override)", priority="HPQ")
+                    else:
+                        logger.info("Summer: summer_use_sleepy_potion=false — nao e possivel usar sleepy potion")
+                    return
+                elif cmd == "summer surf":
+                    from bot.summer import initiate_surf
+                    result = initiate_surf()
+                    if result:
+                        HUD.system("Summer: surf triggered manually via sb command")
+                    else:
+                        HUD.system("Summer: surf on cooldown, cannot trigger")
                     return
                 elif cmd == "force":
                     await responseResolver(message)
@@ -1000,7 +1075,11 @@ class DiscordClient(discord.Client):
                         "• `sb say [texto]`: Envia uma mensagem no canal configurado\n"
                         "• `sb config [categoria/parametro] [valor]`: Gerenciamento interativo de configurações\n"
                         "• `sb export [ini/txt]`: Exporta o arquivo de configuração atual\n"
-                        "• `sb log`: Envia o arquivo .log da sessão atual (ou os últimos 5MB dele)"
+                        "• `sb log`: Envia o arquivo .log da sessão atual (ou os últimos 5MB dele)\n"
+                        "\n=== Summer Event ===\n"
+                        "sb summer status  : Mostra status detalhado do Summer\n"
+                        "sb summer sleepy  : Usa sleepy potion manualmente (task weekly)\n"
+                        "sb summer surf    : Inicia surf manualmente (se off cooldown)\n"
                     )
                     msg_part2 = (
                         "⚙️ **Tutorial Oracle v2 - Configurações (options.ini)**\n\n"
@@ -1124,6 +1203,34 @@ class DiscordClient(discord.Client):
             # Case B: Subsequent message for an active invite in the same channel
             elif bot_state.duel_in_progress and getattr(bot_state, "duel_channel_id", 0) == message.channel.id:
                 is_invite = True
+            elif bot_state.arena_in_progress and getattr(bot_state, "arena_channel_id", 0) == message.channel.id:
+                is_invite = True
+            # Case C: Arena event announcement anywhere in the configured guild —
+            # every active bot must see it to auto-join the same channel.
+            if not is_invite:
+                guild_ok_arena = config.GUILD_ID == 0 or (message.guild and message.guild.id == config.GUILD_ID)
+                arena_announce = (
+                    "started an arena event" in combined_content
+                    or "join the arena" in combined_content
+                    or "to join the arena" in combined_content
+                )
+                if guild_ok_arena and arena_announce:
+                    is_invite = True
+                    logger.info(f"Arena: bypass do channel filter ativado (guild={message.guild.id if message.guild else 0})")
+
+            # ─── Summer Event Bypass ───
+            if config.do_summer:
+                guild_ok = config.GUILD_ID == 0 or (message.guild and message.guild.id == config.GUILD_ID)
+                summer_arena = ("arena" in combined_content and any(kw in combined_content for kw in ["join", "start", "boost"]))
+                summer_surf = "surf" in combined_content and any(kw in combined_content for kw in ["wave", "slippery", "fell", "round"])
+                summer_beach = "beach" in combined_content and any(kw in combined_content for kw in ["party", "coconut", "palm"])
+                summer_color = "color" in combined_content and any(kw in combined_content for kw in ["team", "tournament"])
+                summer_boost_msg = "summer boost" in combined_content or ("boost" in combined_content and ("remaining" in combined_content or "active" in combined_content or "items none" in combined_content))
+                summer_drink_msg = "drink" in combined_content and any(kw in combined_content for kw in ["don't have", "uses a", "received a boost"])
+                if guild_ok and (summer_arena or summer_surf or summer_beach or summer_color or summer_boost_msg or summer_drink_msg):
+                    if has_my_name or summer_arena or summer_color:
+                        is_invite = True
+                        logger.info(f"Summer: bypass do channel filter ativado (arena={summer_arena} surf={summer_surf} beach={summer_beach} color={summer_color} boost={summer_boost_msg} drink={summer_drink_msg})")
 
         if message.channel.id != config.channelID and not is_invite and not (
             isinstance(message.channel, discord.DMChannel)
@@ -1147,6 +1254,11 @@ class DiscordClient(discord.Client):
                         buttons = [f"Label='{c.label}' (ID: {c.custom_id}, Disabled: {c.disabled})" for c in row.children if isinstance(c, discord.Button)]
                         if buttons:
                             logger.debug(f"  Row {idx}: " + " | ".join(buttons))
+
+            if bot_state.last_sent_command == "rpg smr buy summer boost" and "maximum amount available for this item" in combined_content.lower():
+                bot_state.summer_boost_exhausted = True
+                HUD.oracle("Summer Boost: máximo atingido (comprados todos). Não tentará mais.")
+            
             # Plain text errors for Auto Enchant
             if bot_state.auto_enchant_active and message.channel.id == bot_state.auto_enchant_channel_id:
                 if "don't have enough money" in combined_content.lower() or "don't have enough coin" in combined_content.lower():
@@ -1363,6 +1475,7 @@ class DiscordClient(discord.Client):
                 bot_state.jailed = True
                 bot_state.paused = True
                 HUD.alert("PRISÃO DETECTADA! Automação suspensa.")
+                on_jail_detected()
                 await send_telegram_notification(
                     "🚨 BOT PRESO! Captcha falhou ou expirou. "
                     "Intervenção manual necessária."
@@ -1388,6 +1501,7 @@ class DiscordClient(discord.Client):
                 bot_state.jailed = True
                 bot_state.paused = True
                 HUD.alert(f"PRISÃO DETECTADA (feedback imediato após {time_since_last_sent:.2f}s)! Automação suspensa.")
+                on_jail_detected()
                 await send_telegram_notification(
                     "🚨 BOT PRESO! Detectado via feedback imediato do Epic RPG. "
                     "Intervenção manual necessária."
@@ -1414,6 +1528,7 @@ class DiscordClient(discord.Client):
                     bot_state.paused = False
                     bot_state.captcha_pending = False
                     HUD.system("Liberdade detectada! Retomando automação.")
+                    await on_jail_released()
                     return
 
             # Profile detection (update bankroll)
@@ -1474,9 +1589,13 @@ class DiscordClient(discord.Client):
                 await handle_gather_poi_response(combined_content)
 
             # Financial & Quest Error Handling
-            if bot_state.pending_trade_letter and (
-                "don't have enough" in combined_content
-                or "did not unlock area" in combined_content
+            if bot_state.pending_trade_letter and "trade" in combined_content and not any(
+                ign in combined_content for ign in ["drink", "craft", "potion", "lottery"]
+            ) and any(
+                kw in combined_content for kw in [
+                    "don't have enough", "did not unlock area", "you don't have",
+                    "cannot trade", "invalid trade"
+                ]
             ):
                 letters = ["a", "b", "c", "d", "e", "f"]
                 try:
@@ -1486,8 +1605,8 @@ class DiscordClient(discord.Client):
                         bot_state.pending_trade_letter = next_letter
                         add_to_low_priority_queue(f"rpg trade {next_letter} 1")
                         HUD.system(
-                            f"Troca {letters[idx]} falhou. "
-                            f"Tentando '{next_letter}'..."
+                            f"Troca '{letters[idx]}' falhou. "
+                            f"Tentando fallback para 'rpg trade {next_letter} 1'..."
                         )
                     else:
                         bot_state.pending_trade_letter = None
@@ -1495,11 +1614,13 @@ class DiscordClient(discord.Client):
                 except ValueError:
                     bot_state.pending_trade_letter = None
 
-            if bot_state.pending_trade_letter and (
-                "our trade is done then" in combined_content
+            if bot_state.pending_trade_letter and any(
+                kw in combined_content for kw in [
+                    "our trade is done then", "successfully traded", "you traded", "traded "
+                ]
             ):
                 bot_state.pending_trade_letter = None
-                HUD.system("Quest de Troca Concluída com Sucesso!")
+                HUD.oracle("Quest/Task de Troca Concluída com Sucesso!")
 
             if (
                 "don't have enough money" in combined_content
@@ -1560,6 +1681,17 @@ class DiscordClient(discord.Client):
             HUD.system(f"Respondida pergunta do Void: {days}")
             return
 
+        # ═══════════════════════════════════════════════
+        # Summer Event Detection
+        # ═══════════════════════════════════════════════
+        if config.do_summer and message.author.id == config.EPIC_RPG_ID:
+            content = message.content or ""
+            embed = message.embeds[0] if message.embeds else None
+            from bot.parsers import is_summer_related_message
+            is_summer = is_summer_related_message(content, embed)
+            if is_summer:
+                await self.handle_summer_message(message, content, embed)
+
         # ─── 4. Pause Gatekeeper ───
         if bot_state.paused and not (
             message.author.id in config.ADMIN_IDS
@@ -1604,6 +1736,14 @@ class DiscordClient(discord.Client):
             HUD.system("Quest Aceita. Iniciando estratégia...")
 
             clean_quest = combined_content.replace('*', '').replace('_', '').replace('`', '')
+            cook_match = re.search(
+                r"cook (\d+) ([a-z\s]+)", clean_quest
+            )
+            if cook_match:
+                qty, item = cook_match.groups()
+                add_to_low_priority_queue(f"rpg cook {item.strip()} {qty}")
+                return
+
             craft_match = re.search(
                 r"craft (\d+) ([a-z\s]+)", clean_quest
             )
@@ -1647,6 +1787,13 @@ class DiscordClient(discord.Client):
                 HUD.system(f"Quest de Craft Ativa detectada: craft {qty} {item.strip()}")
                 return
 
+            cook_match = re.search(r"cook (\d+) ([a-z\s]+) \(\d+/\d+\)", clean_quest)
+            if cook_match:
+                qty, item = cook_match.groups()
+                add_to_low_priority_queue(f"rpg cook {item.strip()} {qty}")
+                HUD.system(f"Quest de Cook Ativa detectada: cook {qty} {item.strip()}")
+                return
+
             if "trading quest" in clean_quest:
                 if not bot_state.pending_trade_letter:
                     bot_state.pending_trade_letter = "a"
@@ -1679,6 +1826,10 @@ class DiscordClient(discord.Client):
             elif message.author.id == config.userID:
                 prefix = f"{Fore.LIGHTGREEN_EX}👤 [PLAYER]{Style.RESET_ALL}"
                 color = Fore.WHITE
+                if content_to_log.lower().startswith("rpg "):
+                    bot_state.last_sent_command = content_to_log.lower().strip()
+                    bot_state.last_sent_channel_id = message.channel.id
+                    bot_state.last_sent_time = time.time()
             else:
                 prefix = f"{Fore.LIGHTBLACK_EX}💬 [{author_name}]{Style.RESET_ALL}"
                 color = Fore.LIGHTBLACK_EX
@@ -1728,6 +1879,127 @@ class DiscordClient(discord.Client):
                 f"Error processing message: {e}\n{traceback.format_exc()}"
             )
             bot_state.coinflip_pending = False
+
+    async def handle_summer_message(self, message, content, embed=None):
+        """Main dispatcher for summer event message processing."""
+        from bot.parsers import (
+            handle_surf_response, handle_summer_task_message,
+            handle_summer_boost_message, detect_craft_result,
+            detect_color_team, detect_summer_drops,
+            parse_inventory_summer_items,
+        )
+        from bot.summer import (
+            detect_sunglasses_part_a, detect_sunglasses_part_b,
+            detect_surf_result,
+        )
+
+        full_text = (content or "").lower()
+        if embed:
+            import json
+            full_text += " " + json.dumps(embed.to_dict(), ensure_ascii=False).lower()
+
+        user_name_clean = config.user_name_lower.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+        content_clean = full_text.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+        is_user_match = (
+            str(config.userID) in full_text
+            or config.user_name_lower in full_text
+            or (user_name_clean and user_name_clean in content_clean)
+        )
+
+        parse_inventory_summer_items(full_text)
+
+        if "surf" in full_text or "try not to slip" in full_text:
+            action = handle_surf_response(content, embed, is_user_match)
+            logger.info(f"[SUMMER-DEBUG] surf_response action={action!r}")
+            if action and action.startswith("respond_"):
+                bot_state.surf_in_progress = True
+                answer = action.split("_")[1]
+                import random
+                delay = random.uniform(1.5, 3.0)
+                await asyncio.sleep(delay)
+                from bot.state import add_to_high_priority_queue
+                add_to_high_priority_queue(answer)
+                return
+
+        is_task_menu = ("complete these tasks" in full_text or "daily tasks" in full_text or "task" in full_text) and config.user_name_lower in full_text
+        is_quest_menu = "complete these quests" in full_text or "deforestation goal" in full_text
+        if is_task_menu or is_quest_menu:
+            handle_summer_task_message(full_text, message)
+
+        if "boost" in full_text and ("remaining" in full_text or "active" in full_text):
+            if config.user_name_lower in full_text:
+                logger.info(f"[SUMMER-DEBUG] boost handler: user match, chamando handle_summer_boost_message")
+                handle_summer_boost_message(content, embed)
+            else:
+                logger.debug(f"Summer Boost: ignorada (outra conta)")
+
+
+
+        if bot_state.last_sent_command == "rpg smr craft pool float":
+            if "already active" in full_text or "counts for the summer quest" in full_text:
+                HUD.oracle("Summer Task: Pool Float já ativo! Conta para a task.")
+            elif "successfully crafted" in full_text or "crafted!" in full_text:
+                HUD.oracle("Summer Task: Pool Float craftado com sucesso! Item conta para a task.")
+
+        if "craft" in full_text and is_user_match:
+            logger.debug(f"[SUMMER-DEBUG] detect_craft_result input: {full_text[:200]}")
+            result = detect_craft_result(full_text)
+            if result and result.startswith("success_"):
+                color = result.split("_")[1]
+                bot_state.summer_craft_fail_count = 0
+                if color == "yellow":
+                    bot_state.summer_yellow_buy_attempted = False
+                from bot.summer import queue_drink_use
+                queue_drink_use(color)
+            elif result == "no_resources":
+                color = bot_state.summer_last_craft_color or "yellow"
+                if color == "yellow":
+                    from bot.summer import handle_yellow_craft_no_resources
+                    handle_yellow_craft_no_resources()
+                else:
+                    logger.info(f"Summer Craft: {color} — sem recursos, não tentando novamente")
+                    HUD.alert(f"Summer Craft: {color} — sem recursos, ignorando")
+            elif result == "fail":
+                import random
+                await asyncio.sleep(random.uniform(2, 5))
+                if bot_state.summer_craft_fail_count < 3:
+                    from bot.summer import _queue_craft_drink
+                    _queue_craft_drink()
+
+        if "drink" in full_text and ("team" in full_text or "tournament" in full_text):
+            detect_color_team(full_text)
+        elif "drink" in full_text and is_user_match:
+            from bot.parsers import detect_drink_use_failure
+            failed_color = detect_drink_use_failure(full_text)
+            if failed_color:
+                from bot.summer import queue_drink_craft
+                queue_drink_craft(failed_color)
+            else:
+                from bot.parsers import detect_drink_use_success
+                success_color = detect_drink_use_success(full_text)
+                if success_color:
+                    logger.info(f"Summer: drink {success_color} ativado com sucesso")
+
+        if any(kw in full_text for kw in ["coconut", "slime", "sunglasses", "mega palm"]):
+            detect_summer_drops(content, embed)
+
+        if any(kw in full_text for kw in ["punched a tree", "deforestation", "completionist", "turtlepet"]):
+            from bot.summer import handle_summer_quest_message
+            handle_summer_quest_message(content, embed)
+
+        if "you have surfed recently" in full_text:
+            from bot.summer import handle_surf_cooldown_detected
+            handle_surf_cooldown_detected(full_text)
+
+        if getattr(bot_state, "summer_dismantle_in_progress", False):
+            from bot.summer import handle_dismantle_response
+            handle_dismantle_response(content, embed)
+
+        if bot_state.summer_current_work:
+            from bot.parsers import detect_work_progress
+            from bot.summer import increment_summer_work_count
+            if detect_work_progress(content, bot_state.summer_current_work):
+                increment_summer_work_count(bot_state.summer_current_work)
 
     async def on_message_edit(self, before, after):
         if after.author.id not in config.NEON_BOT_IDS and after.author.id != config.EPIC_RPG_ID:

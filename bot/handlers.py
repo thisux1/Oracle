@@ -88,6 +88,16 @@ def _get_state_label():
         return f"🌌 Gather ({bot_state.gather_state or 'init'})", "special"
     if bot_state.sleepet_mode:
         return f"🐾 Sleepet ({bot_state.sleepet_state or 'init'})", "special"
+    if config.do_summer:
+        state_parts = ["Summer"]
+        if bot_state.summer_current_work:
+            state_parts.append(f"Work:{bot_state.summer_current_work}")
+        if bot_state.summer_color_team:
+            state_parts.append(f"Team:{bot_state.summer_color_team.upper()}")
+        if bot_state.summer_surf_rounds > 0:
+            state_parts.append(f"Surf:{bot_state.summer_surf_rounds}r")
+        state_str = " ".join(state_parts)
+        return f"🏖️ {state_str}", "special"
     if bot_state.time_cookie_mode:
         if bot_state.tc_end_time > time.monotonic():
             remaining = max(0, int(bot_state.tc_end_time - time.monotonic()))
@@ -1341,6 +1351,9 @@ CONFIG_CATEGORIES = {
             "do_duel": {"desc": "Ativa automação de duelos.", "type": "bool", "syntax": "do_duel <true/false>"},
             "do_pet": {"desc": "Ativa envios de aventuras de pet.", "type": "bool", "syntax": "do_pet <true/false>"},
             "do_gather": {"desc": "Ativa Gather Mode (Galaxy).", "type": "bool", "syntax": "do_gather <true/false>"},
+            "do_summer": {"desc": "Ativa automacao do evento Summer.", "type": "bool", "syntax": "do_summer <true/false>"},
+            "summer_surf_strategy": {"desc": "Estrategia de surf: conservative (recomendado) ou aggressive.", "type": "str", "syntax": "summer_surf_strategy <conservative|aggressive>"},
+            "summer_drink_choice": {"desc": "Cor da drink semanal.", "type": "str", "syntax": "summer_drink_choice <blue|green|pink|yellow>"},
             "do_ultr": {"desc": "Ativa sequência de treino ULTR.", "type": "bool", "syntax": "do_ultr <true/false>"}
         }
     },
@@ -1413,6 +1426,7 @@ TOGGLE_ALIASES = {
     "do_duel": "duel",
     "do_pet": "pet",
     "do_gather": "gather",
+    "do_summer": "summer",
     "do_ultr": "ultr",
     "is_married": "married",
     "is_ascended": "ascended",
@@ -1525,6 +1539,7 @@ def find_bool_param(name: str) -> str | None:
         "pet": "do_pet", "dopet": "do_pet",
         "gather": "do_gather", "dogather": "do_gather", "galaxy": "do_gather",
         "ultr": "do_ultr", "doultr": "do_ultr",
+        "summer": "do_summer", "dosummer": "do_summer", "summerevent": "do_summer",
         "married": "is_married", "ismarried": "is_married", "marry": "is_married",
         "ascended": "is_ascended", "isascended": "is_ascended", "ascend": "is_ascended",
         "randominterval": "random_interval", "interval": "random_interval", "randomdelay": "random_interval", "delay": "random_interval",
@@ -1569,8 +1584,9 @@ def resolve_parameter_and_value(text: str) -> tuple[str, str, dict] | None:
             "card": "do_card_hand", "hand": "do_card_hand", "cardhand": "do_card_hand", "docardhand": "do_card_hand", "do_card_hand": "do_card_hand",
             "duel": "do_duel", "doduel": "do_duel",
             "pet": "do_pet", "dopet": "do_pet",
-            "gather": "do_gather", "dogather": "do_gather", "galaxy": "do_gather",
-            "ultr": "do_ultr", "doultr": "do_ultr",
+        "gather": "do_gather", "dogather": "do_gather", "galaxy": "do_gather",
+        "summer": "do_summer", "summerevent": "do_summer",
+        "ultr": "do_ultr", "doultr": "do_ultr",
             "token": "user_token", "discordtoken": "user_token",
             "channel": "channel_id",
             "guild": "guild_id", "server": "guild_id",
@@ -2075,36 +2091,37 @@ async def responseResolver(message) -> None:
                     final_cmd += " h"
                 if config.is_married:
                     final_cmd += " t"
-                add_to_high_priority_queue(final_cmd)
+                add_to_low_priority_queue(final_cmd)
             elif cmd_name == "adventure":
                 final_cmd = "rpg adv"
                 if config.is_ascended:
                     final_cmd += " h"
-                add_to_high_priority_queue(final_cmd)
+                add_to_low_priority_queue(final_cmd)
             elif cmd_name == "farm":
                 if bot_state.farm_seed_fallback:
                     farm_cmd = "rpg farm"
                 else:
                     farm_cmd = f"rpg farm {config.farm_seed}" if config.farm_seed and config.farm_seed.lower() != "none" else "rpg farm"
-                add_to_high_priority_queue(farm_cmd)
+                add_to_low_priority_queue(farm_cmd)
                 final_cmd = farm_cmd
             elif cmd_name in ("tr", "training"):
                 if config.training_command_sequence:
                     for tc_cmd in config.training_command_sequence:
-                        add_to_high_priority_queue(tc_cmd)
+                        add_to_low_priority_queue(tc_cmd)
                     final_cmd = str(config.training_command_sequence)
                 else:
                     final_cmd = "rpg training"
-                    add_to_high_priority_queue(final_cmd)
+                    add_to_low_priority_queue(final_cmd)
             elif cmd_name in ("fish", "chop", "mine", "pickup"):
-                final_cmd = f"rpg {config.userOptions.get('work_command', cmd_name)}"
-                add_to_high_priority_queue(final_cmd)
+                work_cmd = getattr(config, "work_command", None) or cmd_name
+                final_cmd = f"rpg {work_cmd}"
+                add_to_low_priority_queue(final_cmd)
             elif cmd_name in ("pets claim", "pets"):
                 final_cmd = "rpg pet claim"
                 add_to_low_priority_queue(final_cmd)
             elif cmd_name in ("quest start", "quest"):
                 final_cmd = "rpg quest"
-                add_to_high_priority_queue(final_cmd)
+                add_to_low_priority_queue(final_cmd)
             elif cmd_name == "lootbox":
                 lootbox_type = config.lootbox_type
                 if (
@@ -2351,6 +2368,33 @@ async def responseResolver(message) -> None:
         if message.embeds:
             full_msg += " " + " ".join(str(e.to_dict()).lower() for e in message.embeds)
 
+        # Arena start detection
+        # Epic RPG prints "type `join` to join the arena!" (with backticks),
+        # so strip formatting before matching.
+        arena_msg = full_msg.replace("`", "").replace("*", "")
+        if "started an arena event!" in arena_msg and "type join to join the arena!" in arena_msg:
+            # Check guild ID
+            guild_ok = config.GUILD_ID == 0 or getattr(message.guild, "id", 0) == config.GUILD_ID
+            if guild_ok:
+                bot_state.arena_in_progress = True
+                bot_state.arena_channel_id = message.channel.id
+                bot_state.minigame_pending_until = time.monotonic() + 120
+                logger.info("Arena event detected in valid guild. Joining and pausing queues for 120s.")
+                add_to_high_priority_queue("join")
+
+        # Arena end detection
+        if bot_state.arena_in_progress and (
+            "eat your cookies to earn xp!" in full_msg
+            or ":epicrpgarena: ranking" in full_msg
+            or "arena rip" in full_msg
+            or "need at least 2 players" in full_msg
+        ):
+            bot_state.arena_in_progress = False
+            bot_state.arena_channel_id = 0
+            if bot_state.minigame_pending_until > 0:
+                bot_state.minigame_pending_until = 0
+            logger.info("Arena event finished. Queues resumed.")
+
         # Coinflip insufficient funds
         if (
             (
@@ -2539,6 +2583,8 @@ async def responseResolver(message) -> None:
                             bot_state.last_duel_time = 0
                             bot_state.duel_channel_id = 0
                             bot_state.duel_fail_count = 0
+                            bot_state.duel_cancelled_count = 0
+                            bot_state.duel_paused_until = 0
                             HUD.system("Duelo concluído. Filas liberadas!")
                             return
                     
@@ -2550,17 +2596,24 @@ async def responseResolver(message) -> None:
                         bot_state.last_duel_time = 0
                         bot_state.duel_channel_id = 0
                         bot_state.duel_fail_count += 1
+                        if "duel cancelled" in embed_text:
+                            bot_state.duel_cancelled_count += 1
+                            if bot_state.duel_cancelled_count >= 3 and not config.win_duel:
+                                config.win_duel = True
+                                HUD.system("Duel cancelled 3x com win_duel=False. Auto-corrigindo win_duel para True.")
+                        else:
+                            bot_state.duel_cancelled_count = 0
                         if bot_state.duel_fail_count == 1:
                             await send_telegram_notification(
                                 "⚠️ Duelo cancelado — parceiro não respondeu. "
                                 "Auto-duel será suspenso após 2 falhas consecutivas."
                             )
                         elif bot_state.duel_fail_count >= 2:
+                            bot_state.duel_paused_until = time.time() + 10800
                             await send_telegram_notification(
-                                "🛑 Auto-duel suspenso: 2 falhas consecutivas. "
-                                "Reative manualmente com sb duel reset ou aguarde o reset automático."
-                            )
-                        HUD.system(f"Duelo cancelado/recusado. (fail_count={bot_state.duel_fail_count})")
+                                "🛑 Auto-duel suspenso por 3h: 2 falhas consecutivas. "
+                                "Reative manualmente com sb duel reset.")
+                        HUD.system(f"Duelo cancelado/recusado. (fail_count={bot_state.duel_fail_count}, cancelled_count={bot_state.duel_cancelled_count})")
                         return
 
             # ─── Quest Completion Detection ───
@@ -3183,6 +3236,8 @@ async def responseResolver(message) -> None:
             elif "fine, i will let you go" in msg:
                 bot_state.captcha_pending = False
                 bot_state.jailed = False
+                from bot.jail_feedback import on_jail_released
+                await on_jail_released()
                 logger.info("User released from captcha/jail")
             elif "seed in the ground" in msg:
                 if config.user_name_lower and f"**{config.user_name_lower}**" in msg.lower():
@@ -3269,9 +3324,9 @@ async def responseResolver(message) -> None:
                 logger.info("rpg farm queued due to invalid seed, fallback activated")
 
             if "need a" in msg and "seed to farm" in msg:
-                add_to_high_priority_queue("rpg buy seed 10")
-                HUD.system("Sem sementes! Comprando 10 sementes...")
-                logger.info("rpg buy seed 10 queued due to no seeds")
+                add_to_high_priority_queue("rpg buy seed 20")
+                HUD.system("Sem sementes! Comprando 20 sementes...")
+                logger.info("rpg buy seed 20 queued due to no seeds")
 
             if bot_state.farm_seed_fallback and "also got" in msg:
                 for match in config.drop_regex.finditer(msg):

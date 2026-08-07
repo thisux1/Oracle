@@ -87,11 +87,35 @@ def process_drops(lines, player_name, loot_data):
                 logger.info(
                     f"{player_name} collected: {item_name}, quantity: {qty:,}"
                 )
+                if config.do_summer and bot_state.summer_current_work:
+                    from bot.summer import increment_summer_work_count
+                    increment_summer_work_count(bot_state.summer_current_work)
             else:
                 _cap_misc(misc_drops, item_name, qty)
                 logger.info(
                     f"{player_name} collected (misc): {item_name}, quantity: {qty:,}"
                 )
+
+            # ─── Summer Event item tracking ───
+            if config.do_summer:
+                if "coconut" in item_name:
+                    bot_state.summer_coconut_count += qty
+                    if "summer_coconuts" not in sessionData:
+                        sessionData["summer_coconuts"] = 0
+                    sessionData["summer_coconuts"] += qty
+                    HUD.system(f"Summer: +{qty} coconut(s) (total: {bot_state.summer_coconut_count})")
+                elif "mega palm log" in item_name:
+                    bot_state.summer_mega_palm_log_count += qty
+                    HUD.loot(player_name, item_name, qty)
+                    HUD.system(f"Summer: +{qty} mega palm log(s) (total: {bot_state.summer_mega_palm_log_count})")
+                elif "palm log" in item_name:
+                    bot_state.summer_palm_log_count += qty
+                    HUD.loot(player_name, item_name, qty)
+                    HUD.system(f"Summer: +{qty} palm log(s) (total: {bot_state.summer_palm_log_count})")
+                elif "summer slime" in item_name:
+                    HUD.oracle("Summer Slime encontrado no hunt!")
+                elif "sunglasses" in item_name:
+                    HUD.oracle("Sunglasses artifact encontrado!")
 
         for match in config.lootbox_drop_regex.finditer(line):
             qty = int(match.group(1).replace(',', ''))
@@ -266,9 +290,12 @@ async def rdCheckNavi(message):
                     add_to_low_priority_queue(f"rpg {cmd}", suppress_log=True)
                     logger.info(f"Command 'rpg {cmd}' added to LPQ from Navi Lite.")
                 elif cmd == "duel" and config.do_duel:
-                    if bot_state.duel_fail_count >= 2:
-                        logger.info("Auto-duel blocked (2 consecutive failures).")
+                    if bot_state.duel_paused_until > time.time():
+                        logger.info("Auto-duel blocked (3h pause).")
                     else:
+                        if bot_state.duel_fail_count >= 2:
+                            bot_state.duel_fail_count = 0
+                            bot_state.duel_paused_until = 0
                         partner_id = config.duel_partner_id
                         if partner_id and not bot_state.duel_in_progress:
                             add_to_low_priority_queue(f"rpg duel <@{partner_id}>")
@@ -277,6 +304,51 @@ async def rdCheckNavi(message):
                     add_to_high_priority_queue("rpg quest", suppress_log=True)
                     logger.info("Command 'rpg quest' added to HPQ from Navi Lite.")
                 break
+
+
+def _process_rd_surf_cooldown(embed_dict, target_name):
+    """Summer Surf: o RD/CD é a fonte de verdade do timer interno.
+
+    O status do surf vem na description do embed do rd/cd:
+      - pronto:   "summer surf cooldown: :white_check_mark:"
+      - cooldown: "summer surf cooldown: :clock4: 3h 54m 31s"
+    Quando o rd/cd diz pronto, reseta o timer interno e enfileira o surf.
+    Quando diz cooldown, atualiza o timer interno para refletir o rd/cd.
+    """
+    if not config.do_summer:
+        return
+    if not embed_dict:
+        return
+    desc = (embed_dict.get("description") or "").lower()
+    if "summer surf cooldown" not in desc:
+        return
+
+    author_name = (embed_dict.get("author") or {}).get("name", "").lower()
+    if author_name:
+        mentioned_user = author_name.split("—")[0].lower().strip()
+        mentioned_user_clean = mentioned_user.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+        target_name_clean = target_name.replace("\\", "").replace("*", "").replace("_", "").replace(".", "").strip()
+        is_ours = (
+            mentioned_user == target_name
+            or (target_name_clean and mentioned_user_clean == target_name_clean)
+            or str(config.userID) in desc
+            or str(config.userID) in author_name
+        )
+        if not is_ours:
+            return
+
+    if ":white_check_mark:" in desc:
+        bot_state.summer_surf_cooldown_until = 0.0
+        if not bot_state.surf_in_progress:
+            add_to_low_priority_queue("rpg smr surf")
+            HUD.command("rpg smr surf (rd ready)", priority="LPQ")
+            bot_state.surf_in_progress = True
+    elif ":clock4:" in desc:
+        time_match = re.search(r'(\d+)h\s*(\d+)m\s*(\d+)s', desc)
+        if time_match:
+            seconds = int(time_match.group(1)) * 3600 + int(time_match.group(2)) * 60 + int(time_match.group(3))
+            bot_state.summer_surf_cooldown_until = time.time() + seconds
+            HUD.cooldown(f"Summer Surf: cooldown atualizado via rd/cd ({seconds}s restante)")
 
 
 async def rdCheckEpicRPG(message):
@@ -296,6 +368,12 @@ async def rdCheckEpicRPG(message):
     if message.embeds:
         embed = message.embeds[0]
         embed_dict = embed.to_dict()
+
+        # ─── Summer Surf cooldown (RD/CD é a fonte de verdade) ───
+        # O status do surf vem na DESCRIPTION do embed do rd/cd, não em fields:
+        #   pronto:  "summer surf cooldown: :white_check_mark:"
+        #   cooldown:"summer surf cooldown: :clock4: 3h 54m 31s"
+        _process_rd_surf_cooldown(embed_dict, target_name)
 
         if "author" in embed_dict:
             author_name = embed_dict["author"].get("name", "").lower()
@@ -363,6 +441,19 @@ async def rdCheckEpicRPG(message):
 
     for line in all_lines:
         line = line.strip().lower()
+        if "summer surf" in line.lower():
+            if ":white_check_mark:" in line:
+                bot_state.summer_surf_cooldown_until = 0.0
+                if config.do_summer and not bot_state.surf_in_progress:
+                    add_to_low_priority_queue("rpg smr surf")
+                    HUD.command("rpg smr surf (rd ready)", priority="LPQ")
+                    bot_state.surf_in_progress = True
+            elif ":clock4:" in line:
+                time_match = re.search(r'(\d+)h\s*(\d+)m\s*(\d+)s', line)
+                if time_match:
+                    seconds = int(time_match.group(1)) * 3600 + int(time_match.group(2)) * 60 + int(time_match.group(3))
+                    bot_state.summer_surf_cooldown_until = time.time() + seconds
+
         if ":white_check_mark:" in line:
             clean_line = re.sub(r':[^:]+:', '', line).replace('~-~', '').strip()
 
@@ -375,6 +466,11 @@ async def rdCheckEpicRPG(message):
                         asyncio.create_task(send_telegram_notification(
                             f"🎯 Modo Time Cookie desativado!\nMotivo: `{stop_cond}` está pronto."
                         ))
+                    # Catch legacy TC stop
+                    if "ended" in clean_line and "you lost" not in line:
+                        bot_state.time_cookie_mode = False
+                        bot_state.tc_end_time = 0
+                        logger.info("Time cookie finalizado. Voltando ao fluxo normal.")
 
             for cmd_type, aliases in command_aliases.items():
                 if (
@@ -435,6 +531,11 @@ async def rdCheckEpicRPG(message):
                             f"Command '{cmd}' added to LPQ from Epic RPG rd."
                         )
 
+                        # ─── Summer work queue counter ───
+                        if config.do_summer and bot_state.summer_current_work:
+                            from bot.summer import increment_summer_work_count
+                            increment_summer_work_count(bot_state.summer_current_work)
+
                     elif cmd_type == "lootbox":
                         lootbox_type = config.lootbox_type
                         if (
@@ -486,9 +587,12 @@ async def rdCheckEpicRPG(message):
                         HUD.system("Quest pronta! Enfileirada na HPQ.")
 
                     elif cmd_type == "duel" and config.do_duel:
-                        if bot_state.duel_fail_count >= 2:
-                            logger.info("Auto-duel blocked from Epic RPG rd (2 consecutive failures).")
+                        if bot_state.duel_paused_until > time.time():
+                            logger.info("Auto-duel blocked from Epic RPG rd (3h pause).")
                         else:
+                            if bot_state.duel_fail_count >= 2:
+                                bot_state.duel_fail_count = 0
+                                bot_state.duel_paused_until = 0
                             partner_id = config.duel_partner_id
                             if partner_id and not bot_state.duel_in_progress:
                                 add_to_low_priority_queue(f"rpg duel <@{partner_id}>")
@@ -580,6 +684,13 @@ def format_session_data(data, title="Dados da Sessão"):
                     "pets": t("stat_pets"),
                 }.get(key.lower(), key.capitalize())
                 output.append(f"  {Fore.LIGHTCYAN_EX}{key_name}{Style.RESET_ALL}: {Fore.YELLOW}{value:,}{Style.RESET_ALL}")
+
+        # ─── Summer Event stats ───
+        if config.do_summer:
+            output.append(f"{Fore.LIGHTMAGENTA_EX}Summer Event:{Style.RESET_ALL}")
+            output.append(f"  {Fore.LIGHTCYAN_EX}Surf Rounds{Style.RESET_ALL}: {Fore.YELLOW}{bot_state.summer_surf_rounds}{Style.RESET_ALL}")
+            output.append(f"  {Fore.LIGHTCYAN_EX}Coconuts{Style.RESET_ALL}: {Fore.YELLOW}{bot_state.summer_coconut_count}{Style.RESET_ALL}")
+            output.append(f"  {Fore.LIGHTCYAN_EX}Tasks Claimed{Style.RESET_ALL}: {Fore.YELLOW}{len(bot_state.summer_tasks_claimed)}{Style.RESET_ALL}")
 
     partner_loot_data = data.get("partner_loot_data", {})
     if partner_loot_data:
@@ -692,3 +803,352 @@ def process_pet_claim_drops(embed_dict, embed_text, player_name):
         _cap_misc(misc_drops, item_name, qty)
         HUD.loot(player_name, item_name, qty)
         logger.info(f"{player_name} collected (pet claim misc): {item_name}, quantity: {qty:,}")
+
+
+# ═══════════════════════════════════════════════
+# Summer Event Parsers
+# ═══════════════════════════════════════════════
+
+SUMMER_KEYWORDS = [
+    "summer", "smr", "surf", "coconut", "beach",
+    "chopped coconut", "palm log",
+    "sleepy potion", "summer boost", "sunglasses",
+    "beach party", "color tournament", "boost", "drink", "craft",
+]
+
+CRAFT_FAIL_PATTERNS = [
+    "you failed to craft",
+    "craft failed",
+    "you don't have the required items",
+    "you don't have enough",
+    "not enough",
+]
+
+COLOR_TEAM_PATTERN = re.compile(r'(blue|green|pink|yellow)\s*(team|color|drink)', re.IGNORECASE)
+
+
+def detect_summer_drops(content, embed):
+    if not content:
+        return
+
+    c = content.lower()
+
+    if "coconut" in c and config.do_summer:
+        coconut_match = re.findall(r'(\d+)\s*coconut', c)
+        if coconut_match:
+            total = sum(int(q) for q in coconut_match)
+            bot_state.summer_coconut_count += total
+            HUD.system(f"Summer: +{total} coconut(s) detectado(s) (total: {bot_state.summer_coconut_count})")
+
+    if "summer slime" in c:
+        HUD.oracle("Summer Slime encontrado no hunt!")
+
+    if "mega palm log" in c:
+        HUD.loot(None, "Mega Palm Log", 1)
+
+    if "sunglasses" in c:
+        HUD.oracle("Sunglasses artifact encontrado!")
+
+
+def detect_work_progress(content, command_name):
+    if not content or not command_name:
+        return False
+
+    c = content.lower()
+
+    if command_name == "fish" and ("fish" in c or "normiefish" in c or "caught" in c):
+        return True
+
+    if command_name == "chop" and ("chop" in c or "coconut" in c or "palm log" in c):
+        return True
+
+    if command_name in ("fish", "chop") and "you don't have enough energy" in c:
+        return False
+
+    return False
+
+
+def handle_summer_task_message(content, message=None):
+    if not content or not config.do_summer:
+        return
+
+    import time
+    if message:
+        valid_commands = ["rpg smr quest", "rpg smr task"]
+        is_valid = False
+        if bot_state.last_sent_command in valid_commands:
+            if time.time() - bot_state.last_sent_time <= 5.0:
+                if bot_state.last_sent_channel_id == message.channel.id:
+                    is_valid = True
+        
+        if not is_valid:
+            HUD.system("Summer Tasks: Embed ignorado (não solicitado ou wrong channel)")
+            return
+
+    from bot.summer import (
+        detect_tasks_in_message,
+        process_task_updates,
+        claim_tasks,
+    )
+
+    content = content.replace("\\n", "\n")
+    tasks = detect_tasks_in_message(content)
+    if not tasks:
+        return
+
+    content_hash = str(hash(str(tasks)))
+    if content_hash == bot_state.summer_last_task_list:
+        return
+    bot_state.summer_last_task_list = content_hash
+
+    HUD.system(f"Summer Tasks: {len(tasks)} task(s) detectadas")
+
+    completed = process_task_updates(tasks)
+    if completed:
+        HUD.oracle(f"Summer Tasks completas: {', '.join(completed)}")
+        claim_tasks()
+
+
+def handle_summer_boost_message(content, embed):
+    if not content and not embed:
+        return
+
+    from bot.summer import detect_active_boosts, handle_boost_response
+
+    import json
+    full = (content or "").lower()
+    if embed:
+        full += " " + json.dumps(embed.to_dict(), ensure_ascii=False).lower()
+
+    full = full.replace("\\n", "\n")
+
+    boosts = detect_active_boosts(full)
+    handle_boost_response(boosts, raw_content=full)
+
+
+def handle_surf_response(content, embed, is_user_match):
+    from bot.summer import (
+        detect_surf_result,
+        parse_surf_wave,
+        parse_surf_choices,
+        choose_surf_answer,
+        handle_surf_completion,
+        handle_surf_cooldown_detected,
+    )
+
+    if not is_user_match:
+        logger.debug("[SUMMER-DEBUG] surf_response ignorado (is_user_match=False)")
+        return None
+
+    result = detect_surf_result(content, embed)
+    logger.info(f"[SUMMER-DEBUG] detect_surf_result={result!r}, content_len={len(content or '')}, embed={embed is not None}")
+
+    if result == "prompt":
+        bot_state.surf_in_progress = True
+        wave = parse_surf_wave(embed, content)
+        choices = parse_surf_choices(embed, content, wave=wave)
+        logger.info(f"[SUMMER-DEBUG] wave={wave!r}, choices={choices!r}")
+
+        if wave:
+            strategy = config.summer_surf_strategy
+            answer = choose_surf_answer(wave, strategy, choices)
+            HUD.dungeon(f"Summer Surf: onda '{wave}' — escolhendo {answer} ({strategy})")
+            return f"respond_{answer}"
+        else:
+            logger.info(f"[SUMMER-DEBUG] wave={wave!r} choices={choices!r} — pulando resposta")
+
+    elif result == "completed":
+        bot_state.surf_in_progress = False
+        handle_surf_completion(1)
+
+    elif result == "fell":
+        bot_state.surf_in_progress = False
+        HUD.alert("Summer Surf: caiu do surfboard")
+
+    elif result == "cooldown":
+        bot_state.surf_in_progress = False
+        import json
+        combined = (content or "")
+        if embed:
+            combined += " " + json.dumps(embed.to_dict(), ensure_ascii=False)
+        handle_surf_cooldown_detected(combined)
+
+    return None
+
+
+def is_summer_related_message(content, embed):
+    if content:
+        c = content.lower()
+        for kw in SUMMER_KEYWORDS:
+            if kw in c:
+                return True
+
+    if embed:
+        embed_text = str(embed.to_dict()).lower()
+        for kw in SUMMER_KEYWORDS:
+            if kw in embed_text:
+                return True
+
+    return False
+
+
+def detect_color_team(content):
+    if not content or not config.do_summer:
+        return
+
+    c = content.lower()
+    match = COLOR_TEAM_PATTERN.search(c)
+    if match:
+        team = match.group(1).lower()
+        bot_state.summer_color_team = team
+        bot_state.summer_drink_this_week = True
+        HUD.oracle(f"Summer: time {team.upper()} confirmado no torneio de cores!")
+
+
+def detect_craft_result(content):
+    if not content:
+        return None
+
+    c = content.lower()
+
+    for pattern in CRAFT_FAIL_PATTERNS:
+        if pattern in c:
+            bot_state.summer_pool_float_craft_queued = False
+            if "required items" in c or "don't have" in c or "not enough" in c:
+                bot_state.summer_craft_fail_count += 1
+                HUD.alert(f"Summer Craft: falhou — sem recursos (falha #{bot_state.summer_craft_fail_count})")
+
+                if bot_state.summer_craft_fail_count >= 3:
+                    send_telegram_notification("⚠️ Summer: craft falhou 3x hoje — recursos insuficientes")
+                return "no_resources"
+            else:
+                bot_state.summer_craft_fail_count += 1
+                HUD.alert(f"Summer Craft: falha (60% chance) #{bot_state.summer_craft_fail_count}")
+                return "fail"
+
+    if "successfully" in c and ("craft" in c or "created" in c):
+        HUD.oracle("Summer Craft: sucesso!")
+        if "mega surfboard" in c:
+            bot_state.summer_mega_surfboard_crafted = True
+            HUD.oracle("Summer Craft: MEGA Surfboard criado com sucesso!")
+        for color in ["blue", "green", "pink", "yellow"]:
+            if color in c:
+                return f"success_{color}"
+        return "success"
+
+    return None
+
+
+def parse_inventory_summer_items(content):
+    if not content or not config.do_summer:
+        return
+    c = content.lower()
+    if "inventory items" in c or "consumables" in c or "more consumables" in c:
+        # Convert custom emoji tags <:emoji_name:1234567890> to text "emoji_name: " so numbers match properly
+        c_clean = re.sub(r'<:([a-zA-Z0-9_]+):\d+>', r' \1: ', c)
+
+        mega_palm_match = re.search(r'(?:mega\s*palm\s*log|megapalmlog)[^\d]*:?\s*\*?\*?\s*([\d,]+)', c_clean)
+        if mega_palm_match:
+            qty = int(mega_palm_match.group(1).replace(",", ""))
+            bot_state.summer_mega_palm_log_count = qty
+            logger.info(f"Inventory update: mega_palm_log_count = {qty}")
+
+        palm_match = re.search(r'(?<!mega\s)(?<!mega)(?:palm\s*log|palmlog)[^\d]*:?\s*\*?\*?\s*([\d,]+)', c_clean)
+        if palm_match:
+            qty = int(palm_match.group(1).replace(",", ""))
+            bot_state.summer_palm_log_count = qty
+            logger.info(f"Inventory update: palm_log_count = {qty}")
+
+        coconut_match = re.search(r'(?<!chopped\s)(?<!chopped)(?:coconut)[^\d]*:?\s*\*?\*?\s*([\d,]+)', c_clean)
+        if coconut_match:
+            qty = int(coconut_match.group(1).replace(",", ""))
+            bot_state.summer_coconut_count = qty
+
+        ruby_match = re.search(r'(?:ruby)[^\d]*:?\s*\*?\*?\s*([\d,]+)', c_clean)
+        if ruby_match:
+            qty = int(ruby_match.group(1).replace(",", ""))
+            bot_state.inventory_ruby = qty
+
+        mermaid_match = re.search(r'(?:mermaid\s*hair|mermaidhairs?)[^\d]*:?\s*\*?\*?\s*([\d,]+)', c_clean)
+        if mermaid_match:
+            qty = int(mermaid_match.group(1).replace(",", ""))
+            bot_state.inventory_mermaid_hair = qty
+
+        # --- DRINK MATERIALS ---
+        chopped_match = re.search(r'(?:chopped\s*coconut)[^\d]*:?\s*\*?\*?\s*([\d,]+)', c_clean)
+        if chopped_match:
+            bot_state.inventory_chopped_coconut = int(chopped_match.group(1).replace(",", ""))
+
+        normiefish_match = re.search(r'(?:normie\s*fish)[^\d]*:?\s*\*?\*?\s*([\d,]+)', c_clean)
+        if normiefish_match:
+            bot_state.inventory_normiefish = int(normiefish_match.group(1).replace(",", ""))
+
+        epicfish_match = re.search(r'(?:epic\s*fish)[^\d]*:?\s*\*?\*?\s*([\d,]+)', c_clean)
+        if epicfish_match:
+            bot_state.inventory_epic_fish = int(epicfish_match.group(1).replace(",", ""))
+
+        edgy_match = re.search(r'(?:edgy\s*lootbox)[^\d]*:?\s*\*?\*?\s*([\d,]+)', c_clean)
+        if edgy_match:
+            bot_state.inventory_edgy_lootbox = int(edgy_match.group(1).replace(",", ""))
+
+        chip_match = re.search(r'(?:epic\s*coin|chip)[^\d]*:?\s*\*?\*?\s*([\d,]+)', c_clean)
+        if chip_match:
+            bot_state.inventory_chip = int(chip_match.group(1).replace(",", ""))
+
+        epicseed_match = re.search(r'(?:epic\s*seed)[^\d]*:?\s*\*?\*?\s*([\d,]+)', c_clean)
+        if epicseed_match:
+            bot_state.inventory_epic_seed = int(epicseed_match.group(1).replace(",", ""))
+
+        banana_match = re.search(r'(?:banana)[^\d]*:?\s*\*?\*?\s*([\d,]+)', c_clean)
+        if banana_match:
+            bot_state.inventory_banana = int(banana_match.group(1).replace(",", ""))
+
+        lottery_match = re.search(r'(?:lottery\s*ticket)[^\d]*:?\s*\*?\*?\s*([\d,]+)', c_clean)
+        if lottery_match:
+            bot_state.inventory_lottery_ticket = int(lottery_match.group(1).replace(",", ""))
+
+        # --- DRINKS ---
+        blue_drink = re.search(r'(?:blue\s*drink)[^\d]*:?\s*\*?\*?\s*([\d,]+)', c_clean)
+        if blue_drink:
+            bot_state.inventory_blue_drink = int(blue_drink.group(1).replace(",", ""))
+        
+        pink_drink = re.search(r'(?:pink\s*drink)[^\d]*:?\s*\*?\*?\s*([\d,]+)', c_clean)
+        if pink_drink:
+            bot_state.inventory_pink_drink = int(pink_drink.group(1).replace(",", ""))
+
+        green_drink = re.search(r'(?:green\s*drink)[^\d]*:?\s*\*?\*?\s*([\d,]+)', c_clean)
+        if green_drink:
+            bot_state.inventory_green_drink = int(green_drink.group(1).replace(",", ""))
+
+        yellow_drink = re.search(r'(?:yellow\s*drink)[^\d]*:?\s*\*?\*?\s*([\d,]+)', c_clean)
+        if yellow_drink:
+            bot_state.inventory_yellow_drink = int(yellow_drink.group(1).replace(",", ""))
+
+
+DRINK_COLORS = ["blue", "green", "pink", "yellow"]
+
+def detect_drink_use_failure(content):
+    if not content:
+        return None
+    c = content.lower()
+    if any(kw in c for kw in ["don't have any", "don't have a", "don't have that item",
+                               "no drink", "no blue drink", "no green drink",
+                               "no pink drink", "no yellow drink"]):
+        for color in DRINK_COLORS:
+            if color in c:
+                return color
+        return "unknown"
+    return None
+
+
+def detect_drink_use_success(content):
+    if not content:
+        return None
+    c = content.lower()
+    if "drink" in c and any(kw in c for kw in ["you take a sip", "you drink", "you feel",
+                                                 "you are now", "activated", "effects"]):
+        for color in DRINK_COLORS:
+            if color in c:
+                return color
+        return "unknown"
+    return None
