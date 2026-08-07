@@ -1733,19 +1733,28 @@ async def handle_config_command(command_text: str) -> str:
     def is_bool_true(val: str) -> bool:
         return str(val).lower() in ("true", "yes", "1", "on")
         
+    def get_bool_icon(name):
+        return "✅" if is_bool_true(_resolved_val(name)) else "❌"
+
+    def _resolved_val(key):
+        raw = config.userOptions.get(key, "")
+        if raw is not None and str(raw).strip() not in ("", "none"):
+            return str(raw).strip()
+        attr = "farm_seed" if key == "seed" else key
+        v = getattr(config, attr, None)
+        if v is None or isinstance(v, (list, tuple, dict, set)):
+            return None
+        if isinstance(v, bool):
+            return "true" if v else "false"
+        s = str(v).strip()
+        return s if s else None
+
     def get_val(key: str, fallback: str = "none") -> str:
-        v = config.userOptions.get(key, "")
-        if v is None:
-            return fallback
-        v_str = str(v).strip()
-        return v_str if v_str else fallback
+        resolved = _resolved_val(key)
+        return resolved if resolved is not None else fallback
 
     cleaned_input = command_text.strip()
     if not cleaned_input:
-        def get_bool_icon(name):
-            val = config.userOptions.get(name, "false")
-            return "✅" if is_bool_true(val) else "❌"
-
         cmd_status = f"Hunt: {get_bool_icon('do_hunt')} | Adv: {get_bool_icon('do_adv')} | Farm: {get_bool_icon('do_farm')} | Training: {get_bool_icon('do_training')} | Dungeon: {get_bool_icon('do_dungeon')}"
         
         uname = get_val("username")
