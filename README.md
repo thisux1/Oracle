@@ -176,6 +176,7 @@ oracle
 ```path
 Oracle-V2/
 ├── bot/                # Python daemon, handlers, TUI core
+│   ├── commands.py     # Standalone command executor (API/CLI/TUI/LLM)
 │   ├── tui.py          # Main Textual application
 │   ├── tui_eye.py      # Core animated eye and cat mascots
 │   └── tui_splash_art.py # Giant Braille splash art definitions
@@ -190,11 +191,20 @@ Oracle-V2/
 └── setup.sh            # Global CLI installation script
 ```
 
+### Configuration Options
+
+| Key | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `do_summer` | bool | false | Enable Summer Event automation |
+| `summer_surf_strategy` | string | conservative | Surf risk: conservative or aggressive |
+| `summer_drink_choice` | string | blue | Weekly drink color: blue, green, pink, yellow |
+| `summer_use_sleepy_potion` | bool | false | Auto-use sleepy potion for weekly task (⚠️ risky) |
+
 ─────── ▪ ───────
 
-## ⌨️ CLI & Discord Commands
+## ⌨️ CLI, API & Discord Commands
 
-Control execution via the TUI console interface, web browser shell, or administrative Discord messages:
+Control execution via the TUI console interface, REST API, terminal stdin, or administrative Discord messages:
 
 ```text
   COMMAND             DESCRIPTION
@@ -216,6 +226,41 @@ Control execution via the TUI console interface, web browser shell, or administr
   exit                Gracefully shuts down services and saves logs.
 ```
 
+### 🤖 AI Agent & LLM Operation (Local or Cloud)
+
+Oracle v3 natively exposes an HTTP REST API and stdin command pipe designed for AI agents (Claude Code, Cursor, Ollama, AutoGPT, custom LLM agents) to programmatically operate the bot:
+
+#### 1. REST API Command Execution (`POST /api/exec`)
+When running the dashboard backend (`python launch_dashboard.py` or `python dashboard_server.py`), issue JSON payloads to control Oracle:
+
+```bash
+# Execute any bot command (e.g. say, start, pause, reset, tc, g, sleepet):
+curl -X POST http://localhost:8000/api/exec \
+  -H 'Content-Type: application/json' \
+  -d '{"command": "say rpg hunt", "profile": "options.ini"}'
+
+# Activate Time Cookie mode for 3 cookies over 30 minutes:
+curl -X POST http://localhost:8000/api/exec \
+  -H 'Content-Type: application/json' \
+  -d '{"command": "tc start 3c 30m"}'
+```
+
+#### 2. AI State & Log Inspection
+AI agents can read live execution telemetry and logs via GET endpoints:
+```bash
+# Read execution status & queues (HPQ/LPQ):
+curl http://localhost:8000/api/status?profile=options.ini
+
+# Fetch the last 50 log lines:
+curl http://localhost:8000/api/logs?profile=options.ini&limit=50
+```
+
+#### 3. Local Headless Stdin Pipe
+Terminal-based agents can pipe commands directly into `main.py --headless`:
+```bash
+echo "say rpg hunt" | python main.py --headless
+```
+
 ### Discord Remote Admin Commands (`sb ` prefix)
 Authorized administrator accounts can send control commands directly in the bot's configured channel:
 
@@ -234,6 +279,15 @@ Authorized administrator accounts can send control commands directly in the bot'
 * `sb tc stop` / `sb tc pause`: Disables Time Cookie mode.
 * `sb g start` / `sb g stop` / `sb g pause`: Starts or stops the Fibonacci gambling sequence.
 * `sb say <message>`: Sends a custom string to the active channel.
+
+### Summer Event (🏖️)
+
+| Command | Description |
+|---------|-------------|
+| `sb summer start` | Enable Summer Event automation |
+| `sb summer stop` | Disable Summer Event automation |
+| `sb summer status` | Show detailed Summer Event status |
+| `sb summer sleepy` | Use sleepy potion for weekly task (manual) |
 
 ─────── ▪ ───────
 

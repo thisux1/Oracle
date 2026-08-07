@@ -176,6 +176,7 @@ oracle
 ```path
 Oracle-V2/
 ├── bot/                # Daemon em Python, handlers e regras da TUI
+│   ├── commands.py     # Executor de comandos desacoplado (API/CLI/TUI/LLM)
 │   ├── tui.py          # Aplicação principal Textual
 │   ├── tui_eye.py      # Definição do olho e do gato animado
 │   └── tui_splash_art.py # Splash art gigante em Braille do terminal
@@ -187,14 +188,20 @@ Oracle-V2/
 ├── requirements.txt    # Dependências do ecossistema Python
 ├── main.py             # Arquivo inicializador
 ├── launch_dashboard.py # Inicializador do backend FastAPI
-└── setup.sh            # Script de registro CLI global
-```
+### Opções de Configuração
+
+| Chave | Tipo | Padrão | Descrição |
+| :--- | :--- | :--- | :--- |
+| `do_summer` | bool | false | Ativa a automação do Evento Summer |
+| `summer_surf_strategy` | string | conservative | Estratégia de risco no Surf: conservative ou aggressive |
+| `summer_drink_choice` | string | blue | Cor da bebida da segunda-feira: blue, green, pink, yellow |
+| `summer_use_sleepy_potion` | bool | false | Uso automático de sleepy potion para a task semanal (⚠️ arriscado) |
 
 ─────── ▪ ───────
 
-## ⌨️ Comandos da CLI & Discord
+## ⌨️ Comandos CLI, API & Discord
 
-Controle o andamento das tarefas e gerencie filas utilizando o terminal da TUI, a aba de comandos do dashboard ou enviando mensagens diretas no chat do Discord (restrito a admins configurados):
+Controle a execução através da interface TUI do terminal, da REST API, do stdin de terminal ou enviando mensagens diretas no chat do Discord (restrito a admins):
 
 ```text
   COMANDO             DESCRIÇÃO
@@ -216,6 +223,41 @@ Controle o andamento das tarefas e gerencie filas utilizando o terminal da TUI, 
   exit                Encerra processos e persiste arquivos de log.
 ```
 
+### 🤖 Operação por Agentes de IA & LLMs (Local ou Nuvem)
+
+O Oracle v3 dispõe de uma REST API HTTP e leitura via pipe stdin projetadas especificamente para que agentes de IA (Claude Code, Cursor, Ollama, AutoGPT, agentes LLM customizados) possam operar o bot de forma programática:
+
+#### 1. Execução de Comandos via REST API (`POST /api/exec`)
+Com o backend do dashboard em execução (`python launch_dashboard.py` ou `python dashboard_server.py`), envie requisições JSON para controlar o Oracle:
+
+```bash
+# Executar qualquer comando do bot (ex: say, start, pause, reset, tc, g, sleepet):
+curl -X POST http://localhost:8000/api/exec \
+  -H 'Content-Type: application/json' \
+  -d '{"command": "say rpg hunt", "profile": "options.ini"}'
+
+# Ativar o modo Time Cookie para 3 cookies em 30 minutos:
+curl -X POST http://localhost:8000/api/exec \
+  -H 'Content-Type: application/json' \
+  -d '{"command": "tc start 3c 30m"}'
+```
+
+#### 2. Inspeção de Estado e Logs para IA
+Agentes de IA podem ler a telemetria ao vivo e logs através dos endpoints GET:
+```bash
+# Obter status de execução e tamanho das filas (HPQ/LPQ):
+curl http://localhost:8000/api/status?profile=options.ini
+
+# Ler as últimas 50 linhas do log:
+curl http://localhost:8000/api/logs?profile=options.ini&limit=50
+```
+
+#### 3. Pipe Stdin em Modo Headless Local
+Agentes baseados em terminal podem injetar comandos diretamente no stdin do `main.py --headless`:
+```bash
+echo "say rpg hunt" | python main.py --headless
+```
+
 ### Comandos de Controle Remoto no Discord (Prefixo `sb `)
 Contas administradoras autorizadas podem controlar o daemon enviando comandos diretamente no canal configurado:
 
@@ -234,6 +276,15 @@ Contas administradoras autorizadas podem controlar o daemon enviando comandos di
 * `sb tc stop` / `sb tc pause`: Encerra o modo Time Cookie ativo.
 * `sb g start` / `sb g stop` / `sb g pause`: Ativa ou desativa as rotinas do módulo de gambling/apostas Fibonacci.
 * `sb say <mensagem>`: Envia uma mensagem personalizada no canal ativo.
+
+### Evento Summer (🏖️)
+
+| Comando | Descrição |
+|---------|-----------|
+| `sb summer start` | Ativa a automação do Evento Summer |
+| `sb summer stop` | Desativa a automação do Evento Summer |
+| `sb summer status` | Exibe o status detalhado do Evento Summer |
+| `sb summer sleepy` | Usa a porção sleepy para a task semanal (manual) |
 
 ─────── ▪ ───────
 

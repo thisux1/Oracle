@@ -18,6 +18,7 @@ session_data.json
 opencode.json
 stats*.json
 stats_*.json
+live*.json
 session_baseline*.json
 TUI_PLAN.md
 
@@ -45,5 +46,4 @@ graphify-out/
 .agents/
 
 # Planos e Documentação de Desenvolvimento
-docs/
-
+docs/plan_*.md
