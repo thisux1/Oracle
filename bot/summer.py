@@ -308,11 +308,25 @@ def handle_boost_response(boosts, raw_content=""):
         if defn["craft_cmd"]:
             add_to_low_priority_queue(defn["craft_cmd"])
             HUD.command(f"{defn['craft_cmd']} (boost renew)", priority="LPQ")
-    
+
+    _renew_missing_drinks()
+
+def _request_inventory_check():
+    if bot_state.summer_waiting_inventory:
+        return
+    bot_state.summer_waiting_inventory = True
+    add_to_high_priority_queue("rpg i")
+    HUD.command("rpg i (summer inventory check)", priority="HPQ")
+    HUD.system("Summer Boost: inventario nao carregado — consultando rpg i para verificar materiais")
+
+def _renew_missing_drinks():
+    now = time.time()
+    active_keys = {k for k, exp in bot_state.summer_boosts_active.items() if exp > now}
+
     all_drink_keys = ["blue drink", "green drink", "pink drink", "yellow drink"]
     fav_color = config.summer_drink_choice.lower().strip()
     fav_key = f"{fav_color} drink"
-    
+
     ordered_drink_keys = []
     if fav_key in all_drink_keys:
         ordered_drink_keys.append(fav_key)
@@ -321,27 +335,35 @@ def handle_boost_response(boosts, raw_content=""):
             ordered_drink_keys.append(k)
 
     for key in ordered_drink_keys:
+        if key in active_keys:
+            continue
         defn = BOOST_DEFS[key]
-        if key not in active_keys:
-            bot_state.summer_boosts_active.pop(key, None)
-            color = key.split(" ")[0]
-            drink_qty = getattr(bot_state, f"inventory_{color}_drink", 0)
-            if drink_qty > 0:
-                if defn["use_cmd"]:
-                    add_to_low_priority_queue(defn["use_cmd"])
-                    HUD.command(f"{defn['use_cmd']} (boost renew)", priority="LPQ")
-            elif has_materials_for_drink(color):
+        bot_state.summer_boosts_active.pop(key, None)
+        color = key.split(" ")[0]
+        drink_qty = getattr(bot_state, f"inventory_{color}_drink", 0)
+        if drink_qty > 0:
+            if defn["use_cmd"]:
+                add_to_low_priority_queue(defn["use_cmd"])
+                HUD.command(f"{defn['use_cmd']} (boost renew)", priority="LPQ")
+        elif bot_state.summer_inventory_known:
+            if has_materials_for_drink(color):
                 if defn["craft_cmd"]:
                     add_to_low_priority_queue(defn["craft_cmd"])
                     HUD.command(f"{defn['craft_cmd']} (boost renew)", priority="LPQ")
             else:
-                HUD.system(f"Summer Boost: {key} ignorado (faltam materiais e drink).")
+                HUD.system(f"Summer Boost: {key} ignorado (faltam materiais e craft drinks).")
+        else:
+            _request_inventory_check()
+            break
 
 def queue_drink_craft(color):
     drink_key = f"{color} drink"
     now = time.time()
     if drink_key in bot_state.summer_boosts_active and bot_state.summer_boosts_active[drink_key] > now:
         logger.info(f"Summer: {drink_key} já está ativo ({bot_state.summer_boosts_active[drink_key] - now:.0f}s restante). Ignorando craft fallback.")
+        return
+    if not bot_state.summer_inventory_known:
+        _request_inventory_check()
         return
     if has_materials_for_drink(color):
         bot_state.summer_last_craft_color = color

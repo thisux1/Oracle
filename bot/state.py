@@ -221,6 +221,8 @@ class BotState:
         self.inventory_green_drink = 0
         self.inventory_yellow_drink = 0
         self.summer_boost_exhausted = False
+        self.summer_inventory_known = False
+        self.summer_waiting_inventory = False
         self.summer_coconut_count = 0
         self.summer_palm_log_count = 0
         self.summer_mega_palm_log_count = 0
@@ -633,6 +635,8 @@ def reset_bot_state() -> None:
     bot_state.inventory_green_drink = 0
     bot_state.inventory_yellow_drink = 0
     bot_state.summer_boost_exhausted = False
+    bot_state.summer_inventory_known = False
+    bot_state.summer_waiting_inventory = False
     bot_state.summer_coconut_count = 0
     bot_state.summer_palm_log_count = 0
     bot_state.summer_mega_palm_log_count = 0

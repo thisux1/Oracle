@@ -1124,6 +1124,13 @@ def parse_inventory_summer_items(content):
         if yellow_drink:
             bot_state.inventory_yellow_drink = int(yellow_drink.group(1).replace(",", ""))
 
+        bot_state.summer_inventory_known = True
+        if bot_state.summer_waiting_inventory:
+            bot_state.summer_waiting_inventory = False
+            HUD.system("Summer Boost: inventario carregado — recalculando materiais das drinks")
+            from bot.summer import _renew_missing_drinks
+            _renew_missing_drinks()
+
 
 DRINK_COLORS = ["blue", "green", "pink", "yellow"]
 
