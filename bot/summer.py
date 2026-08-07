@@ -883,26 +883,12 @@ def _check_weekly_reset():
             claim_tournament_codes()
             HUD.system("Summer: reset semanal — resgatando códigos do torneio e nova semana")
 
-def check_mega_surfboard_craft():
-    if not config.do_summer:
-        return
-    if bot_state.summer_mega_surfboard_crafted:
-        return
-    if bot_state.summer_mega_palm_log_count >= 5 and bot_state.summer_palm_log_count >= 100:
-        bot_state.summer_mega_surfboard_crafted = True
-        HUD.oracle(
-            f"Summer: Requisitos atingidos! ({bot_state.summer_mega_palm_log_count} Mega Palm Logs, {bot_state.summer_palm_log_count} Palm Logs) -> Craftando MEGA Surfboard!"
-        )
-        add_to_low_priority_queue("rpg smr craft mega surfboard")
-        HUD.command("rpg smr craft mega surfboard (auto-craft)", priority="LPQ")
-
 def summer_tick():
     now = time.time()
     if bot_state.surf_in_progress and (now - bot_state.summer_last_action_time) > 45:
         bot_state.surf_in_progress = False
         HUD.system("Summer Surf: watchdog liberou trava de surf inativo")
     _check_daily_reset(now)
-    check_mega_surfboard_craft()
     if now - bot_state.summer_last_task_check >= 43200:
         bot_state.summer_last_task_check = now
         add_to_low_priority_queue("rpg smr task")
