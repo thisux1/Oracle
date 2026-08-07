@@ -521,5 +521,57 @@ body::before {
   background: var(--accent-cyan) !important;
 }
 
+/* ---- Jail Theme (auto when bot is jailed) ---- */
+.theme-jailed {
+  --accent-danger: #ff3333;
+  --accent-danger-dim: rgba(255, 51, 51, 0.2);
+  --accent-cyan: #ff6b6b;
+  --accent-cyan-dim: rgba(255, 107, 107, 0.18);
+  --accent-primary: #ff5555;
+  --accent-success: #ff6b6b;
+  --border-glow-danger: rgba(255, 51, 51, 0.6);
+  --bg-void: #100505;
+  --bg-surface: #170909;
+  --bg-elevated: #200d0d;
+}
+
+.theme-jailed body {
+  background:
+    radial-gradient(circle at 20% 10%, rgba(255, 51, 51, 0.22), transparent 45%),
+    radial-gradient(circle at 80% 80%, rgba(255, 51, 51, 0.16), transparent 50%),
+    linear-gradient(140deg, var(--bg-void) 0%, #2a0f0f 100%);
+}
+
+.theme-jailed .glass {
+  border-color: rgba(255, 51, 51, 0.45) !important;
+  box-shadow: 0 0 25px rgba(255, 51, 51, 0.25), inset 0 0 20px rgba(255, 51, 51, 0.06);
+}
+
+.theme-jailed .scanline {
+  background: linear-gradient(to bottom, rgba(255, 51, 51, 0) 0%, rgba(255, 51, 51, 0.18) 50%, rgba(255, 51, 51, 0) 100%) !important;
+}
+
+.jail-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  padding: 8px 16px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #fff;
+  background: linear-gradient(90deg, #ff3333 0%, #b91c1c 50%, #ff3333 100%);
+  box-shadow: 0 2px 20px rgba(255, 51, 51, 0.6);
+  animation: jail-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes jail-pulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.35); }
+}
+
 
 

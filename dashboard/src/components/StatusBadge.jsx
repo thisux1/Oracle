@@ -31,6 +31,14 @@ const STATUS_STYLES = {
     color: "var(--accent-danger)",
     border: "var(--border-glow-danger)",
   },
+  jailed: {
+    label: "Preso",
+    dot: "bg-red-500",
+    dotGlow: "animate-oracle-pulse",
+    bg: "rgba(239, 68, 68, 0.2)",
+    color: "#ff5555",
+    border: "rgba(255, 85, 85, 0.5)",
+  },
 };
 
 export default function StatusBadge({ state = "offline", size = "sm" }) {

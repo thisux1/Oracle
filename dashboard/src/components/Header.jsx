@@ -14,6 +14,7 @@ function formatUptime(seconds) {
 export default function Header({ onMenuToggle }) {
   const activeProfile = useOracleStore((s) => s.activeProfile);
   const botState = useOracleStore((s) => s.botState);
+  const jailed = useOracleStore((s) => s.jailed);
   const uptime = useOracleStore((s) => s.uptime);
   const botActionPending = useOracleStore((s) => s.botActionPending);
   const startBot = useOracleStore((s) => s.startBot);
@@ -64,7 +65,7 @@ export default function Header({ onMenuToggle }) {
             {profileName || "Sem perfil"}
           </p>
           <div className="mt-1 flex items-center gap-2">
-            <StatusBadge state={botState} size="xs" />
+            <StatusBadge state={jailed ? "jailed" : botState} size="xs" />
             {(botState === "online" || botState === "starting") && uptime > 0 ? (
               <span
                 className="text-[11px] tabular-nums"

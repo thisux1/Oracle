@@ -98,6 +98,7 @@ export default function ProfileSidebar({ open, onClose }) {
   const profiles = useOracleStore((s) => s.profiles);
   const activeProfile = useOracleStore((s) => s.activeProfile);
   const botState = useOracleStore((s) => s.botState);
+  const jailed = useOracleStore((s) => s.jailed);
   const setActiveProfile = useOracleStore((s) => s.setActiveProfile);
   const fetchProfiles = useOracleStore((s) => s.fetchProfiles);
 
@@ -334,7 +335,7 @@ export default function ProfileSidebar({ open, onClose }) {
       </nav>
 
       <div className="mt-auto border-t px-4 py-3" style={{ borderColor: "var(--border-subtle)" }}>
-        <StatusBadge state={botState} size="xs" />
+        <StatusBadge state={jailed ? "jailed" : botState} size="xs" />
       </div>
     </aside>
   );

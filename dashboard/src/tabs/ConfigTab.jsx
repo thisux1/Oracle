@@ -257,6 +257,36 @@ export default function ConfigTab() {
         </div>
       </ConfigSection>
 
+      {/* Summer Event */}
+      <ConfigSection title="Summer Event" icon="&#127958;">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <ToggleSwitch label="Summer Event" checked={isTrue("do_summer")} onChange={doToggle("do_summer")} />
+          <SelectField
+            label="Surf Strategy"
+            field="summer_surf_strategy"
+            value={config.summer_surf_strategy}
+            onChange={handleChange}
+            options={[
+              { value: "conservative", label: "Conservative" },
+              { value: "aggressive", label: "Aggressive" },
+            ]}
+          />
+          <SelectField
+            label="Weekly Drink"
+            field="summer_drink_choice"
+            value={config.summer_drink_choice}
+            onChange={handleChange}
+            options={[
+              { value: "blue", label: "Blue" },
+              { value: "green", label: "Green" },
+              { value: "pink", label: "Pink" },
+              { value: "yellow", label: "Yellow" },
+            ]}
+          />
+          <ToggleSwitch label="Auto Sleepy Potion (risky)" checked={isTrue("summer_use_sleepy_potion")} onChange={doToggle("summer_use_sleepy_potion")} />
+        </div>
+      </ConfigSection>
+
       {/* Advanced */}
       <ConfigSection title="Avançado" icon="&#129514;">
         <div className="grid gap-4 sm:grid-cols-2">
@@ -292,6 +322,7 @@ export default function ConfigTab() {
           />
           <ToggleSwitch label="Casado (Is Married)" checked={isTrue("is_married")} onChange={doToggle("is_married")} />
           <TextField label="Nome do Parceiro(a)" field="partner_name" value={config.partner_name} onChange={handleChange} />
+          <NumberField label="Reaviso de Jail (min)" field="jail_notify_interval_min" value={config.jail_notify_interval_min} onChange={handleChange} min={1} />
           <TextField label="ID do Parceiro de Duelo" field="duel_partner_id" value={config.duel_partner_id} onChange={handleChange} placeholder="ID do Discord" />
           <ToggleSwitch label="Ascendido (Is Ascended)" checked={isTrue("is_ascended")} onChange={doToggle("is_ascended")} />
           <TextField label="IDs dos Administradores" field="admin_ids" value={config.admin_ids} onChange={handleChange} placeholder="id1,id2" />

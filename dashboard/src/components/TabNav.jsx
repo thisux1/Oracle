@@ -4,22 +4,27 @@ import {
   Terminal,
   Settings,
   BarChart3,
+  Sun,
 } from "lucide-react";
 
-const TABS = [
+const BASE_TABS = [
   { key: "overview", label: "Visão Geral", Icon: LayoutDashboard },
   { key: "terminal", label: "Terminal", Icon: Terminal },
   { key: "config", label: "Configurações", Icon: Settings },
   { key: "stats", label: "Estatísticas", Icon: BarChart3 },
 ];
 
-export default function TabNav({ activeTab, onTabChange }) {
+const SUMMER_TAB = { key: "summer", label: "Summer", Icon: Sun };
+
+export default function TabNav({ activeTab, onTabChange, summerActive }) {
+  const tabs = summerActive ? [...BASE_TABS, SUMMER_TAB] : BASE_TABS;
+
   return (
     <nav
       className="glass flex items-center gap-1 rounded-2xl p-1.5"
       role="tablist"
     >
-      {TABS.map(({ key, label, Icon }) => {
+      {tabs.map(({ key, label, Icon }) => {
         const isActive = key === activeTab;
         return (
           <button

@@ -1,10 +1,10 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { useOracleStore } from "../stores/useOracleStore";
 import GlassCard from "../components/GlassCard";
 import StatusBadge from "../components/StatusBadge";
 import AnimatedCounter from "../components/AnimatedCounter";
 import MiniTerminal from "../components/MiniTerminal";
-import { Play, Square, Pause, RefreshCw, Cookie, ShieldAlert, Sparkles } from "lucide-react";
+import { Play, Square, Pause, RefreshCw, Cookie, ShieldAlert, Sparkles, Waves } from "lucide-react";
 
 function formatUptime(seconds) {
   if (!seconds || seconds <= 0) return "0s";
@@ -28,7 +28,7 @@ function QueueBar({ label, value, max = 20, color }) {
       </div>
       <div className="h-2 overflow-hidden rounded-full" style={{ background: "var(--bg-void)" }}>
         <div
-          className="h-full rounded-full transition-all duration-500"
+          className="h-full rounded-full transition-[width] duration-500"
           style={{ width: `${pct}%`, background: color }}
         />
       </div>
@@ -39,6 +39,7 @@ function QueueBar({ label, value, max = 20, color }) {
 export default function OverviewTab({ onNavigateTerminal }) {
   const activeProfile = useOracleStore((s) => s.activeProfile);
   const botState = useOracleStore((s) => s.botState);
+  const jailed = useOracleStore((s) => s.jailed);
   const uptime = useOracleStore((s) => s.uptime);
   const hpqSize = useOracleStore((s) => s.hpqSize);
   const lpqSize = useOracleStore((s) => s.lpqSize);
@@ -49,6 +50,7 @@ export default function OverviewTab({ onNavigateTerminal }) {
   const stopBot = useOracleStore((s) => s.stopBot);
   const sendTerminalBinary = useOracleStore((s) => s.sendTerminalBinary);
   const connected = useOracleStore((s) => s.terminalConnected);
+  const summerData = useOracleStore((s) => s.summerData);
 
   const handleSendCommand = useCallback((cmd) => {
     if (connected) {
@@ -78,7 +80,7 @@ export default function OverviewTab({ onNavigateTerminal }) {
           <GlassCard title="Estado do Bot" subtitle={activeProfile}>
             <div className="flex items-start justify-between">
               <div>
-                <StatusBadge state={botState} size="md" />
+                <StatusBadge state={jailed ? "jailed" : botState} size="md" />
                 <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
                   <div>
                     <dt style={{ color: "var(--text-dim)" }}>Tempo Online (Uptime)</dt>
@@ -93,6 +95,27 @@ export default function OverviewTab({ onNavigateTerminal }) {
                     </dd>
                   </div>
                 </dl>
+                {summerData?.active && (
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <span
+                      className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide"
+                      style={{
+                        background: "rgba(251, 191, 36, 0.12)",
+                        color: "#fbbf24",
+                        border: "1px solid rgba(251, 191, 36, 0.2)",
+                      }}
+                    >
+                      🏖️ Summer
+                    </span>
+                    <span className="text-xs" style={{ color: "var(--text-secondary)" }}>
+                      {summerData.color_team ? `Team: ${summerData.color_team.toUpperCase()}` : ""}
+                      {summerData.color_team && summerData.surf_rounds > 0 ? " | " : ""}
+                      {summerData.surf_rounds > 0 ? `Surf: ${summerData.surf_rounds}r` : ""}
+                      {(summerData.color_team || summerData.surf_rounds > 0) && summerData.boost_count > 0 ? " | " : ""}
+                      {summerData.boost_count > 0 ? `Boosts: ${summerData.boost_count}` : ""}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </GlassCard>
@@ -224,6 +247,27 @@ export default function OverviewTab({ onNavigateTerminal }) {
             </div>
           </GlassCard>
 
+          {/* Summer Cooldowns */}
+          {summerData?.active && (
+            <GlassCard title="Summer Cooldowns" subtitle={<><Waves size={12} className="inline" /> Active timers</>}>
+              <div className="space-y-2">
+                {summerData.surf_cooldown_remaining > 0 && (
+                  <CooldownBar label="Surf" remaining={summerData.surf_cooldown_remaining} maxSeconds={1800} />
+                )}
+                {summerData.boosts_active && Object.entries(summerData.boosts_active).map(([name, expiresAt]) => {
+                  const remaining = Math.max(0, expiresAt - Date.now() / 1000);
+                  return remaining > 0 ? (
+                    <CooldownBar key={name} label={name} remaining={remaining} maxSeconds={1800} />
+                  ) : null;
+                })}
+                {(!summerData.surf_cooldown_remaining || summerData.surf_cooldown_remaining <= 0) &&
+                 (!summerData.boosts_active || Object.values(summerData.boosts_active).every(e => e <= Date.now() / 1000)) && (
+                  <p className="text-xs" style={{ color: "var(--text-secondary)" }}>No active cooldowns</p>
+                )}
+              </div>
+            </GlassCard>
+          )}
+
           {/* Recent Drops */}
           <GlassCard title="Drops Recentes" subtitle="Top 10 drops desta sessão">
             <DropsList loot={sessionStats?.loot} />
@@ -233,6 +277,29 @@ export default function OverviewTab({ onNavigateTerminal }) {
 
       {/* Mini Terminal */}
       <MiniTerminal lines={terminalLines} onNavigateTerminal={onNavigateTerminal} />
+    </div>
+  );
+}
+
+function CooldownBar({ label, remaining, maxSeconds = 1800 }) {
+  const pct = maxSeconds > 0 ? Math.min(100, ((maxSeconds - remaining) / maxSeconds) * 100) : 100;
+  const ready = remaining <= 0;
+  const m = Math.floor(remaining / 60);
+  const s = Math.floor(remaining % 60);
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between text-xs">
+        <span style={{ color: "var(--text-secondary)" }}>{label}</span>
+        <span className="tabular-nums" style={{ color: ready ? "#22c55e" : "var(--accent-primary)", fontFamily: "var(--font-mono)" }}>
+          {ready ? "READY" : `${m}m ${s.toString().padStart(2, "0")}s`}
+        </span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full" style={{ background: "var(--bg-void)" }}>
+        <div
+          className="h-full rounded-full transition-[width] duration-1000"
+          style={{ width: `${pct}%`, background: ready ? "#22c55e" : "var(--accent-primary)" }}
+        />
+      </div>
     </div>
   );
 }

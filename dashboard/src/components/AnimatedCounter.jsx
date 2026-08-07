@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 
-export default function AnimatedCounter({ value = 0, label, color = "var(--accent-cyan)", duration = 0.8 }) {
+export default function AnimatedCounter({ value = 0, label, color = "var(--accent-cyan)", duration = 0.8, delta = null }) {
   const ref = useRef(null);
   const currentRef = useRef(0);
 
@@ -34,6 +34,7 @@ export default function AnimatedCounter({ value = 0, label, color = "var(--accen
       </p>
       <p className="mt-1 text-[11px] font-medium uppercase tracking-wide" style={{ color: "var(--text-dim)" }}>
         {label}
+        {delta && <span className="ml-1.5">{delta}</span>}
       </p>
     </div>
   );

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useOracleStore } from "../stores/useOracleStore";
 import GlassCard from "../components/GlassCard";
 import AnimatedCounter from "../components/AnimatedCounter";
@@ -40,7 +40,7 @@ function LootTable({ drops, title }) {
             </div>
             <div className="h-1.5 overflow-hidden rounded-full" style={{ background: "var(--bg-void)" }}>
               <div
-                className="h-full rounded-full transition-all duration-500"
+                className="h-full rounded-full transition-[width] duration-500"
                 style={{
                   width: `${pct}%`,
                   background: "var(--accent-cyan)",
@@ -97,6 +97,85 @@ function CardGrid({ cards }) {
         );
       })}
     </div>
+  );
+}
+
+const CMD_COLORS = [
+  "var(--accent-cyan)", "var(--accent-primary)", "var(--accent-success)",
+  "var(--accent-warning)", "var(--accent-danger)", "#f472b6",
+  "#a78bfa", "#38bdf8", "#fbbf24", "#34d399",
+];
+
+function DonutChart({ data, size = 120, thickness = 14 }) {
+  const entries = useMemo(() => {
+    const filtered = Object.entries(data || {}).filter(([, v]) => v > 0);
+    const total = filtered.reduce((a, [, v]) => a + v, 0);
+    return filtered.map(([k, v]) => ({ key: k, value: v, pct: total > 0 ? (v / total) * 100 : 0 }));
+  }, [data]);
+
+  const total = entries.reduce((a, e) => a + e.value, 0);
+  const r = (size - thickness) / 2;
+  const circumference = 2 * Math.PI * r;
+
+  if (entries.length === 0) {
+    return <div className="text-xs" style={{ color: "var(--text-dim)" }}>No data</div>;
+  }
+
+  let offset = 0;
+  return (
+    <div className="flex items-center gap-4">
+      <svg width={size} height={size} className="flex-shrink-0">
+        {entries.map((entry, i) => {
+          const dash = (entry.pct / 100) * circumference;
+          const rotation = (offset / 100) * 360 - 90;
+          offset += entry.pct;
+          return (
+            <circle
+              key={entry.key}
+              cx={size / 2}
+              cy={size / 2}
+              r={r}
+              fill="none"
+              stroke={CMD_COLORS[i % CMD_COLORS.length]}
+              strokeWidth={thickness}
+              strokeDasharray={`${dash} ${circumference - dash}`}
+              transform={`rotate(${rotation} ${size / 2} ${size / 2})`}
+              style={{ transition: "stroke-dasharray 0.5s ease" }}
+            />
+          );
+        })}
+        <text x={size / 2} y={size / 2 - 6} textAnchor="middle" className="text-sm font-bold" fill="var(--text-primary)" style={{ fontFamily: "var(--font-mono)" }}>
+          {total}
+        </text>
+        <text x={size / 2} y={size / 2 + 10} textAnchor="middle" className="text-[9px]" fill="var(--text-secondary)">
+          commands
+        </text>
+      </svg>
+      <div className="space-y-1">
+        {entries.slice(0, 6).map((entry, i) => (
+          <div key={entry.key} className="flex items-center gap-2 text-xs">
+            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: CMD_COLORS[i % CMD_COLORS.length] }} />
+            <span style={{ color: "var(--text-secondary)" }}>{entry.key}</span>
+            <span className="tabular-nums ml-auto" style={{ color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}>{entry.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DeltaIndicator({ session, total }) {
+  if (!total || total === 0) return null;
+  const delta = session - total;
+  const pct = total > 0 ? ((delta / total) * 100).toFixed(1) : "0";
+  const positive = delta > 0;
+  return (
+    <span
+      className="text-[10px] font-semibold tabular-nums"
+      style={{ color: positive ? "#22c55e" : delta < 0 ? "#ef4444" : "var(--text-secondary)", fontFamily: "var(--font-mono)" }}
+    >
+      {positive ? "+" : ""}{pct}%
+    </span>
   );
 }
 
@@ -170,12 +249,17 @@ export default function StatsTab() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-        <AnimatedCounter value={progress.coins || 0} label="Coins" color="#fbbf24" />
-        <AnimatedCounter value={progress.xp || 0} label="XP" color="#a78bfa" />
-        <AnimatedCounter value={progress.levels || 0} label="Níveis" color="var(--accent-cyan)" />
+        <AnimatedCounter value={progress.coins || 0} label="Coins" color="#fbbf24" delta={viewMode === "session" ? <DeltaIndicator session={progress.coins || 0} total={totalStats?.progress?.coins || 0} /> : null} />
+        <AnimatedCounter value={progress.xp || 0} label="XP" color="#a78bfa" delta={viewMode === "session" ? <DeltaIndicator session={progress.xp || 0} total={totalStats?.progress?.xp || 0} /> : null} />
+        <AnimatedCounter value={progress.levels || 0} label="Níveis" color="var(--accent-cyan)" delta={viewMode === "session" ? <DeltaIndicator session={progress.levels || 0} total={totalStats?.progress?.levels || 0} /> : null} />
         <AnimatedCounter value={totalLootboxes} label="Lootboxes" color="#f472b6" />
         <AnimatedCounter value={totalCommands} label="Comandos" color="var(--accent-success)" />
       </div>
+
+      {/* Donut Chart — Command Distribution */}
+      <GlassCard title="Command Distribution" subtitle="Donut chart by type">
+        <DonutChart data={commands} />
+      </GlassCard>
 
       {/* Command Breakdown */}
       <GlassCard title="Comandos" subtitle="Contagem de execução por tipo">

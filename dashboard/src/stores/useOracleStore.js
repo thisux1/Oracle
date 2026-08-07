@@ -77,6 +77,10 @@ export const useOracleStore = create((set, get) => ({
   lastExitCode: null,
   lastCrashAt: null,
 
+  jailed: false,
+  jailElapsed: 0,
+  summerData: null,
+
   config: {},
   configDirty: false,
 
@@ -366,6 +370,9 @@ export const useOracleStore = create((set, get) => ({
         lpqSize: Number(status.lpq || 0),
         lastExitCode: status.lastExitCode ?? null,
         lastCrashAt: status.lastCrashAt ?? null,
+        jailed: !!status.jailed,
+        jailElapsed: Number(status.jailElapsed || 0),
+        summerData: status.summer || null,
         loadingStatus: false,
       });
       get().fetchProfiles().catch(() => undefined);
