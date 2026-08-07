@@ -251,6 +251,29 @@ async def edit_telegram_message(message_id, text, buttons=None, parse_mode="HTML
     return False
 
 
+async def delete_telegram_message(message_id):
+    """Delete a previously sent Telegram message. Best-effort, never raises."""
+    if not message_id or not config.TelegramBotToken or not config.TelegramChatID:
+        return False
+    url = f"https://api.telegram.org/bot{config.TelegramBotToken}/deleteMessage"
+    payload = {
+        "chat_id": config.TelegramChatID,
+        "message_id": message_id,
+    }
+    try:
+        session = _get_session()
+        async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=10)) as response:
+            if response.status == 200:
+                logger.info("Telegram message deleted successfully.")
+                return True
+            resp_text = await response.text()
+            logger.error(f"Failed to delete Telegram message: {resp_text}")
+            return False
+    except Exception as e:
+        logger.error(f"Error deleting Telegram message: {e}")
+    return False
+
+
 
 
 

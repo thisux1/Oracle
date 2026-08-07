@@ -14,6 +14,7 @@ from bot.telegram import (
     send_telegram_photo,
     get_telegram_override,
 )
+from bot.jail_feedback import on_jail_detected, on_jail_released
 
 # Client reference — set by client.py at startup via set_client()
 _client = None
@@ -239,11 +240,13 @@ async def tentar_resolver_captcha(message):
                     HUD.system("🎯 Captcha Resolvido!")
                     bot_state.paused = False
                     bot_state.jailed = False
+                    await on_jail_released()
                     return True
                 elif result == "jailed":
                     HUD.alert("💀 Captcha FALHOU — Preso.")
                     bot_state.jailed = True
                     bot_state.paused = True
+                    on_jail_detected()
                     await send_telegram_notification(
                         "🚨 CAPTCHA FALHOU! O bot está PRESO. Intervenção manual necessária."
                     )

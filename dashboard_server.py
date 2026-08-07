@@ -162,6 +162,22 @@ def _load_baseline_for_profile(profile: str) -> dict[str, Any] | None:
     return None
 
 
+def _load_live_for_profile(profile: str) -> dict[str, Any]:
+    """Load the live_<profile>.json shared with the bot subprocess.
+    Returns an empty dict if the file is missing (bot offline / not started yet)."""
+    profile_stem = Path(profile).stem
+    user_data_path = Path(options_resolver.USER_DATA_DIR)
+    candidates = [
+        user_data_path / f"live_{profile_stem}.json",
+        user_data_path / "live.json",
+    ]
+    for candidate in candidates:
+        result = _load_json_file(candidate)
+        if result is not None:
+            return result
+    return {}
+
+
 def _subtract_stats(current: dict[str, Any], baseline: dict[str, Any]) -> dict[str, Any]:
     """Subtract baseline values from current stats to get session-only deltas."""
     result: dict[str, Any] = {}
@@ -778,7 +794,19 @@ async def post_config(payload: ConfigUpdatePayload):
 async def get_status(profile: str = Query(default=DEFAULT_PROFILE)):
     profile_name = normalize_and_validate_profile(profile)
     manager = await get_manager(profile_name)
-    return manager.status_payload()
+    status_data = manager.status_payload()
+
+    # Live status shared via live_<profile>.json — the source of truth for
+    # jail and summer state. The bot runs as a subprocess, so its bot_state
+    # is NOT available in this process.
+    live = _load_live_for_profile(profile_name)
+    if live:
+        status_data["jailed"] = bool(live.get("jailed", False))
+        status_data["jailElapsed"] = live.get("jail_elapsed", 0)
+        if live.get("summer"):
+            status_data["summer"] = live["summer"]
+
+    return status_data
 
 
 @app.get("/api/stats")
@@ -856,6 +884,61 @@ async def stop_bot(payload: BotControlPayload):
     stopped = await manager.stop()
     return {
         "status": "stopped" if stopped else "already_stopped",
+        "profile": profile_name,
+    }
+
+# --- Command Execution Endpoint ---
+
+
+class ExecPayload(BaseModel):
+    profile: str = Field(default=DEFAULT_PROFILE)
+    command: str
+
+
+@app.post("/api/exec")
+async def exec_command(payload: ExecPayload):
+    """Execute an Oracle command on a running bot instance.
+
+    Sends the command string to the bot's stdin via PTY/pipe.
+    In TUI mode (POSIX PTY), characters appear as keystrokes in the CommandInput.
+    In headless mode, the stdin reader processes the command directly.
+
+    Usage examples (curl):
+        curl -X POST http://localhost:8000/api/exec \\
+            -H 'Content-Type: application/json' \\
+            -d '{"command": "say rpg hunt"}'
+
+        curl -X POST http://localhost:8000/api/exec \\
+            -H 'Content-Type: application/json' \\
+            -d '{"command": "tc start 3c 30m", "profile": "options.ini"}'
+    """
+    profile_name = normalize_and_validate_profile(payload.profile)
+    manager = await get_manager(profile_name)
+
+    if manager.state not in (BotState.ONLINE, BotState.STARTING):
+        api_error(
+            409,
+            "bot_not_running",
+            "Bot is not running for this profile",
+            {"profile": profile_name, "state": manager.state.value},
+        )
+
+    # Send command + CR LF to bot stdin
+    # \r triggers Enter in TUI mode (Textual), \n is the line delimiter for headless stdin reader
+    cmd_bytes = payload.command.encode("utf-8") + b"\r\n"
+    success = await manager.write_input(cmd_bytes)
+
+    if not success:
+        api_error(
+            500,
+            "write_failed",
+            "Failed to write command to bot process stdin",
+            {"profile": profile_name, "command": payload.command},
+        )
+
+    return {
+        "ok": True,
+        "command": payload.command,
         "profile": profile_name,
     }
 
