@@ -63,6 +63,11 @@ class ProfileCreatePayload(BaseModel):
     copyFrom: str | None = None
 
 
+class ProfileRenamePayload(BaseModel):
+    name: str
+    newName: str
+
+
 def api_error(status_code: int, code: str, message: str, details: dict[str, Any] | None = None) -> None:
     raise HTTPException(
         status_code=status_code,
@@ -1029,6 +1034,57 @@ async def delete_profile(name: str = Query(...)):
 
     target.unlink()
     return {"status": "ok", "name": profile_name}
+
+
+@app.post("/api/profiles/rename")
+async def rename_profile(payload: ProfileRenamePayload):
+    profile_name = options_resolver.normalize_profile_name(payload.name)
+    if profile_name == DEFAULT_PROFILE:
+        api_error(403, "cannot_rename_default", "Cannot rename the default profile")
+
+    new_name = options_resolver.normalize_profile_name(payload.newName)
+    if new_name == DEFAULT_PROFILE:
+        api_error(400, "invalid_name", "New name cannot be the default profile name")
+
+    user_data_path = Path(options_resolver.USER_DATA_DIR)
+    target = user_data_path / profile_name
+    if not target.exists():
+        api_error(404, "profile_not_found", f"Profile '{profile_name}' not found", {"name": profile_name})
+
+    if new_name == profile_name:
+        return {"status": "ok", "name": new_name}
+
+    new_target = user_data_path / new_name
+    if new_target.exists():
+        api_error(409, "profile_exists", f"Profile '{new_name}' already exists", {"name": new_name})
+
+    manager = MANAGERS.get(profile_name)
+    if manager and manager.state in (BotState.ONLINE, BotState.STARTING):
+        api_error(
+            409,
+            "bot_running",
+            "Stop the bot before renaming this profile",
+            {"name": profile_name, "state": manager.state.value},
+        )
+
+    os.replace(str(target), str(new_target))
+
+    for suffix, fmt in [
+        ("log", "{stem}.log"),
+        ("stats", "stats_{stem}.json"),
+        ("stats_history", "stats_history_{stem}.json"),
+        ("session_baseline", "session_baseline_{stem}.json"),
+        ("live", "live_{stem}.json"),
+    ]:
+        old_aux = user_data_path / fmt.format(stem=Path(profile_name).stem)
+        new_aux = user_data_path / fmt.format(stem=Path(new_name).stem)
+        if old_aux.exists() and not new_aux.exists():
+            try:
+                os.replace(str(old_aux), str(new_aux))
+            except Exception:
+                pass
+
+    return {"status": "ok", "name": new_name}
 
 
 @app.post("/api/profiles/import")

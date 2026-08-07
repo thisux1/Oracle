@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useOracleStore } from "../stores/useOracleStore";
 import StatusBadge from "./StatusBadge";
-import { apiCreateProfile, apiDeleteProfile, apiExportProfile, apiImportProfile } from "../lib/api";
-import { Plus, Copy, Trash2, Download, Upload, MoreVertical, AlertTriangle } from "lucide-react";
+import { apiCreateProfile, apiDeleteProfile, apiExportProfile, apiImportProfile, apiRenameProfile } from "../lib/api";
+import { Plus, Copy, Trash2, Download, Upload, MoreVertical, AlertTriangle, Pencil } from "lucide-react";
 
 function ProfileMenu({ profile, isDefault, onAction, onClose }) {
   const ref = useRef(null);
@@ -37,6 +37,16 @@ function ProfileMenu({ profile, isDefault, onAction, onClose }) {
       >
         <Download size={13} /> Exportar
       </button>
+      {!isDefault ? (
+        <button
+          type="button"
+          onClick={() => { onAction("rename"); onClose(); }}
+          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-[rgba(148,163,184,0.08)]"
+          style={{ color: "var(--text-secondary)" }}
+        >
+          <Pencil size={13} /> Renomear
+        </button>
+      ) : null}
       {!isDefault ? (
         <button
           type="button"
@@ -94,6 +104,49 @@ function CreateProfileDialog({ onConfirm, onClose }) {
   );
 }
 
+function RenameProfileDialog({ profile, onConfirm, onClose }) {
+  const [name, setName] = useState(profile.replace(/\.ini$/i, ""));
+  const [error, setError] = useState("");
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const trimmed = name.trim();
+    if (!trimmed) {
+      setError("O nome é obrigatório");
+      return;
+    }
+    if (/[\\/]/.test(trimmed)) {
+      setError("Caracteres inválidos no nome");
+      return;
+    }
+    onConfirm(trimmed);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-sm rounded-2xl p-5" style={{ background: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+        <h3 className="mb-4 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Renomear Perfil</h3>
+        <form onSubmit={handleSubmit}>
+          <input
+            autoFocus
+            type="text"
+            value={name}
+            onChange={(e) => { setName(e.target.value); setError(""); }}
+            placeholder="novo_nome"
+            className="input mb-2"
+          />
+          {error ? <p className="mb-2 text-xs" style={{ color: "var(--accent-danger)" }}>{error}</p> : null}
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={onClose} className="btn btn-ghost text-xs">Cancelar</button>
+            <button type="submit" className="btn btn-primary text-xs">Renomear</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export default function ProfileSidebar({ open, onClose }) {
   const profiles = useOracleStore((s) => s.profiles);
   const activeProfile = useOracleStore((s) => s.activeProfile);
@@ -104,6 +157,7 @@ export default function ProfileSidebar({ open, onClose }) {
 
   const [menuProfile, setMenuProfile] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [renameProfile, setRenameProfile] = useState(null);
   const [importInput, setImportInput] = useState(null);
 
   useEffect(() => {
@@ -141,6 +195,10 @@ export default function ProfileSidebar({ open, onClose }) {
         }
         break;
       }
+      case "rename": {
+        setRenameProfile(profile);
+        break;
+      }
       case "delete": {
         if (!confirm(`Deseja excluir "${profile}"? Esta ação não pode ser desfeita.`)) break;
         try {
@@ -166,6 +224,19 @@ export default function ProfileSidebar({ open, onClose }) {
       alert(err?.message || "Falha ao criar o perfil");
     }
   }, [fetchProfiles]);
+
+  const handleRename = useCallback(async (newName) => {
+    try {
+      await apiRenameProfile(renameProfile, newName);
+      if (renameProfile === activeProfile) {
+        setActiveProfile(newName.endsWith(".ini") ? newName : `${newName}.ini`);
+      }
+      await fetchProfiles();
+      setRenameProfile(null);
+    } catch (err) {
+      alert(err?.message || "Falha ao renomear o perfil");
+    }
+  }, [renameProfile, activeProfile, fetchProfiles, setActiveProfile]);
 
   const handleImport = useCallback(async (e) => {
     const file = e.target.files?.[0];
@@ -350,6 +421,7 @@ export default function ProfileSidebar({ open, onClose }) {
         </div>
       ) : null}
       {showCreate ? <CreateProfileDialog onConfirm={handleCreate} onClose={() => setShowCreate(false)} /> : null}
+      {renameProfile ? <RenameProfileDialog profile={renameProfile} onConfirm={handleRename} onClose={() => setRenameProfile(null)} /> : null}
     </>
   );
 }

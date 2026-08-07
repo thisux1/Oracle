@@ -106,6 +106,12 @@ export async function apiDeleteProfile(name) {
   );
 }
 
+export async function apiRenameProfile(name, newName) {
+  return safeRequest(() =>
+    apiClient.post("/api/profiles/rename", { name, newName })
+  );
+}
+
 export async function apiImportProfile(file) {
   const formData = new FormData();
   formData.append("file", file);
