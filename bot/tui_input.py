@@ -38,6 +38,8 @@ COMMANDS = {
     "/tc stop": "Desativa modo Time Cookie",
     "/sleepet start": "Ativa o Sleepet Mode (loop automatizado de pets)",
     "/sleepet stop": "Desativa o Sleepet Mode",
+    "/summer status": "Mostra status do Summer Event",
+    "/summer sleepy": "Usa sleepy potion manualmente para task weekly",
     "/g start": "Inicia o gambling (rpg cf)",
     "/g pause": "Pausa o gambling",
     "/theme": "Abre seletor de temas",
@@ -95,6 +97,10 @@ CONFIG_METADATA = {
     "theme": "Tema visual a ser utilizado na interface TUI",
     "pet_adventure_command": "Comando de aventura do pet (ex: 'find epic', 'learn a', 'rpg pet adv find epic')",
     "do_pet": "Habilitar a automação e coleta de aventuras de pets",
+    "do_summer": "Ativa automacao completa do evento Summer (surf, tasks, boosts, craft, drink)",
+    "summer_surf_strategy": "Estrategia de surf: conservative (menor risco, recomendado) ou aggressive (maior recompensa, mais risco de cair)",
+    "summer_drink_choice": "Cor da drink para iniciar o torneio semanal na segunda: blue|green|pink|yellow",
+    "summer_use_sleepy_potion": "Habilitar uso automatico de sleepy potion para completar task weekly (avanca 24h do jogo!)",
     "language": "Idioma do bot (pt = português, en = english)",
 }
 
@@ -411,6 +417,7 @@ class CommandInput(Input):
 
     async def _process_command(self, cmd: str) -> None:
         from bot.tui_modals import HelpModal, ThemeModal, ConfigModal
+        from bot.commands import execute_oracle_command
 
         cmd_clean = cmd.strip()
         if cmd_clean.startswith("/"):
@@ -424,199 +431,31 @@ class CommandInput(Input):
             return
         base = parts[0].lower()
 
+        # ── TUI-only commands (require widget/app access) ──
         if base in ["help", "ajuda", "tutorial", "/help", "?"]:
             self.app.push_screen(HelpModal())
             self._notify_system("Ajuda aberta.", severity="information")
+            return
 
-        elif base in ["play", "start", "resume"]:
-            bot_state.paused = False
-            HUD.oracle("Bot retomado/iniciado manualmente.")
-            self._notify_system("Bot retomado.", severity="information")
-
-        elif base in ["pause", "stop", "sleep"]:
-            bot_state.paused = True
-            HUD.oracle("Bot pausado manualmente.")
-            self._notify_system("Bot pausado.", severity="warning")
-
-        elif base == "reset":
-            highPriorityQueue.clear()
-            highPriorityQueueSet.clear()
-            lowPriorityQueue.clear()
-            lowPriorityQueueSet.clear()
-            reset_bot_state()
-            HUD.oracle("Filas, Estados e Cooldowns RESETADOS. Bot despausado!")
-            self._notify_system("Filas e estado resetados.", severity="warning")
-
-        elif base == "restart":
-            import bot
-            HUD.oracle("🔄 Restart solicitado via TUI. Limpando estado e reconectando...")
-            self._notify_system("Reiniciando (reset completo)...", severity="warning")
-            highPriorityQueue.clear()
-            highPriorityQueueSet.clear()
-            reset_bot_state()
-            if bot.UserBot:
-                asyncio.create_task(bot.UserBot.close())
-
-        elif base == "stats":
-            from bot.parsers import format_session_data
-            from bot.persistence import get_stats_for_period
-
-            if len(parts) > 1:
-                period_str = parts[1]
-                period_data = get_stats_for_period(sessionData, period_str)
-                summary = format_session_data(period_data, f"{t('stat_session_title')} ({period_str})")
-            else:
-                summary = format_session_data(sessionData, t("stat_session_title"))
-            for line in summary.split("\n"):
-                HUD.oracle(line)
-
-        elif base == "queue":
-            HUD.oracle(f"HPQ ({len(highPriorityQueue)}): {list(highPriorityQueue)}")
-            HUD.oracle(f"LPQ ({len(lowPriorityQueue)}): {list(lowPriorityQueue)}")
-
-        elif base == "say":
-            if len(parts) > 1:
-                text_to_say = cmd_clean[len(parts[0]) :].strip()
-                add_to_high_priority_queue(text_to_say)
-                HUD.system(f"Comando manual enviado para a fila: {text_to_say}")
-            else:
-                HUD.alert("Uso: sb say <mensagem>")
-
-        elif base == "tc":
-            if len(parts) > 1 and parts[1].lower() == "start":
-                bot_state.time_cookie_mode = True
-                bot_state.tc_quantity = config.tc_quantity
-
-                for part in parts[2:]:
-                    if part.endswith("c") and part[:-1].isdigit():
-                        bot_state.tc_quantity = int(part[:-1])
-                        break
-
-                for part in parts[2:]:
-                    if part.endswith("m") and part[:-1].isdigit():
-                        mins = int(part[:-1])
-                        bot_state.tc_end_time = time.monotonic() + (mins * 60)
-                        break
-                else:
-                    bot_state.tc_end_time = 0
-
-                HUD.tc(f"Modo Time Cookie ATIVADO ({bot_state.tc_quantity} cookies/uso).")
-                self._notify_system(
-                    f"Time Cookie ativado ({bot_state.tc_quantity} cookies/uso).",
-                    severity="information",
-                )
-                await queue_tc_commands()
-
-            elif len(parts) > 1 and parts[1].lower() in ["stop", "pause"]:
-                bot_state.time_cookie_mode = False
-                bot_state.tc_end_time = 0
-                HUD.system("Modo Time Cookie DESATIVADO.")
-                self._notify_system("Time Cookie desativado.", severity="warning")
-            else:
-                HUD.alert("Uso: sb tc start [Xc] [Xm]  ou  sb tc stop")
-                self._notify_system("Uso inválido para tc.", severity="error")
-
-        elif base == "g":
-            if len(parts) > 1 and parts[1].lower() == "start":
-                from bot.state import coinflip_strategy
-                if coinflip_strategy:
-                    bot_state.gambling_paused = False
-                    first_bet = coinflip_strategy.get_bet_command()
-                    add_to_high_priority_queue(first_bet)
-                    bot_state.coinflip_pending = True
-                    HUD.oracle("Gambling/Coinflip iniciado manualmente via TUI.")
-                    self._notify_system("Gambling iniciado.", severity="information")
-                else:
-                    HUD.alert("Estratégia de Coinflip não inicializada. Verifique bankroll nas opções.")
-                    self._notify_system("Erro ao iniciar gambling.", severity="error")
-            elif len(parts) > 1 and parts[1].lower() in ["stop", "pause"]:
-                bot_state.gambling_paused = True
-                HUD.oracle("Gambling pausado manualmente via TUI.")
-                self._notify_system("Gambling pausado.", severity="warning")
-            else:
-                HUD.alert("Uso: sb g start  ou  sb g pause")
-                self._notify_system("Uso inválido para g.", severity="error")
-
-        elif base == "sleepet":
-            if len(parts) > 1 and parts[1].lower() == "start":
-                lowPriorityQueue.clear()
-                lowPriorityQueueSet.clear()
-                bot_state.sleepet_mode = True
-                bot_state.sleepet_state = "init"
-                bot_state.last_sleepet_cmd_time = time.monotonic()
-                HUD.oracle("Sleepet Mode ATIVADO manualmente via TUI.")
-                self._notify_system("Sleepet Mode ativado.", severity="information")
-            elif len(parts) > 1 and parts[1].lower() == "stop":
-                bot_state.sleepet_mode = False
-                bot_state.sleepet_state = None
-                HUD.oracle("Sleepet Mode DESATIVADO manualmente via TUI.")
-                self._notify_system("Sleepet Mode desativado.", severity="warning")
-            else:
-                HUD.alert("Uso: /sleepet start  ou  /sleepet stop")
-                self._notify_system("Uso inválido para sleepet.", severity="error")
-
-        elif base.startswith("rpg"):
-            highPriorityQueue.append(cmd)
-            HUD.command(cmd, priority="HPQ")
-
-        elif base == "cfg":
-            if len(parts) >= 3:
-                key, val = parts[1], " ".join(parts[2:])
-                config.userOptions[key] = val
-                
-                # Synchronize to in-memory config module attributes if they exist
-                if hasattr(config, key):
-                    old_val = getattr(config, key)
-                    try:
-                        if isinstance(old_val, bool):
-                            setattr(config, key, val.lower() == "true")
-                        elif isinstance(old_val, int):
-                            setattr(config, key, int(val))
-                        elif isinstance(old_val, float):
-                            setattr(config, key, float(val))
-                        else:
-                            setattr(config, key, val)
-                    except ValueError:
-                        setattr(config, key, val)
-                
-                # Save changes to options.ini
-                try:
-                    options_resolver.editData(key, val)
-                    HUD.oracle(f"Configuração '{key}' salva: {val}")
-                    self._notify_system(f"Configuração '{key}' salva.", severity="information")
-                except Exception as e:
-                    HUD.alert(f"Erro ao salvar config: {e}")
-                    self._notify_system("Erro ao salvar config.", severity="error")
-            else:
-                HUD.alert("Uso: cfg <chave> <valor>")
-
-        elif base in ["config", "configs"]:
+        if base in ["config", "configs"]:
             self.app.push_screen(ConfigModal())
             self._notify_system("Painel de configurações aberto.", severity="information")
+            return
 
-        elif base in ["theme", "themes"]:
+        if base in ["theme", "themes"]:
             self.app.push_screen(ThemeModal())
             self._notify_system("Seletor de temas aberto.", severity="information")
+            return
 
-        elif base == "status":
-            HUD.system("Sending live status to Discord + Telegram...")
-            from bot.handlers import trigger_status_command
-            asyncio.create_task(trigger_status_command())
-            self._notify_system("Status enviado.", severity="information")
-
-        elif base in ["language", "lang"]:
-            if len(parts) > 1:
-                new_lang = parts[1].lower()
-                if new_lang in ("pt", "en"):
-                    set_language(new_lang)
-                    HUD.system(t("notify_language_changed", lang="pt" if new_lang == "pt" else "en"))
-                    self._notify_system(t("notify_language_changed", lang="pt" if new_lang == "pt" else "en"), severity="information")
-
-        elif base in ["exit", "quit"]:
+        if base in ["exit", "quit"]:
             HUD.oracle("Sequência de encerramento seguro iniciada...")
             self._notify_system("Encerrando aplicação...", severity="warning")
             self.app.exit()
+            return
 
-        else:
-            HUD.alert(f"Comando desconhecido: {cmd}")
-            self._notify_system(f"Comando desconhecido: {cmd}", severity="error")
+        # ── All other commands → shared executor ──
+        result = await execute_oracle_command(cmd)
+        severity = result.get("severity", "information")
+        message = result.get("message", "")
+        if message:
+            self._notify_system(message, severity=severity)

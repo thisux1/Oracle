@@ -410,12 +410,33 @@ class SidebarPane(Static):
             else:
                 tc_str = f"{self._trunc(' ' + t('sidebar_tc_unlimited', qty=bot_state.tc_quantity), w)}\n"
 
+        summer_str = ""
+        if config.do_summer:
+            now = time.time()
+            sb_renew = bot_state.summer_boost_renew_at
+            sb_remaining = max(0, int(sb_renew - now)) if sb_renew > now else 0
+            active_boosts = sum(1 for t in bot_state.summer_boosts_active.values() if t > now)
+            surf_remaining = max(0, int(bot_state.summer_surf_cooldown_until - now))
+            surf_ready = surf_remaining <= 0
+            team = bot_state.summer_color_team or "?"
+            surf_str = "Ready" if surf_ready else f"{surf_remaining // 60}m"
+            nl = "\n"
+            sb_line = f" SB renew: {sb_remaining // 60}m{nl}" if sb_remaining > 0 else ""
+            work_line = f" Work: {bot_state.summer_current_work}{nl}" if bot_state.summer_current_work else ""
+            summer_str = (
+                f"{nl}{self._header('SUMMER', marker, w)}{nl}"
+                f" {self._trunc(f'Surf: {surf_str} | Rds: {bot_state.summer_surf_rounds}', w)}{nl}"
+                f" {self._trunc(f'Team: {team.upper()} | Boosts: {active_boosts}/5', w)}{nl}"
+                f"{sb_line}{work_line}"
+            )
+
         return (
             f"{self._header(t('sidebar_estado'), marker, w)}\n"
             f"{self._trunc(' ' + t('sidebar_estado') + ': ' + state_str, w)}\n"
             f"{self._trunc(' ' + t('sidebar_sleep_time', time=config.sleep_at), w)}\n"
             f"{self._trunc(' ' + t('sidebar_uptime', time=self.uptime), w)}\n"
             f"{tc_str}"
+            f"{summer_str}"
             f"\n{separator_medium(w)}\n"
             f" {t('sidebar_session_stats')}\n"
             f"{stats_lines}"

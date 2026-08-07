@@ -89,7 +89,10 @@ class HUD:
     @staticmethod
     def loot(player, item, qty):
         # Premium green/yellow loot logs
-        HUD._write(f"{Fore.GREEN}📦 [LOOT]{Fore.LIGHTGREEN_EX} {player.upper()} encontrou {qty:,}x {item.upper()}{Style.RESET_ALL}")
+        p_name = (player or "VOCÊ").upper()
+        item_name = (item or "ITEM").upper()
+        qty_val = qty if isinstance(qty, (int, float)) else 1
+        HUD._write(f"{Fore.GREEN}📦 [LOOT]{Fore.LIGHTGREEN_EX} {p_name} encontrou {qty_val:,}x {item_name}{Style.RESET_ALL}")
 
     @staticmethod
     def oracle(msg):

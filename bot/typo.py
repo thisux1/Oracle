@@ -96,48 +96,53 @@ async def send_with_typo_chance(channel, command, priority_label=""):
         HUD.system(f"⚠️ Erro: Canal do Discord indisponível. '{command}' não enviado.")
         return False
 
-    if random.random() < config.typo_chance:
-        typo_text, orig, repl, pos = generate_typo(command)
+    try:
+        if random.random() < config.typo_chance:
+            typo_text, orig, repl, pos = generate_typo(command)
 
-        if typo_text and typo_text != command:
-            # Send the typo
-            async with channel.typing():
-                await asyncio.sleep(0.1 + random.random() * 0.3)
-            typo_msg = await channel.send(typo_text)
-            bot_state.sent_message_ids.append(typo_msg.id)
-            if len(bot_state.sent_message_ids) > 20:
-                bot_state.sent_message_ids.pop(0)
-                
-            HUD.system(
-                f"🫢 Typo! Enviado '{typo_text}' "
-                f"('{orig}'→'{repl}' na pos {pos})"
-            )
-            logger.debug(
-                f"Typo triggered: '{command}' → '{typo_text}' "
-                f"[{priority_label}]"
-            )
+            if typo_text and typo_text != command:
+                # Send the typo
+                async with channel.typing():
+                    await asyncio.sleep(0.1 + random.random() * 0.3)
+                typo_msg = await channel.send(typo_text)
+                bot_state.sent_message_ids.append(typo_msg.id)
+                if len(bot_state.sent_message_ids) > 20:
+                    bot_state.sent_message_ids.pop(0)
+                    
+                HUD.system(
+                    f"🫢 Typo! Enviado '{typo_text}' "
+                    f"('{orig}'→'{repl}' na pos {pos})"
+                )
+                logger.debug(
+                    f"Typo triggered: '{command}' → '{typo_text}' "
+                    f"[{priority_label}]"
+                )
 
-            # Brief "correction" delay — faster than normal human delay
-            # because you notice a typo quickly
-            correction_delay = 0.3 + random.random() * 0.9
-            await asyncio.sleep(correction_delay)
+                # Brief "correction" delay — faster than normal human delay
+                # because you notice a typo quickly
+                correction_delay = 0.3 + random.random() * 0.9
+                await asyncio.sleep(correction_delay)
 
-            # Now send the correct command
-            async with channel.typing():
-                await asyncio.sleep(0.1 + random.random() * 0.3)
-            sent_msg = await channel.send(command)
-            bot_state.sent_message_ids.append(sent_msg.id)
-            if len(bot_state.sent_message_ids) > 20:
-                bot_state.sent_message_ids.pop(0)
-                
-            HUD.system(f"Corrigido -> '{command}'")
-            return True
+                # Now send the correct command
+                async with channel.typing():
+                    await asyncio.sleep(0.1 + random.random() * 0.3)
+                sent_msg = await channel.send(command)
+                bot_state.sent_message_ids.append(sent_msg.id)
+                if len(bot_state.sent_message_ids) > 20:
+                    bot_state.sent_message_ids.pop(0)
+                    
+                HUD.system(f"Corrigido -> '{command}'")
+                return True
 
-    # No typo — send normally
-    async with channel.typing():
-        await asyncio.sleep(0.1 + random.random() * 0.3)
-    sent_msg = await channel.send(command)
-    bot_state.sent_message_ids.append(sent_msg.id)
-    if len(bot_state.sent_message_ids) > 20:
-        bot_state.sent_message_ids.pop(0)
-    return False
+        # No typo — send normally
+        async with channel.typing():
+            await asyncio.sleep(0.1 + random.random() * 0.3)
+        sent_msg = await channel.send(command)
+        bot_state.sent_message_ids.append(sent_msg.id)
+        if len(bot_state.sent_message_ids) > 20:
+            bot_state.sent_message_ids.pop(0)
+        return False
+    except Exception as e:
+        logger.error(f"Erro no envio do comando '{command}': {e}", exc_info=True)
+        HUD.alert(f"⚠️ Erro ao enviar comando '{command}': {e}")
+        return False

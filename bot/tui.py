@@ -4,6 +4,7 @@ Complete implementation of the Textual interface and Discord bot hooks.
 """
 
 import re
+import sys
 import asyncio
 
 from rich.text import Text
@@ -331,11 +332,40 @@ class OracleApp(App):
                 retry_delay = min(retry_delay * 2, max_retry_delay)
 
 
+async def _headless_stdin_reader() -> None:
+    """Read commands from stdin line-by-line in headless mode.
+
+    Uses run_in_executor for portable blocking stdin reads that work
+    with both PTY slave fds (dashboard) and regular pipes.
+    """
+    from bot.commands import execute_oracle_command
+
+    loop = asyncio.get_event_loop()
+
+    while True:
+        try:
+            line = await loop.run_in_executor(None, sys.stdin.readline)
+            if not line:
+                break  # EOF
+            cmd = line.strip()
+            if cmd:
+                try:
+                    result = await execute_oracle_command(cmd)
+                    HUD.system(f"[CMD] {result.get('message', 'ok')}")
+                except Exception as e:
+                    HUD.alert(f"[CMD ERROR] {cmd}: {e}")
+        except Exception:
+            break
+
+
 async def run_headless() -> None:
     """Main loop that drives connection to Discord and sleep scheduling without TUI (headless)."""
     HUD.resume()
     HUD.oracle("Mecanismo Headless do Oracle v3.0 inicializado.")
     HUD.oracle("Núcleo do Oracle online (Modo Headless).")
+
+    # Start stdin command reader for API/pipe command injection
+    stdin_task = asyncio.create_task(_headless_stdin_reader())
 
     retry_delay = 5
     max_retry_delay = 300
@@ -382,4 +412,5 @@ async def run_headless() -> None:
             HUD.system(f"Tentando reconectar em {retry_delay}s...")
             await asyncio.sleep(retry_delay)
             retry_delay = min(retry_delay * 2, max_retry_delay)
+
 

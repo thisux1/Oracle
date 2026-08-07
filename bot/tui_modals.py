@@ -556,6 +556,7 @@ CONFIG_SCHEMA = [
         ("do_duel", "bool", "false"),
         ("win_duel", "bool", "true"),
         ("do_pet", "bool", "true"),
+        ("do_summer", "bool", "false"),
     ]),
     ("🧪 Advanced", [
         ("do_ultr", "bool", "false"),
@@ -571,6 +572,10 @@ CONFIG_SCHEMA = [
         ("tc_stop_on", "text", "dungeon,miniboss"),
         ("sleep_at", "text", "none"),
         ("wake_up_at", "text", "none"),
+        ("summer_surf_strategy", "dropdown", "conservative", ["conservative", "aggressive"]),
+        ("summer_drink_choice", "dropdown", "blue", ["blue", "green", "pink", "yellow"]),
+        ("summer_use_sleepy_potion", "bool", "false"),
+        ("jail_notify_interval_min", "text", "15"),
         ("theme", "dropdown", "dracula", ["cathedral", "dracula", "nord", "monokai", "gruvbox", "catppuccin", "tokyonight", "rosepine", "solarized", "cyberpunk"]),
     ]),
 ]
@@ -599,6 +604,11 @@ def load_example_comments() -> dict[str, str]:
         "tc_stop_on": "Parar o uso de time cookie caso ocorram estes eventos",
         "eternal_tier": "Tier do eternal (de t1 até t10)",
         "pet_adventure_command": "Comando personalizado de aventura do pet. Ex: 'find epic', 'learn a' ou 'rpg pet adv find epic'",
+        "do_summer": "Ativa automacao completa do evento Summer (surf, tasks, boosts, craft)",
+        "summer_surf_strategy": "Estrategia de surf: conservative (menor risco) ou aggressive (maior recompensa)",
+        "summer_drink_choice": "Cor da drink para segunda-feira (blue = craft dobrado, green = surf dobrado, pink = shop 30%% off, yellow = task dobrado)",
+        "summer_use_sleepy_potion": "Atencao: sleepy potion avanca 24h do jogo — usar apenas se tiver ciente do risco",
+        "jail_notify_interval_min": "Intervalo em minutos para reaviso de jail no Telegram + alarme sonoro (default 15)",
     }
     
     try:
