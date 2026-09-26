@@ -1,15 +1,23 @@
-discord.py-self
-tflite-runtime; sys_platform != "win32" and python_version < "3.12"
-tensorflow; sys_platform == "win32"
-numpy
-Pillow
-colorama
-aiohttp
-textual
-fastapi
-uvicorn[standard]
-python-multipart
-pywinpty; sys_platform == "win32"
-# Build dependencies (install separately or use build_windows.py)
+# ─── Runtime ───────────────────────────────────────────────────────────
+discord.py-self                        # Discord gateway listener (selfbot)
+tflite-runtime; sys_platform != "win32" and python_version < "3.12"  # CNN interpreter (Linux/macOS, Python <= 3.11)
+tensorflow; sys_platform == "win32"    # Windows builds run the same .tflite models on full TF
+numpy                                  # captcha tensors
+Pillow                                 # captcha image decode / resize
+colorama                               # ANSI colors
+aiohttp                                # Telegram API calls
+textual                                # TUI framework
+rich                                   # TUI text/cell helpers (direct imports in bot/)
+fastapi                                # dashboard backend
+uvicorn[standard]                      # ASGI server + websockets
+python-multipart                       # file upload on /api/profiles/import
+pydantic                               # request models in dashboard_server.py
+pywinpty; sys_platform == "win32"      # PTY backend for /ws/terminal on Windows
+
+# ─── Notes ─────────────────────────────────────────────────────────────
+# Linux/macOS on Python >= 3.12: tflite-runtime ships no wheels, so install
+# the fallback manually:   pip install tensorflow
+#
+# ─── Build (Windows installer only; CI installs this itself) ───────────
 # pyinstaller
-# node (for frontend build)
+# Node.js 20 is required to build dashboard/ (npm install && npm run build)

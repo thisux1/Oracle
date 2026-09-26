@@ -1,0 +1,212 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 340" width="100%" height="100%">
+  <defs>
+    <!-- Background subtle grid pattern -->
+    <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+      <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(0, 242, 255, 0.015)" stroke-width="1"/>
+    </pattern>
+
+    <filter id="glow-cyan" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-magenta" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <!-- Arrowheads -->
+    <marker id="arw-cyan" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#00f2ff" fill-opacity="0.8"/>
+    </marker>
+    <marker id="arw-magenta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b5179e" fill-opacity="0.9"/>
+    </marker>
+    <marker id="arw-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#00ffaa" fill-opacity="0.8"/>
+    </marker>
+    <marker id="arw-violet" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7209b7" fill-opacity="0.9"/>
+    </marker>
+  </defs>
+
+  <style>
+    .bg { fill: #07090e; }
+    .grid-bg { fill: url(#grid); }
+    .window-bg { fill: #0b0e14; }
+    .window-header { fill: #121824; }
+
+    .term-title { font-family: 'JetBrains Mono', monospace; font-size: 11px; fill: rgba(255, 255, 255, 0.7); font-weight: bold; }
+    .term-status { font-family: 'JetBrains Mono', monospace; font-size: 10px; fill: #00ffaa; }
+    .node-header-text { font-family: 'JetBrains Mono', monospace; font-size: 8.5px; fill: rgba(255, 255, 255, 0.45); font-weight: bold; }
+    .node-title { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: bold; fill: #ffffff; }
+    .node-subtext { font-family: 'JetBrains Mono', monospace; font-size: 8.5px; fill: rgba(255, 255, 255, 0.45); }
+    .edge-label { font-family: 'JetBrains Mono', monospace; font-size: 8.5px; fill: rgba(255, 255, 255, 0.5); }
+    .decision-text { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: bold; fill: #00f2ff; }
+  </style>
+
+  <!-- BACKGROUND -->
+  <rect class="bg" width="100%" height="100%"/>
+  <rect class="grid-bg" width="100%" height="100%"/>
+
+  <!-- CLI SHELL WINDOW WRAPPER BORDER -->
+  <rect x="1" y="1" width="1078" height="338" fill="none" stroke="rgba(255, 255, 255, 0.05)" stroke-width="1"/>
+
+  <!-- ==================== HEADER BAR ==================== -->
+  <rect class="window-header" x="1" y="1" width="1078" height="38" />
+  <line x1="1" y1="39" x2="1079" y2="39" stroke="rgba(255, 255, 255, 0.06)" stroke-width="1"/>
+  <!-- window dots -->
+  <circle cx="22" cy="20" r="5" fill="#b5179e" opacity="0.85"/>
+  <circle cx="40" cy="20" r="5" fill="#7209b7" opacity="0.85"/>
+  <circle cx="58" cy="20" r="5" fill="#00f2ff" opacity="0.7"/>
+  <text class="term-title" x="80" y="24">oracle@captcha: ./resolver --fsm --watch</text>
+  <text class="term-status" x="960" y="24">guard: watching
+    <animate attributeName="opacity" values="1;1;0.25;0.25" keyTimes="0;0.6;0.61;1" dur="1.6s" repeatCount="indefinite"/>
+  </text>
+
+  <!-- ==================== EDGES (under nodes) ==================== -->
+  <!-- N1 -> N2 -->
+  <path id="e12" d="M 165 130 L 198 130" fill="none" stroke="#00f2ff" stroke-opacity="0.55" stroke-width="1.5" marker-end="url(#arw-cyan)"/>
+  <!-- N2 -> N3 -->
+  <path id="e23" d="M 355 130 L 388 130" fill="none" stroke="#00f2ff" stroke-opacity="0.55" stroke-width="1.5" marker-end="url(#arw-cyan)"/>
+  <!-- N3 -> D1 -->
+  <path id="e3d" d="M 565 130 L 586 130" fill="none" stroke="#00f2ff" stroke-opacity="0.55" stroke-width="1.5" marker-end="url(#arw-cyan)"/>
+  <!-- D1 -> N4 -->
+  <path id="ed4" d="M 694 130 L 708 130" fill="none" stroke="#00f2ff" stroke-opacity="0.55" stroke-width="1.5" marker-end="url(#arw-cyan)"/>
+  <!-- N4 -> N5 -->
+  <path id="e45" d="M 855 130 L 888 130" fill="none" stroke="#00f2ff" stroke-opacity="0.55" stroke-width="1.5" marker-end="url(#arw-cyan)"/>
+
+  <!-- Fallback: decision -> CNN (loop over the top) -->
+  <path id="eback" d="M 640 92 C 640 60, 480 60, 480 93" fill="none" stroke="#7209b7" stroke-opacity="0.7" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arw-violet)"/>
+  <text class="edge-label" x="505" y="56" fill="#7209b7" opacity="0.9">conf &lt; 0.80 &#8594; alt model votes</text>
+
+  <!-- CNN -> Telegram (dashed) -->
+  <path id="etg-in" d="M 445 165 C 430 195, 400 210, 390 238.5" fill="none" stroke="#b5179e" stroke-opacity="0.7" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arw-magenta)"/>
+  <!-- Telegram -> Attempts (dashed) -->
+  <path id="etg-out" d="M 480 238 C 560 210, 700 195, 750 165" fill="none" stroke="#b5179e" stroke-opacity="0.7" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arw-magenta)"/>
+  <text class="edge-label" x="510" y="222" fill="#b5179e" opacity="0.9">reply = next attempt (hijack)</text>
+
+  <!-- Verdict -> RESUME -->
+  <path id="eok" d="M 940 165 C 900 200, 810 215, 770 238.5" fill="none" stroke="#00ffaa" stroke-opacity="0.55" stroke-width="1.5" marker-end="url(#arw-green)"/>
+  <text class="edge-label" x="826" y="208" fill="#00ffaa" opacity="0.85">freed</text>
+  <!-- Verdict -> JAILED -->
+  <path id="efail" d="M 1000 165 C 1010 200, 1005 215, 990 238.5" fill="none" stroke="#b5179e" stroke-opacity="0.8" stroke-width="1.5" marker-end="url(#arw-magenta)"/>
+  <text class="edge-label" x="1006" y="205" fill="#b5179e">jailed</text>
+
+  <!-- ==================== TRAVELING PULSES ==================== -->
+  <circle r="3" fill="#00f2ff" filter="url(#glow-cyan)">
+    <animateMotion dur="1.4s" repeatCount="indefinite"><mpath href="#e12"/></animateMotion>
+  </circle>
+  <circle r="3" fill="#00f2ff" filter="url(#glow-cyan)">
+    <animateMotion dur="1.4s" begin="0.4s" repeatCount="indefinite"><mpath href="#e23"/></animateMotion>
+  </circle>
+  <circle r="3" fill="#00f2ff" filter="url(#glow-cyan)">
+    <animateMotion dur="1.4s" begin="0.8s" repeatCount="indefinite"><mpath href="#e3d"/></animateMotion>
+  </circle>
+  <circle r="3" fill="#00f2ff" filter="url(#glow-cyan)">
+    <animateMotion dur="1.4s" begin="1.1s" repeatCount="indefinite"><mpath href="#ed4"/></animateMotion>
+  </circle>
+  <circle r="3" fill="#00f2ff" filter="url(#glow-cyan)">
+    <animateMotion dur="1.4s" begin="1.4s" repeatCount="indefinite"><mpath href="#e45"/></animateMotion>
+  </circle>
+  <circle r="3.5" fill="#7209b7" filter="url(#glow-magenta)">
+    <animateMotion dur="2.6s" repeatCount="indefinite"><mpath href="#eback"/></animateMotion>
+  </circle>
+  <circle r="3.5" fill="#b5179e" filter="url(#glow-magenta)">
+    <animateMotion dur="2.2s" repeatCount="indefinite"><mpath href="#etg-in"/></animateMotion>
+  </circle>
+  <circle r="3.5" fill="#b5179e" filter="url(#glow-magenta)">
+    <animateMotion dur="2.2s" begin="0.7s" repeatCount="indefinite"><mpath href="#etg-out"/></animateMotion>
+  </circle>
+  <circle r="3" fill="#00ffaa" filter="url(#glow-cyan)">
+    <animateMotion dur="2s" begin="0.3s" repeatCount="indefinite"><mpath href="#eok"/></animateMotion>
+  </circle>
+  <circle r="3" fill="#b5179e" filter="url(#glow-magenta)">
+    <animateMotion dur="2s" begin="1s" repeatCount="indefinite"><mpath href="#efail"/></animateMotion>
+  </circle>
+
+  <!-- ==================== NODES ==================== -->
+  <!-- N1: EPIC GUARD -->
+  <g>
+    <rect class="window-bg" x="30" y="95" width="135" height="70" rx="8" stroke="#b5179e" stroke-opacity="0.6" stroke-width="1.2"/>
+    <text class="node-header-text" x="42" y="110">&#9672; discord embed</text>
+    <text class="node-title" x="42" y="128">Epic Guard</text>
+    <text class="node-subtext" x="42" y="143">captcha image drops</text>
+    <text class="node-subtext" x="42" y="156">captcha_pending = true</text>
+  </g>
+
+  <!-- N2: INGEST / ROUTE -->
+  <g>
+    <rect class="window-bg" x="205" y="95" width="150" height="70" rx="8" stroke="#00f2ff" stroke-opacity="0.5" stroke-width="1.2"/>
+    <text class="node-header-text" x="217" y="110">&#9672; ingest + route</text>
+    <text class="node-title" x="217" y="128">save attachment</text>
+    <text class="node-subtext" x="217" y="143">epic_guard.png</text>
+    <text class="node-subtext" x="217" y="156">is_grayscale() &#8594; route</text>
+  </g>
+
+  <!-- N3: CNN -->
+  <g>
+    <rect class="window-bg" x="395" y="95" width="170" height="70" rx="8" stroke="#7209b7" stroke-opacity="0.75" stroke-width="1.2"/>
+    <text class="node-header-text" x="407" y="110">&#9672; local inference</text>
+    <text class="node-title" x="407" y="128">tflite cnn &#215;2</text>
+    <text class="node-subtext" x="407" y="143">128&#215;128 &#8594; 16 classes</text>
+    <text class="node-subtext" x="407" y="156">oracle_v2_color | _gray</text>
+  </g>
+
+  <!-- D1: CONFIDENCE DECISION (diamond) -->
+  <g>
+    <polygon points="640,92 694,130 640,168 586,130" fill="#0b0e14" stroke="#00f2ff" stroke-opacity="0.7" stroke-width="1.2">
+      <animate attributeName="stroke-opacity" values="0.7;1;0.7" dur="2.4s" repeatCount="indefinite"/>
+    </polygon>
+    <text class="decision-text" x="640" y="126" text-anchor="middle">conf</text>
+    <text class="decision-text" x="640" y="140" text-anchor="middle">&#8805; 0.80?</text>
+  </g>
+
+  <!-- N4: ATTEMPTS -->
+  <g>
+    <rect class="window-bg" x="710" y="95" width="145" height="70" rx="8" stroke="#00f2ff" stroke-opacity="0.5" stroke-width="1.2"/>
+    <text class="node-header-text" x="722" y="110">&#9672; answer loop</text>
+    <text class="node-title" x="722" y="128">top-3 attempts</text>
+    <text class="node-subtext" x="722" y="143">typing sim &#183; 3-5s pause</text>
+    <text class="node-subtext" x="722" y="156">channel.send(item)</text>
+  </g>
+
+  <!-- N5: VERDICT -->
+  <g>
+    <rect class="window-bg" x="890" y="95" width="165" height="70" rx="8" stroke="rgba(255,255,255,0.4)" stroke-width="1.2"/>
+    <text class="node-header-text" x="902" y="110">&#9672; epic guard reply</text>
+    <text class="node-title" x="902" y="128">verdict parse</text>
+    <text class="node-subtext" x="902" y="143">"let you go" &#8594; freed</text>
+    <text class="node-subtext" x="902" y="156">"in the jail" &#8594; jailed</text>
+  </g>
+
+  <!-- TELEGRAM (bottom lane) -->
+  <g>
+    <rect class="window-bg" x="205" y="240" width="275" height="62" rx="8" stroke="#b5179e" stroke-opacity="0.7" stroke-width="1.2" stroke-dasharray="0"/>
+    <text class="node-header-text" x="217" y="256">&#9672; human override channel</text>
+    <text class="node-title" x="217" y="274" fill="#b5179e">telegram bot</text>
+    <text class="node-subtext" x="217" y="289">photo + ai guess &#183; window ~7s &#183; rechecks each try</text>
+  </g>
+
+  <!-- RESUME (bottom lane) -->
+  <g>
+    <rect class="window-bg" x="680" y="240" width="170" height="62" rx="8" stroke="#00ffaa" stroke-opacity="0.55" stroke-width="1.2"/>
+    <text class="node-header-text" x="692" y="256">&#9672; outcome: freed</text>
+    <text class="node-title" x="692" y="274" fill="#00ffaa">resume queues</text>
+    <text class="node-subtext" x="692" y="289">paused = false &#183; hpq/lpq drain</text>
+  </g>
+
+  <!-- JAILED (bottom lane) -->
+  <g>
+    <rect class="window-bg" x="880" y="240" width="175" height="62" rx="8" stroke="#b5179e" stroke-opacity="0.8" stroke-width="1.2"/>
+    <text class="node-header-text" x="892" y="256">&#9672; outcome: jailed</text>
+    <text class="node-title" x="892" y="274" fill="#b5179e">halt + page owner</text>
+    <text class="node-subtext" x="892" y="289">paused = true &#183; telegram alarm</text>
+  </g>
+
+  <!-- Footer strip -->
+  <line x1="30" y1="322" x2="1055" y2="322" stroke="#00f2ff" stroke-width="1" opacity="0.15"/>
+  <text class="edge-label" x="30" y="316" opacity="0.7">bot/captcha.py :: tentar_resolver_captcha &#183; threshold 0.80, cross-model fallback, top-3 + override</text>
+  <text x="1052" y="316" class="term-status" text-anchor="end">&#9608;
+    <animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.5;0.51;1" dur="1.1s" repeatCount="indefinite"/>
+  </text>
+</svg>

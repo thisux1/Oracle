@@ -1,57 +1,71 @@
 <!-- MASCOTE VISUAL DO TERMINAL -->
 <p align="center">
-  <img src="banner.svg" alt="Banner do Olho Cibernético do Oracle v3" width="100%" style="border-radius: 8px; border: 1px solid rgba(168, 85, 247, 0.18);" />
+  <img src="banner.svg?v=2" alt="Banner do Olho Cibernético do Oracle v3" width="100%" style="border-radius: 8px; border: 1px solid rgba(168, 85, 247, 0.18);" />
 </p>
 
 
 🇺🇸 **For the English version of this document, see: [README.md](../README.md).**
 
+> [!WARNING]
+> **Isto é um selfbot.** O Oracle controla uma conta real de usuário do Discord via `discord.py-self`, o que viola os Termos de Serviço do Discord e pode banir a conta permanentemente. Rode somente numa conta, e num servidor, que você pode perder. Disclaimer completo no fim da página.
 
 ─────── ▪ ───────
 
-## 📡 Diagnósticos do Sistema
+## ❯ Diagnósticos do Sistema
 
-O **Oracle v3** é um assistente de automação baseado em máquinas de estados de baixa latência construído sob medida para o Epic RPG. Otimizado para execução precisa de loops de jogo e segundo plano seguro, ele gerencia uma fila inteligente de comandos humanizados. O sistema utiliza inteligência artificial local (**Rede Neural Convolucional via TensorFlow Lite**) exclusivamente para a resolução de captchas e verificações de segurança, exibindo a telemetria do console via interface de terminal (**TUI**) e um **Web Dashboard** interativo.
+O **Oracle v3** é um daemon selfbot para Epic RPG. Ele escuta o gateway do Discord via `discord.py-self`, roda uma máquina de estados sobre duas filas de prioridade (HPQ/LPQ) e resolve os captchas do Epic Guard localmente com um par de CNNs TensorFlow Lite (16 classes de itens, variantes colorida e grayscale), sem APIs externas de resolução. As sessões são observáveis via TUI em Textual com mascote de olho animado e por um dashboard React servido por FastAPI (`:8000`, REST em `/api/*`, PTY ao vivo por `/ws/terminal`). Alertas no Telegram e rotinas de humanização (typos, delays variados, pausas para café, janelas de sono) já vêm embutidos.
 
 > [!NOTE]
 > Configuração do bot Navi e do Neon Util é necessária para obter todas as funcionalidades.
 
 ─────── ▪ ───────
 
-## 🧠 Arquitetura do Sistema e Fluxos de Dados
+## ❯ Arquitetura do Sistema e Fluxos de Dados
 
 O diagrama abaixo detalha a estrutura de execução contínua, manipulando a transmissão de dados entre servidores Discord, nosso motor de filas de comando e o classificador de captchas local:
 
 <p align="center">
-  <img src="architecture.svg" alt="Pipeline de Fluxo de Dados Oracle v3" width="100%" style="border-radius: 8px; border: 1px solid rgba(168, 85, 247, 0.1);" />
+  <img src="architecture.svg?v=2" alt="Pipeline de Fluxo de Dados Oracle v3" width="100%" style="border-radius: 8px; border: 1px solid rgba(168, 85, 247, 0.1);" />
 </p>
 
 ### Fases de Execução da Automação
 1. **Captura/Escuta**: O gateway de WebSocket de cliente do Discord captura as mensagens da guilda em tempo real através da biblioteca `discord.py-self`.
 2. **Decomposição/Análise**: O analisador (Parser) extrai cooldowns de comandos, eventos ativos e argumentos solicitados pelas respostas de jogo.
-3. **Resolução de Bloqueio**: Captchas disparam o recorte da imagem e processamento com OpenCV, resolvendo símbolos via **TensorFlow Lite** de forma local e assíncrona.
+3. **Resolução de Bloqueio**: Captchas são salvos, roteados por detecção de grayscale, redimensionados para 128×128 com Pillow/NumPy e classificados pelos modelos **TensorFlow Lite** locais. Sem APIs externas.
 4. **Humanização**: As macros e ações passam pelo gerador de atraso que injeta desvios aleatórios de tempo, emulação de erros de digitação e pausa para ciclos de café e sono profundo.
 5. **Telemetria**: Métricas de progresso de sessão são repassadas via sockets para atualizar a TUI do console e painéis web de forma simultânea.
 
+### Loop do Resolvedor de Captcha
+
+Quando o Epic Guard dispara uma verificação, o `bot/captcha.py` roda este ciclo:
+
+<p align="center">
+  <img src="state-machine.svg?v=1" alt="Máquina de Estados do Resolvedor de Captcha do Oracle v3" width="100%" style="border-radius: 8px; border: 1px solid rgba(168, 85, 247, 0.1);" />
+</p>
+
+A imagem é classificada como grayscale ou colorida e roteada para o modelo `.tflite` correspondente. Se a confiança ficar abaixo de **0.80**, o modelo irmão também vota e a maior nota vence. O resolvedor tenta os 3 melhores palpites com digitação simulada e override do Telegram a cada tentativa; a resposta do Epic Guard (palavras-chave `freed`/`jailed`) decide se as filas voltam a rodar ou se o bot pausa e aciona o dono.
+
 ─────── ▪ ───────
 
-## ⚙️ Especificações Técnicas de Ambiente
+## ❯ Especificações Técnicas de Ambiente
 
 ```ini
 [system-specification]
-runtime      = Python 3.12 + Node.js v20
-gateway_lib  = Discord.py-self v2.0 (Stealth Client)
-ai_solver    = TensorFlow Lite 2.17 (Captcha CNN)
+runtime      = Python 3.11+ + Node.js 20
+gateway_lib  = discord.py-self (listener selfbot)
+ai_solver    = CNN TensorFlow Lite x2 (color + gray, 128x128, 16 classes)
 console_ui   = Textual TUI + Estilização Rich
-web_backend  = FastAPI + Uvicorn + WebSockets
-web_frontend = React 19 + Vite + Tailwind CSS v4 + Zustand
-installers   = PyInstaller wrapper + Pacotes Inno Setup
+web_backend  = FastAPI + Uvicorn + WebSocket PTY (pywinpty no Windows)
+web_frontend = React 19 + Vite 6 + Tailwind CSS v4 + Zustand + xterm.js
+installers   = PyInstaller + Inno Setup (OracleOS_Setup.exe via CI)
 ```
+
+> No Linux/macOS, prefira Python 3.11: o `tflite-runtime` não tem wheels para 3.12+. Em interpretadores mais novos, instale `tensorflow` manualmente; os mesmos modelos `.tflite` rodam via `tf.lite`. No Windows sempre entra o TensorFlow completo.
 
 | Módulo do Sistema | Tecnologias | Escopo de Operação |
 | :--- | :--- | :--- |
 | **Daemon de Automação** | Python, asyncio | Processamento de loops, gerenciamento de perfis e orquestração de filas. |
-| **Resolvedor de Captcha** | TF Lite, OpenCV | Detecção de captchas, segmentação, limpeza e classificação de caracteres. |
+| **Resolvedor de Captcha** | TF Lite, Pillow, NumPy | Roteamento grayscale, preparo de tensores, classificação top-3, override via Telegram. |
 | **Terminal de Console** | Textual, Temas TUI | Monitoramento de telemetria rápida, mascote animado e console de comandos. |
 | **Backend de Controle** | FastAPI, WebSockets | Servidor web que alimenta o dashboard e persiste alterações nos dados de configuração. |
 | **Web Dashboard** | React 19, Zustand | Painel visual de controle remoto, alteração de opções e acionamento de comandos de console. |
@@ -59,7 +73,7 @@ installers   = PyInstaller wrapper + Pacotes Inno Setup
 
 ─────── ▪ ───────
 
-## 🚀 Linha de Implantação
+## ❯ Linha de Implantação
 
 <details>
 <summary><b>[1] Inicializar Workspace Virtual</b></summary>
@@ -101,6 +115,8 @@ Inicie os dados de configuração local copiando o template de exemplo:
 cp options_example.ini options.ini
 ```
 
+(Pulou este passo? O `options_resolver.py` copia o template para você no primeiro boot.)
+
 Abra o arquivo `options.ini` e defina suas credenciais:
 ```ini
 language=pt
@@ -119,7 +135,7 @@ do_adv=true
 Inicie o painel interativo no terminal:
 
 ```bash
-python main.py
+./oracle            # equivale a: python main.py
 ```
 </details>
 
@@ -130,7 +146,8 @@ python main.py
 Rode o servidor local FastAPI e visualize métricas e relatórios gráficos:
 
 ```bash
-python launch_dashboard.py
+./oracle dashboard     # equivale a: python launch_dashboard.py (uvicorn + abre o navegador)
+./oracle dev           # backend --reload na :8000 + hot-reload do Vite na :5173
 ```
 *Monitore dados e acesse o mini-terminal em tempo real no navegador.*
 </details>
@@ -157,7 +174,7 @@ python build_windows.py
 <summary><b>[7] Registrar Atalho Global no Terminal (Linux)</b></summary>
 <br />
 
-Gere o Wrapper global do script CLI:
+O `setup.sh` adiciona uma função `oracle()` no `~/.bashrc` / `~/.zshrc` apontando para o launcher:
 
 ```bash
 chmod +x setup.sh && ./setup.sh
@@ -171,35 +188,62 @@ oracle
 
 ─────── ▪ ───────
 
-## 📂 Organização das Pastas
+## ❯ Organização das Pastas
 
-```path
-Oracle-V2/
-├── bot/                # Daemon em Python, handlers e regras da TUI
-│   ├── commands.py     # Executor de comandos desacoplado (API/CLI/TUI/LLM)
-│   ├── tui.py          # Aplicação principal Textual
-│   ├── tui_eye.py      # Definição do olho e do gato animado
-│   └── tui_splash_art.py # Splash art gigante em Braille do terminal
-├── dashboard/          # Web Dashboard escrito em React (Vite, CSS)
-├── docs/               # Documentação gráfica e localização de README
-│   ├── banner.svg      # Imagem vetorial do olho do terminal (sem texto)
-│   └── architecture.svg # Pipeline do sistema
-├── options_example.ini # Arquivo base de configurações
-├── requirements.txt    # Dependências do ecossistema Python
-├── main.py             # Arquivo inicializador
-├── launch_dashboard.py # Inicializador do backend FastAPI
+```text
+Oracle/
+├── bot/                  # daemon: cliente gateway, máquina de estados, filas, TUI
+│   ├── client.py         # listener discord.py-self e handlers de eventos
+│   ├── captcha.py        # loop do resolvedor de captcha (roteamento, fallback, override via Telegram)
+│   ├── state.py          # estado do bot, filas HPQ/LPQ, gerador de delay humano
+│   ├── commands.py       # executor de comandos compartilhado (API/CLI/TUI/Discord)
+│   ├── tui.py            # aplicação principal Textual
+│   ├── tui_eye.py        # mascotes animados: olho e gato
+│   └── ...               # parsers, handlers, telegram, summer, jail feedback
+├── dashboard/            # dashboard React 19 (Vite, Tailwind v4, xterm.js)
+├── dashboard_server.py   # backend FastAPI: REST /api/* + PTY via /ws/terminal
+├── launch_dashboard.py   # launcher desktop: thread uvicorn + abre o navegador
+├── main.py               # entrypoint da TUI (--headless para pipe via stdin)
+├── oracle                # launcher bash: modos TUI (padrão), dashboard, dev
+├── options_resolver.py   # resolução de perfis + leitura/escrita do options.ini
+├── options_example.ini   # template de configuração anotado (copiado para options.ini)
+├── build_windows.py      # empacotador PyInstaller (build do frontend + exe)
+├── setup.iss             # script Inno Setup -> OracleOS_Setup.exe (CI em tags)
+├── setup.sh              # registra a função global `oracle` no shell
+├── requirements.txt      # dependências Python
+├── classes.txt           # as 16 classes de itens do captcha
+├── oracle_v2_*.tflite    # pesos das CNNs de captcha (color + grayscale; .h5 como fallback)
+├── data/wiki_docs/       # referência da wiki do Epic RPG scrapeada (~100 docs markdown)
+├── tools/                # scraper da wiki
+├── docs/                 # banner.svg, architecture.svg, state-machine.svg, README pt-BR
+├── plans/                # documentos de design e planejamento
+└── scratch/              # scripts avulsos de geração de assets
+```
+
 ### Opções de Configuração
+
+O template completo e anotado está em `options_example.ini`. Principais chaves:
 
 | Chave | Tipo | Padrão | Descrição |
 | :--- | :--- | :--- | :--- |
+| `user_token` | string | (vazio) | Token da conta Discord (obrigatório) |
+| `channel_id` / `guild_id` | int | (vazio) | IDs do canal e do servidor alvo |
+| `language` | string | pt | `en` ou `pt` |
+| `admin_ids` | lista | (vazio) | IDs extras do Discord autorizados a enviar comandos `sb` |
+| `random_interval` | bool | false | Adiciona jitter de 1-4s entre comandos |
+| `typo_chance` | float | 0.05 | Chance de typo simulado por comando |
+| `sleep_at` / `wake_up_at` | HH:MM | (vazio) | Janela offline noturna |
+| `telegram_bot_token` / `telegram_chat_id` | string | (vazio) | Alertas de captcha e canal de override remoto |
+| `do_*` | bool | misto | Toggles de rotinas: `hunt`, `adv`, `farm`, `work`, `training`, `daily`, `weekly`, `quest`, `lootbox`, `dungeon`, `card_hand`, `duel`, `pet`, `summer` |
 | `do_summer` | bool | false | Ativa a automação do Evento Summer |
 | `summer_surf_strategy` | string | conservative | Estratégia de risco no Surf: conservative ou aggressive |
 | `summer_drink_choice` | string | blue | Cor da bebida da segunda-feira: blue, green, pink, yellow |
-| `summer_use_sleepy_potion` | bool | false | Uso automático de sleepy potion para a task semanal (⚠️ arriscado) |
+| `summer_use_sleepy_potion` | bool | false | Uso automático de sleepy potion para a task semanal (arriscado) |
+| `theme` | string | dracula | Paleta da TUI: cathedral, dracula, nord, monokai, gruvbox, catppuccin, tokyonight, rosepine, solarized, cyberpunk |
 
 ─────── ▪ ───────
 
-## ⌨️ Comandos CLI, API & Discord
+## ❯ Comandos CLI, API & Discord
 
 Controle a execução através da interface TUI do terminal, da REST API, do stdin de terminal ou enviando mensagens diretas no chat do Discord (restrito a admins):
 
@@ -223,7 +267,7 @@ Controle a execução através da interface TUI do terminal, da REST API, do std
   exit                Encerra processos e persiste arquivos de log.
 ```
 
-### 🤖 Operação por Agentes de IA & LLMs (Local ou Nuvem)
+### Operação por Agentes de IA & LLMs (Local ou Nuvem)
 
 O Oracle v3 dispõe de uma REST API HTTP e leitura via pipe stdin projetadas especificamente para que agentes de IA (Claude Code, Cursor, Ollama, AutoGPT, agentes LLM customizados) possam operar o bot de forma programática:
 
@@ -277,7 +321,7 @@ Contas administradoras autorizadas podem controlar o daemon enviando comandos di
 * `sb g start` / `sb g stop` / `sb g pause`: Ativa ou desativa as rotinas do módulo de gambling/apostas Fibonacci.
 * `sb say <mensagem>`: Envia uma mensagem personalizada no canal ativo.
 
-### Evento Summer (🏖️)
+### Evento Summer
 
 | Comando | Descrição |
 |---------|-----------|
@@ -288,7 +332,7 @@ Contas administradoras autorizadas podem controlar o daemon enviando comandos di
 
 ─────── ▪ ───────
 
-## 🛡️ Protocolos de Segurança e Anti-Detecção
+## ❯ Protocolos de Segurança e Anti-Detecção
 
 ```text
   [!] USE CONEXÃO RESIDENCIAL: Evite hostings comerciais (AWS, GCP, DigitalOcean).
@@ -300,24 +344,27 @@ Contas administradoras autorizadas podem controlar o daemon enviando comandos di
 
 ─────── ▪ ───────
 
-## ⚠️ Aviso Legal
+## ❯ Aviso Legal
 
 ```text
   [AVISO]
-  Esta aplicação interage com o Discord através de chamadas à APIs não-oficiais.
-  Isso viola as diretrizes de termos de uso do Discord. O pacote foi criado
-  unicamente para fins de estudos acadêmicos e testes. Os autores não assumem
-  qualquer responsabilidade por suspensões de contas ou bans. Use por sua conta.
+  O Oracle é um selfbot. Ele controla uma conta real de usuário do Discord
+  através de APIs não-oficiais, o que viola os Termos de Serviço do Discord.
+  Rodá-lo pode resultar em suspensão ou banimento permanente da conta.
+
+  Este projeto existe apenas para fins educacionais e de experimentação.
+  Rode numa conta, e num servidor, que você pode perder. Os autores não
+  assumem qualquer responsabilidade. Use por sua conta e risco.
 ```
 
 ─────── ▪ ───────
 
-## 📄 Termos de Licenciamento
+## ❯ Termos de Licenciamento
 
-Sob os termos da licença de código aberto **[MIT License](LICENSE)**. Permissivo para modificação, estudo acadêmico e redistribuição.
+Sob os termos da licença de código aberto **[MIT License](../LICENSE)**. Permissivo para modificação, estudo acadêmico e redistribuição.
 
 ```text
-  Copyright (c) 2026 Oracle Devs
+  Copyright (c) 2026 Thiago Araújo
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files...
 ```
