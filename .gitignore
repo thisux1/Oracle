@@ -47,3 +47,7 @@ graphify-out/
 
 # Planos e Documentação de Desenvolvimento
 docs/plan_*.md
+
+# demo media
+!docs/demo.mp4
+!docs/demo-poster.png

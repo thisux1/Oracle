@@ -18,6 +18,12 @@ O **Oracle v3** é um daemon selfbot para Epic RPG. Ele escuta o gateway do Disc
 > [!NOTE]
 > Configuração do bot Navi e do Neon Util é necessária para obter todas as funcionalidades.
 
+[![Demo do Oracle](demo-poster.png)](demo.mp4)
+
+▶ **[Assistir à demo](demo.mp4)** — 31s: boot real da TUI em Textual → dashboard React ao vivo (overview, terminal PTY via WebSocket, config, stats) → lógica de roteamento das CNNs gêmeas do resolvedor de captcha → disclaimer educacional. Capturado offline, sem credenciais do Discord: o daemon reporta honestamente a configuração ausente em vez de conectar.
+
+<video src="demo.mp4" width="720" controls muted></video>
+
 ─────── ▪ ───────
 
 ## ❯ Arquitetura do Sistema e Fluxos de Dados
