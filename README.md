@@ -20,7 +20,7 @@
 
 [![Oracle demo](docs/demo-poster.png)](docs/demo.webm)
 
-▶ **[Watch the demo](docs/demo.webm)** — 31s: real Textual TUI boot → live React dashboard (overview, PTY terminal over WebSocket, config, stats) → the captcha resolver's dual-CNN routing logic → educational disclaimer. Captured offline with no Discord credentials: the daemon honestly reports the missing config instead of connecting.
+▶ **[Watch the demo](docs/demo.webm)** — 31s, rendered in Oracle's own identity (Dracula palette, ASCII-eye `░▒▓█` ping-pong, scanline transitions): real Textual TUI boot → live React dashboard (overview, PTY terminal over WebSocket, config, stats) → the captcha resolver's dual-CNN routing logic → educational disclaimer. Captured offline with no Discord credentials: the daemon honestly reports the missing config instead of connecting.
 
 <video src="docs/demo.webm" width="720" controls muted></video>
 

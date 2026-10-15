@@ -20,7 +20,7 @@ O **Oracle v3** é um daemon selfbot para Epic RPG. Ele escuta o gateway do Disc
 
 [![Demo do Oracle](demo-poster.png)](demo.webm)
 
-▶ **[Assistir à demo](demo.webm)** — 31s: boot real da TUI em Textual → dashboard React ao vivo (overview, terminal PTY via WebSocket, config, stats) → lógica de roteamento das CNNs gêmeas do resolvedor de captcha → disclaimer educacional. Capturado offline, sem credenciais do Discord: o daemon reporta honestamente a configuração ausente em vez de conectar.
+▶ **[Assistir à demo](demo.webm)** — 31s, renderizado na identidade própria do Oracle (paleta Dracula, olho ASCII `░▒▓█` em ping-pong, transições scanline): boot real da TUI em Textual → dashboard React ao vivo (overview, terminal PTY via WebSocket, config, stats) → lógica de roteamento das CNNs gêmeas do resolvedor de captcha → disclaimer educacional. Capturado offline, sem credenciais do Discord: o daemon reporta honestamente a configuração ausente em vez de conectar.
 
 <video src="demo.webm" width="720" controls muted></video>
 
