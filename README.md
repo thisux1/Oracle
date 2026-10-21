@@ -29,7 +29,7 @@
 </p>
 
 <p align="center">
-  <video src="https://github.com/thisux1/thisux1/releases/download/demos/oracle.webm" poster="docs/demo-poster.png" width="720" autoplay loop muted playsinline controls></video>
+  <a href="https://github.com/thisux1/thisux1/releases/download/demos/oracle.webm"><img src="docs/demo.gif" width="720" alt="demo" /></a>
 </p>
 
 ─────── ▪ ───────

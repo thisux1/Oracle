@@ -29,7 +29,7 @@ O **Oracle v3** é um daemon selfbot para Epic RPG. Ele escuta o gateway do Disc
 </p>
 
 <p align="center">
-  <video src="https://github.com/thisux1/thisux1/releases/download/demos/oracle.webm" poster="demo-poster.png" width="720" autoplay loop muted playsinline controls></video>
+  <a href="https://github.com/thisux1/thisux1/releases/download/demos/oracle.webm"><img src="demo.gif" width="720" alt="demo" /></a>
 </p>
 
 ─────── ▪ ───────
