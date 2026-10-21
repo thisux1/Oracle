@@ -18,11 +18,19 @@
 > [!NOTE]
 > Navi Bot and Neon Util setup required for full features.
 
-[![Oracle demo](docs/demo-poster.png)](docs/demo.webm)
+▶ **[Watch the demo](https://github.com/thisux1/thisux1/releases/download/demos/oracle.webm)** — 31s, rendered in Oracle's own identity (Dracula palette, ASCII-eye `░▒▓█` ping-pong, scanline transitions): real Textual TUI boot → live React dashboard (overview, PTY terminal over WebSocket, config, stats) → the captcha resolver's dual-CNN routing logic → educational disclaimer. Captured offline with no Discord credentials: the daemon honestly reports the missing config instead of connecting.
 
-▶ **[Watch the demo](docs/demo.webm)** — 31s, rendered in Oracle's own identity (Dracula palette, ASCII-eye `░▒▓█` ping-pong, scanline transitions): real Textual TUI boot → live React dashboard (overview, PTY terminal over WebSocket, config, stats) → the captcha resolver's dual-CNN routing logic → educational disclaimer. Captured offline with no Discord credentials: the daemon honestly reports the missing config instead of connecting.
+## Screenshots
 
-<video src="docs/demo.webm" width="720" controls muted></video>
+<p align="center">
+  <img src="docs/screenshots/01-tui.png" width="31%" />
+  <img src="docs/screenshots/02-dashboard.png" width="31%" />
+  <img src="docs/screenshots/03-report.png" width="31%" />
+</p>
+
+<p align="center">
+  <video src="https://github.com/thisux1/thisux1/releases/download/demos/oracle.webm" poster="docs/demo-poster.png" width="720" autoplay loop muted playsinline controls></video>
+</p>
 
 ─────── ▪ ───────
 

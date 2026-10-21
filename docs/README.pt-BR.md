@@ -18,11 +18,19 @@ O **Oracle v3** é um daemon selfbot para Epic RPG. Ele escuta o gateway do Disc
 > [!NOTE]
 > Configuração do bot Navi e do Neon Util é necessária para obter todas as funcionalidades.
 
-[![Demo do Oracle](demo-poster.png)](demo.webm)
+▶ **[Assistir à demo](https://github.com/thisux1/thisux1/releases/download/demos/oracle.webm)** — 31s, renderizado na identidade própria do Oracle (paleta Dracula, olho ASCII `░▒▓█` em ping-pong, transições scanline): boot real da TUI em Textual → dashboard React ao vivo (overview, terminal PTY via WebSocket, config, stats) → lógica de roteamento das CNNs gêmeas do resolvedor de captcha → disclaimer educacional. Capturado offline, sem credenciais do Discord: o daemon reporta honestamente a configuração ausente em vez de conectar.
 
-▶ **[Assistir à demo](demo.webm)** — 31s, renderizado na identidade própria do Oracle (paleta Dracula, olho ASCII `░▒▓█` em ping-pong, transições scanline): boot real da TUI em Textual → dashboard React ao vivo (overview, terminal PTY via WebSocket, config, stats) → lógica de roteamento das CNNs gêmeas do resolvedor de captcha → disclaimer educacional. Capturado offline, sem credenciais do Discord: o daemon reporta honestamente a configuração ausente em vez de conectar.
+## Capturas de tela
 
-<video src="demo.webm" width="720" controls muted></video>
+<p align="center">
+  <img src="screenshots/01-tui.png" width="31%" />
+  <img src="screenshots/02-dashboard.png" width="31%" />
+  <img src="screenshots/03-report.png" width="31%" />
+</p>
+
+<p align="center">
+  <video src="https://github.com/thisux1/thisux1/releases/download/demos/oracle.webm" poster="demo-poster.png" width="720" autoplay loop muted playsinline controls></video>
+</p>
 
 ─────── ▪ ───────
 
