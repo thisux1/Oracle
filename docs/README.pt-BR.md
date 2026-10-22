@@ -3,7 +3,6 @@
   <img src="banner.svg?v=2" alt="Banner do Olho Cibernético do Oracle v3" width="100%" style="border-radius: 8px; border: 1px solid rgba(168, 85, 247, 0.18);" />
 </p>
 
-
 🇺🇸 **For the English version of this document, see: [README.md](../README.md).**
 
 > [!WARNING]
@@ -18,7 +17,13 @@ O **Oracle v3** é um daemon selfbot para Epic RPG. Ele escuta o gateway do Disc
 > [!NOTE]
 > Configuração do bot Navi e do Neon Util é necessária para obter todas as funcionalidades.
 
+## ❯ Demo
+
 ▶ **[Assistir à demo](https://github.com/thisux1/thisux1/releases/download/demos/oracle.webm)** — 31s, renderizado na identidade própria do Oracle (paleta Dracula, olho ASCII `░▒▓█` em ping-pong, transições scanline): boot real da TUI em Textual → dashboard React ao vivo (overview, terminal PTY via WebSocket, config, stats) → lógica de roteamento das CNNs gêmeas do resolvedor de captcha → disclaimer educacional. Capturado offline, sem credenciais do Discord: o daemon reporta honestamente a configuração ausente em vez de conectar.
+
+<p align="center">
+  <a href="https://github.com/thisux1/thisux1/releases/download/demos/oracle.webm"><img src="demo.gif" width="720" alt="demo" /></a>
+</p>
 
 ## Capturas de tela
 
@@ -26,10 +31,6 @@ O **Oracle v3** é um daemon selfbot para Epic RPG. Ele escuta o gateway do Disc
   <img src="screenshots/01-tui.png" width="31%" />
   <img src="screenshots/02-dashboard.png" width="31%" />
   <img src="screenshots/03-report.png" width="31%" />
-</p>
-
-<p align="center">
-  <a href="https://github.com/thisux1/thisux1/releases/download/demos/oracle.webm"><img src="demo.gif" width="720" alt="demo" /></a>
 </p>
 
 ─────── ▪ ───────

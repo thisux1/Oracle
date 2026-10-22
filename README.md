@@ -3,7 +3,6 @@
   <img src="docs/banner.svg?v=2" alt="Oracle v3 Cybernetic Eye Banner" width="100%" style="border-radius: 8px; border: 1px solid rgba(168, 85, 247, 0.18);" />
 </p>
 
-
 🇧🇷 **Para ler a documentação em Português, acesse: [README.pt-BR.md](docs/README.pt-BR.md).**
 
 > [!WARNING]
@@ -18,7 +17,13 @@
 > [!NOTE]
 > Navi Bot and Neon Util setup required for full features.
 
+## ❯ Demo
+
 ▶ **[Watch the demo](https://github.com/thisux1/thisux1/releases/download/demos/oracle.webm)** — 31s, rendered in Oracle's own identity (Dracula palette, ASCII-eye `░▒▓█` ping-pong, scanline transitions): real Textual TUI boot → live React dashboard (overview, PTY terminal over WebSocket, config, stats) → the captcha resolver's dual-CNN routing logic → educational disclaimer. Captured offline with no Discord credentials: the daemon honestly reports the missing config instead of connecting.
+
+<p align="center">
+  <a href="https://github.com/thisux1/thisux1/releases/download/demos/oracle.webm"><img src="docs/demo.gif" width="720" alt="demo" /></a>
+</p>
 
 ## Screenshots
 
@@ -26,10 +31,6 @@
   <img src="docs/screenshots/01-tui.png" width="31%" />
   <img src="docs/screenshots/02-dashboard.png" width="31%" />
   <img src="docs/screenshots/03-report.png" width="31%" />
-</p>
-
-<p align="center">
-  <a href="https://github.com/thisux1/thisux1/releases/download/demos/oracle.webm"><img src="docs/demo.gif" width="720" alt="demo" /></a>
 </p>
 
 ─────── ▪ ───────
